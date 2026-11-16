@@ -202,3 +202,7 @@ input { font-family: inherit; -webkit-user-select: text; user-select: text; }
 .musapp .card, .musapp .card-svg, .musapp .card-back, .musapp .seat__card, .musapp .seat__card .card-back, .musapp .table__seat .seat__card .card-back,
 .pcard, .card-face, .card-btn { border-radius: 0 !important; }
 .musapp .card-svg, .musapp .card-back { box-shadow: 0 12px 24px rgba(0, 0, 0, .75); border: 1px solid rgba(0, 0, 0, .45); }
+
+/* Foco de luz dorado que recorre el fondo muy despacio. */
+.club-sweep { background: radial-gradient(ellipse 60% 40% at 50% 50%, rgba(212, 175, 55, .13), transparent 70%); animation: club-drift calc(26s / var(--anim)) ease-in-out infinite alternate; }
+@keyframes club-drift { from { transform: translate(-22%, -18%); } to { transform: translate(22%, 20%); } }

@@ -1,6 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { WelcomeGate } from './components/ui/WelcomeGate.tsx';
-import { Galaxy } from './components/ui/Galaxy.tsx';
+import { ClubBackground } from './components/ui/ClubBackground.tsx';
 import { ErrorBoundary } from './components/ui/ErrorBoundary.tsx';
 import Blackjack from './games/blackjack/Blackjack.tsx';
 import Brisca from './games/brisca/Brisca.tsx';
@@ -16,7 +16,7 @@ import Home from './pages/Home.tsx';
 export default function App() {
   return (
     <ErrorBoundary>
-    <Galaxy />
+    <ClubBackground />
     <WelcomeGate>
     <HashRouter>
       <Routes>
