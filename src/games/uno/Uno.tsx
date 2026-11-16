@@ -44,7 +44,6 @@ export default function Uno() {
   const [count, setCount] = useState<2 | 3 | 4 | null>(null);
   const [s, setS] = useState<UnoState | null>(null);
   const [pickFor, setPickFor] = useState<UnoCard | null>(null);
-  const [sel, setSel] = useState<string | null>(null);
   const [bubbles, setBubbles] = useState<Record<string, Bubble | undefined>>({});
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
@@ -53,7 +52,7 @@ export default function Uno() {
   // Quién soy: en una sala, el jugador con mi peerId; en local, siempre p0.
   const me = online ? s?.players.find((p) => p.peerId === seating.myPeerId)?.id ?? 'p0' : 'p0';
 
-  const start = (n: 2 | 3 | 4) => { setCount(n); setS(newGame(makePlayers(n))); setBubbles({}); setPickFor(null); setSel(null); paid.current = false; lastSeq.current = ''; };
+  const start = (n: 2 | 3 | 4) => { setCount(n); setS(newGame(makePlayers(n))); setBubbles({}); setPickFor(null); paid.current = false; lastSeq.current = ''; };
 
   // Online: el anfitrión reparte con los humanos de la sala y, si está activado, rellena con bots.
   const hostStart = () => {
@@ -62,7 +61,7 @@ export default function Uno() {
     const players: UnoPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
       : { id: `p${i}`, name: BOT_NAMES[i - humans.length] ?? `Bot ${i}`, human: false });
-    setS(newGame(players)); setBubbles({}); setPickFor(null); setSel(null); paid.current = false; lastSeq.current = '';
+    setS(newGame(players)); setBubbles({}); setPickFor(null); paid.current = false; lastSeq.current = '';
   };
   const noS = s === null;
   useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
@@ -188,11 +187,9 @@ export default function Uno() {
     setPickFor(null);
     if (card) act({ k: 'play', cardId: card.id, color });
   };
-  // Primer toque: la carta se eleva; segundo toque: se juega (los comodines abren el selector de color).
+  // Un toque lanza la carta a la mesa (los comodines abren antes el selector de color).
   const onCard = (c: UnoCard) => {
     if (!myTurn || !isPlayable(s, c, myHand)) return;
-    if (sel !== c.id) { setSel(c.id); feedback('tap'); return; }
-    setSel(null);
     feedback('play');
     if (c.color === 'wild') { setPickFor(c); return; }
     act({ k: 'play', cardId: c.id });
@@ -254,7 +251,7 @@ export default function Uno() {
         <div className="mx-auto flex w-max items-end px-2">
           {sorted.map((c, i) => (
             <div key={c.id} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${sorted.length > 9 ? -0.46 : sorted.length > 6 ? -0.34 : -0.12})`, zIndex: i }}>
-              <UnoCardView card={c} scale={0.82} playable={playable.has(c.id)} selected={sel === c.id} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
+              <UnoCardView card={c} scale={0.82} playable={playable.has(c.id)} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
             </div>
           ))}
         </div>
@@ -266,7 +263,7 @@ export default function Uno() {
   return (
     <GameFrame
       gameId="uno"
-      timer={{ active: myTurn, id: `${s.turn}:${myHand.length}:${s.drawn?.id ?? ''}:${s.drawPile.length}`, onTimeout: () => { setPickFor(null); setSel(null); const m = botMove(s); act(m.type === 'play' ? { k: 'play', cardId: m.cardId, color: m.color } : { k: m.type }); } }}
+      timer={{ active: myTurn, id: `${s.turn}:${myHand.length}:${s.drawn?.id ?? ''}:${s.drawPile.length}`, onTimeout: () => { setPickFor(null); const m = botMove(s); act(m.type === 'play' ? { k: 'play', cardId: m.cardId, color: m.color } : { k: m.type }); } }}
       onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
       header={
         <div className="grid grid-cols-2 gap-[min(1.8vw,8px)]" role="group" aria-label="Estado">
@@ -287,7 +284,7 @@ export default function Uno() {
           <PhaseCinematic cine={cine} />
           <AnimatePresence>
             {pickFor && (
-              <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE}>
+              <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE}>
                 <motion.div role="dialog" aria-modal="true" aria-label="Elige un color"
                   className="w-full max-w-xs rounded-3xl border border-amber-200/20 bg-zinc-900/95 p-5 text-center shadow-[0_20px_60px_rgba(0,0,0,.6)]"
                   initial={{ scale: 0.92, y: 12 }} animate={{ scale: 1, y: 0 }} transition={FAST_EASE}>

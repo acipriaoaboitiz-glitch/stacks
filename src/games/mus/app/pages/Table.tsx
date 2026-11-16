@@ -294,7 +294,7 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
           </div>
 
           {discarding && !frozen ? (
-            <div className="flex min-h-[50px] w-full max-w-[520px] items-center justify-between gap-3 rounded-2xl border border-white/10 bg-zinc-900/75 px-3 py-1.5 backdrop-blur-md">
+            <div className="flex min-h-[50px] w-full max-w-[520px] items-center justify-between gap-3 rounded-2xl border border-white/10 bg-zinc-900/75 px-3 py-1.5">
               <p className="text-[12px] leading-tight text-stone-300">
                 {selected.size === 0 ? 'Desliza hacia arriba las cartas que quieres cambiar' : `Cambiar ${selected.size} ${selected.size === 1 ? 'carta' : 'cartas'}`}
               </p>

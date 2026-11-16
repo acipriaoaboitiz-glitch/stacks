@@ -28,6 +28,7 @@ export const ROOM_LAYOUTS: Record<string, RoomLayout> = {
   escoba: { capacity: 4, mode: 'table', min: 2 },
   uno: { capacity: 4, mode: 'table', min: 2 },
   presidente: { capacity: 4, mode: 'table', min: 2 },
+  seises: { capacity: 4, mode: 'table', min: 2 },
   blackjack: { capacity: 4, mode: 'table', min: 1 },
   sieteymedia: { capacity: 4, mode: 'table', min: 2 },
 };

@@ -164,7 +164,7 @@ export default function Presidente() {
     : myTurn
       ? [
           ...(s.table ? [{ id: 'pass', tone: 'soft' as const, label: t('a.pass'), onPress: doPass }] : []),
-          { id: 'play', tone: 'gold' as const, label: sel.length ? `Jugar ${sel.length}` : 'Elige cartas', disabled: !playOk, onPress: doPlay },
+          { id: 'play', tone: 'gold' as const, label: sel.length ? `Tirar selección (${sel.length})` : 'Toca tus cartas', disabled: !playOk, onPress: doPlay },
         ]
       : [];
   const status = s.phase === 'done' ? '' : waitingExchange ? 'El Presidente elige 2 cartas para devolver…' : exchange ? 'Elige 2 cartas para devolver al Mendigo'

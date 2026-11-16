@@ -9,13 +9,13 @@ import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
-import { SUIT_LABEL, type SpanishCard, type SpanishSuit } from '../../engine/deck.ts';
+import { SUIT_LABEL, type AnyCard, type SpanishSuit } from '../../engine/deck.ts';
 import { useT } from '../../i18n/index.ts';
 import { aiDelay, botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { points as briscaPts } from '../brisca/engine.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
-import { useTapToPlay, Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, briscaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
+import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, briscaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
   applyTuteAction, botTute, declareTute, hasTute, legalCards, newTute, playTute, resolveTute, sing, singable, teamOf, teamPoints, winnerTeam, type TPlayer, type TuteAction, type TuteState,
 } from './engine.ts';
@@ -110,10 +110,15 @@ export default function Tute() {
   useEffect(() => { if (played > 0) feedback('deal'); }, [played]);
 
   const legalIds = useMemo(() => new Set(s && s.phase === 'playing' && s.players[s.turn]!.id === me ? legalCards(s, me).map((c) => c.id) : []), [s, me]);
-  const play = useCallback((c: SpanishCard) => {
-    if (s && s.phase === 'playing' && s.players[s.turn]!.id === me) dispatch(me, { k: 'play', cardId: c.id });
-  }, [s, me, dispatch]);
-  const { sel, tap } = useTapToPlay(play);
+  // Manejador estable (lee el estado más reciente de una ref) para que las cartas memoizadas no se repinten en cada frame.
+  const sRef = useRef(s);
+  sRef.current = s;
+  const play = useCallback((c: AnyCard) => {
+    const cur = sRef.current;
+    if (!cur || cur.phase !== 'playing' || cur.players[cur.turn]!.id !== me) return;
+    feedback('play');
+    dispatch(me, { k: 'play', cardId: c.id });
+  }, [me, dispatch]);
 
   if (!s && online) {
     return (
@@ -178,7 +183,7 @@ export default function Tute() {
       onPress: () => dispatch(me, { k: 'sing', suit: su }),
     })),
   ];
-  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? (legalIds.size < s.hands[me]!.length ? 'Te toca: asiste, monta o falla' : 'Te toca: toca una carta dos veces para jugarla') : `Juega ${s.players[s.turn]!.name}…`;
+  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? (legalIds.size < s.hands[me]!.length ? 'Te toca: asiste, monta o falla' : 'Te toca: toca una carta') : `Juega ${s.players[s.turn]!.name}…`;
   const myTricks = s.tricks[myTeam] ?? 0;
 
   const felt = (
@@ -197,7 +202,7 @@ export default function Tute() {
                   style={{ marginLeft: `calc(var(--card-w) * ${-0.36 + o.x})`, marginTop: `calc(var(--card-w) * ${-0.57 + o.y})`, zIndex: 2 }}
                   initial={human ? false : { x: DIR[slot].x * 160, y: DIR[slot].y * 160, opacity: 0, scale: 1.15 }}
                   animate={{ x: 0, y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 240, damping: 22 }}>
-                  <FaceCard card={tp.card} scale={0.72} layoutId={tp.card.id} rotate={tilt(tp.card.id)} {...briscaDeco(tp.card, s.trumpSuit)} />
+                  <FaceCard card={tp.card} scale={0.72} rotate={tilt(tp.card.id)} {...briscaDeco(tp.card, s.trumpSuit)} />
                 </motion.div>
               );
             })}
@@ -234,8 +239,8 @@ export default function Tute() {
       {pills.length > 0 && <p className="text-center text-[11px] text-stone-400">{status}</p>}
       <div className="flex items-end justify-center gap-[min(1.2vw,8px)] pt-[min(3.2dvh,24px)]" role="group" aria-label="Tu mano">
         {s.hands[me]!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} scale={arr.length > 6 ? 0.66 : 0.8} layoutId={c.id} rotate={(i - (arr.length - 1) / 2) * 1.4}
-            dim={myTurn && !legalIds.has(c.id)} selected={sel === c.id} {...briscaDeco(c, s.trumpSuit)} onClick={myTurn && legalIds.has(c.id) ? () => tap(c) : undefined} />
+          <FaceCard key={c.id} card={c} scale={arr.length > 6 ? 0.66 : 0.8} rotate={(i - (arr.length - 1) / 2) * 1.4}
+            dim={myTurn && !legalIds.has(c.id)} {...briscaDeco(c, s.trumpSuit)} onSelect={myTurn && legalIds.has(c.id) ? play : undefined} />
         ))}
       </div>
     </>

@@ -37,10 +37,10 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-black/55 p-4 backdrop-blur-sm"
+        <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('set.title')}
-            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-amber-500/30 bg-slate-900/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,.65)] backdrop-blur-xl"
+            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-amber-500/30 bg-slate-900/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,.65)]"
             initial={{ y: 24, scale: 0.96 }} animate={{ y: 0, scale: 1 }} exit={{ y: 24, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }} onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center">

@@ -10,6 +10,7 @@ import MusPlay from './games/mus/MusPlay.tsx';
 import Chinchon from './games/chinchon/Chinchon.tsx';
 import Poker from './games/poker/Poker.tsx';
 import Presidente from './games/presidente/Presidente.tsx';
+import Seises from './games/seises/Seises.tsx';
 import Tute from './games/tute/Tute.tsx';
 import Home from './pages/Home.tsx';
 
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/play/tute" element={<Tute />} />
         <Route path="/play/poker" element={<Poker />} />
         <Route path="/play/presidente" element={<Presidente />} />
+        <Route path="/play/seises" element={<Seises />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

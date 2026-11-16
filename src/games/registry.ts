@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Crown, Diamond, Flame, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
+import { Crown, Diamond, Flame, Hash, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
 
 export type GameCategory = 'espanola' | 'francesa' | 'familiar';
 
@@ -59,7 +59,7 @@ export const GAMES: GameInfo[] = [
       'Se reparten 7 cartas. En tu turno robas del mazo o del descarte y descartas una.',
       'Ligas cartas en tríos (mismo número) o escaleras (mismo palo seguidas, 3 o más).',
       'Cierras cuando las cartas sueltas suman 7 puntos o menos. Los demás se anotan sus sueltas.',
-      'Cerrar con todo ligado (o Chinchón: 7 cartas seguidas del mismo palo) resta 10. Quien llega a 100 queda eliminado.',
+      'Quien cierra gana la ronda y resta 10 puntos (25 con Chinchón: 7 cartas seguidas del mismo palo). Quien llega a 100 queda eliminado.',
     ],
   },
   {
@@ -112,6 +112,17 @@ export const GAMES: GameInfo[] = [
       'El siguiente jugador debe superar el valor con la misma cantidad de cartas, o pasar. Un 2 suelto corta cualquier jugada.',
       'Si todos pasan o alguien corta con un 2, se limpia la mesa y vuelve a salir quien ganó la baza.',
       'Quien se queda sin cartas el primero es Presidente; el último, Mendigo. En la ronda siguiente el Mendigo entrega sus 2 mejores cartas al Presidente, que le devuelve 2 a su elección.',
+    ],
+  },
+  {
+    id: 'seises', name: 'Los Seises', tagline: 'Escaleras al corte por palos', category: 'espanola', deck: 'es', players: '2–4 jugadores',
+    icon: Hash, route: '/play/seises', playable: true, accent: '#e6b94d', tint: ['#33280a', '#0d1a12'],
+    rules: [
+      'Baraja española de 40 cartas repartida entre todos los jugadores. Empieza quien tiene el 6 de oros y lo coloca en la mesa.',
+      'En tu turno colocas otro 6 (abre un palo) o la carta inmediatamente superior o inferior de un palo ya abierto: 5 o 7 sobre el 6, y así hasta el As y el Rey (tras el 7 va la Sota).',
+      'Si no tienes ninguna jugada, pasas. Solo puedes pasar si de verdad no puedes colocar nada.',
+      'Quien se queda sin cartas gana la ronda y resta 10 puntos. Los demás suman sus cartas: As 1, del 2 al 7 su valor, Sota 10, Caballo 11 y Rey 12.',
+      'Cuando alguien llega a 150 puntos acaba la partida y gana quien menos puntos tiene.',
     ],
   },
 ];

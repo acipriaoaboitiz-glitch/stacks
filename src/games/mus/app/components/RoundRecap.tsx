@@ -123,7 +123,7 @@ export function RoundRecap({ view, mySeat, seats, startPoints, busy, final = fal
 
   return (
     <motion.div
-      className="absolute inset-0 z-40 flex flex-col bg-black/55 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-[max(env(safe-area-inset-top),14px)] backdrop-blur-md"
+      className="absolute inset-0 z-40 flex flex-col bg-black/55 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-[max(env(safe-area-inset-top),14px)]"
       role="dialog"
       aria-modal="true"
       aria-label="Recuento de la mano"

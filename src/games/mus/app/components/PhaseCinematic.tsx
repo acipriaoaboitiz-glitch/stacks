@@ -19,7 +19,7 @@ export function PhaseCinematic({ cine }: { cine: PhaseCine | null }) {
           role="status"
           aria-live="polite"
           aria-label={cine.title}
-          className="absolute inset-0 z-30 grid place-items-center bg-black/60 px-6 backdrop-blur-[2px]"
+          className="absolute inset-0 z-30 grid place-items-center bg-black/60 px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: { duration: 0.45 } }}
           exit={{ opacity: 0, transition: { duration: CINE.out } }}

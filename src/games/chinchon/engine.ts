@@ -9,6 +9,9 @@ import { shuffle, spanishDeck } from '../../engine/deck.ts';
  */
 export const CLOSE_LIMIT = 7;
 export const OUT_AT = 100;
+/** Quien cierra gana la ronda y resta 10 puntos; con Chinchón puro (7 cartas seguidas del mismo palo), 25. */
+export const CLOSE_BONUS = -10;
+export const CHINCHON_BONUS = -25;
 const ORDER = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 const pos = (c: SpanishCard): number => ORDER.indexOf(c.rank);
 export const looseValue = (c: SpanishCard): number => (c.rank >= 10 ? 10 : c.rank);
@@ -173,7 +176,7 @@ export function closeRound(prev: ChState, cardId: string): ChState | null {
     const arr = arrange(s.hands[i]!);
     const chinchon = isMeld(s.hands[i]!);
     let delta = arr.unmatched;
-    if (i === closer) delta = arr.unmatched === 0 ? -10 : 0;
+    if (i === closer) delta = chinchon ? CHINCHON_BONUS : CLOSE_BONUS;
     return { hand: s.hands[i]!, unmatched: arr.unmatched, delta, chinchon: i === closer && chinchon };
   });
   s.rows.forEach((r, i) => { s.scores[i] = s.scores[i]! + r.delta; if (s.scores[i]! >= OUT_AT) s.out[i] = true; });

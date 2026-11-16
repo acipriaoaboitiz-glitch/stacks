@@ -22,9 +22,9 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-black/55 p-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label="Perfil"
-            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-amber-500/30 bg-slate-900/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,.65)] backdrop-blur-xl"
+            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-amber-500/30 bg-slate-900/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,.65)]"
             initial={{ y: 24, scale: 0.96 }} animate={{ y: 0, scale: 1 }} exit={{ y: 24, opacity: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }} onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center">
               <h2 className="flex-1 font-[var(--font-display)] text-xl font-bold text-amber-300">Perfil</h2>
@@ -58,7 +58,7 @@ export function ProfileCard({ compact = false }: { compact?: boolean }) {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} aria-label="Editar perfil"
-        className="flex min-w-0 items-center gap-2 rounded-2xl border border-amber-200/15 bg-black/30 py-1 pl-1 pr-2.5 text-left backdrop-blur">
+        className="flex min-w-0 items-center gap-2 rounded-2xl border border-amber-200/15 bg-black/30 py-1 pl-1 pr-2.5 text-left">
         <PlayerAvatar name={prof.name} chips={w.chips} size={compact ? 34 : 44} />
         <span className={`min-w-0 leading-tight ${compact ? "hidden max-w-[68px] min-[460px]:block" : ""}`}>
           <b className="block truncate text-[13px]">{prof.name}</b>

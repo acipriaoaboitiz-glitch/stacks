@@ -146,7 +146,7 @@ export default function Chinchon() {
 
   const draw = (source: 'stock' | 'discard') => { if (!(myTurn && s.phase === 'draw')) return; setSel(null); dispatch(me, { k: 'draw', source }); };
   const pills: PillSpec[] = myTurn && s.phase === 'discard' && selCard ? [
-    { id: 'disc', tone: 'gold', label: t('a.discard'), onPress: () => { setSel(null); dispatch(me, { k: 'discard', cardId: selCard.id }); } },
+    { id: 'disc', tone: 'gold', label: 'Tirar selección', onPress: () => { setSel(null); dispatch(me, { k: 'discard', cardId: selCard.id }); } },
     { id: 'close', tone: 'ok', label: t('a.close'), disabled: !closable, onPress: () => { setSel(null); dispatch(me, { k: 'close', cardId: selCard.id }); } },
     { id: 'clr', tone: 'soft', label: t('a.clear'), onPress: () => setSel(null) },
   ] : [];
@@ -236,11 +236,14 @@ export default function Chinchon() {
                   ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } }]
                   : hostLike ? [{ label: t('a.next'), primary: true, onClick: () => { setSel(null); setS((cur) => (cur ? applyChAction(cur, me, { k: 'next' }) ?? cur : cur)); } }] : []}
               >
-                <ul className="grid gap-1 text-sm">
+                <ul className="grid gap-1.5 text-sm" aria-label="Puntos de la ronda">
                   {s.rows.map((r, i) => (
-                    <li key={i} className={`flex justify-between border-b border-white/10 py-1 ${s.out[i] ? 'opacity-50' : ''}`}>
-                      <span className={i === s.closer ? 'font-bold text-amber-300' : ''}>{nm(i)}{s.out[i] ? ' ✕' : ''}{r.chinchon ? ' · Chinchón' : ''}</span>
-                      <span className="tabular-nums text-stone-300">{r.delta >= 0 ? '+' : ''}{r.delta} → <b>{s.scores[i]}</b></span>
+                    <li key={i} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 ${i === s.closer ? 'border-emerald-400/40 bg-emerald-900/25' : 'border-white/10 bg-white/5'} ${s.out[i] ? 'opacity-60' : ''}`}>
+                      <span className={`min-w-0 truncate ${i === s.closer ? 'font-bold text-amber-300' : ''}`}>{nm(i)}{s.out[i] ? ' ✕' : ''}{r.chinchon ? ' · Chinchón' : ''}</span>
+                      <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
+                        <b className={`rounded-full px-2 py-[1px] text-[12px] ${r.delta < 0 ? 'bg-emerald-500/25 text-emerald-300' : 'bg-white/10 text-stone-200'}`}>{r.delta > 0 ? '+' : ''}{r.delta} pts</b>
+                        <span className="text-[12px] text-stone-300"><b className="text-stone-50">{s.scores[i]}</b> / {OUT_AT}</span>
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -74,7 +74,7 @@ export function TableCenter({ view, mySeat, names, banner }: { view: PublicState
             {bet && (
               <motion.div
                 layout
-                className={`grid gap-px rounded-2xl border px-4 py-1.5 backdrop-blur-sm ${
+                className={`grid gap-px rounded-2xl border px-4 py-1.5 ${
                   ordago
                     ? 'border-rose-500 bg-rose-950/70 shadow-[0_0_22px_rgba(255,77,94,.25)]'
                     : hot ? 'border-amber-300/60 bg-black/35' : 'border-white/10 bg-black/25'

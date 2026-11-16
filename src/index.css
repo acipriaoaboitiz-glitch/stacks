@@ -98,9 +98,9 @@ input { font-family: inherit; -webkit-user-select: text; user-select: text; }
 
 /* ── Cristal ahumado ─────────────────────────────────────────────────────────────────── */
 .glass-panel {
-  background: rgba(24, 24, 27, .75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(20, 22, 21, .94);
+ 
+ 
   border: 1px solid rgba(255, 255, 255, .1);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
 }

@@ -18,7 +18,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[80] grid place-items-center p-4 bg-black/45 backdrop-blur-sm"
+          className="fixed inset-0 z-[80] grid place-items-center p-4 bg-black/45"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -29,7 +29,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
             role="dialog"
             aria-modal="true"
             aria-label="Ajustes"
-            className="w-[min(92vw,380px)] rounded-3xl border border-white/15 bg-neutral-950/55 p-6 text-stone-100 shadow-2xl shadow-black/60 backdrop-blur-xl"
+            className="w-[min(92vw,380px)] rounded-3xl border border-white/15 bg-neutral-950/55 p-6 text-stone-100 shadow-2xl shadow-black/60"
             initial={{ opacity: 0, scale: 0.94, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 6 }}

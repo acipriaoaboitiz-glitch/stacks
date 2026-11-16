@@ -144,7 +144,9 @@ export default function Escoba() {
     setSelCard(id);
     const c = s.hands[myIdx]!.find((x) => x.id === id)!;
     const options = findCaptures(s.table, c);
-    setSelTable(options.length === 1 ? options[0]! : []);
+    // Sin captura posible, o con una sola, un toque basta: la carta vuela a la mesa.
+    if (options.length <= 1) { clear(); feedback('play'); dispatch(me, { k: 'play', cardId: id, take: options[0] ?? [] }); return; }
+    setSelTable([]);
   };
   const toggleTable = (i: number) => {
     if (!card || caps.length === 0) return;
@@ -190,10 +192,10 @@ export default function Escoba() {
           <div className="flex max-w-[560px] flex-wrap items-center justify-center gap-[min(2vw,10px)]">
             <AnimatePresence custom={exitDy(s.lastPlay?.by ?? 0)}>
               {s.table.map((c, i) => (
-                <motion.div key={c.id} layout custom={exitDy(s.lastPlay?.by ?? 0)} variants={takeVariants} exit="exit"
+                <motion.div key={c.id} custom={exitDy(s.lastPlay?.by ?? 0)} variants={takeVariants} exit="exit"
                   initial={s.lastPlay && s.lastPlay.by !== myIdx && s.lastPlay.card.id === c.id ? { y: -160, opacity: 0, scale: 1.1, rotate: 20 } : { opacity: 0, scale: 0.6 }}
                   animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}>
-                  <FaceCard card={c} scale={0.7} layoutId={c.id} rotate={tilt(c.id)} selected={selTable.includes(i)} {...escobaDeco(c)}
+                  <FaceCard card={c} scale={0.7} rotate={tilt(c.id)} selected={selTable.includes(i)} {...escobaDeco(c)}
                     dim={!!card && caps.length > 0 && !caps.some((cap) => cap.includes(i))}
                     onClick={card && caps.length > 0 ? () => toggleTable(i) : undefined} />
                 </motion.div>
@@ -230,7 +232,7 @@ export default function Escoba() {
       <PillBar pills={pills} idle={status} />
       <div className="flex items-end justify-center gap-[min(2vw,12px)] pt-[min(3.4dvh,26px)]" role="group" aria-label="Tu mano">
         {s.hands[myIdx]!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} layoutId={c.id} rotate={(i - (arr.length - 1) / 2) * 1.8} selected={selCard === c.id} dim={!myTurn} {...escobaDeco(c)}
+          <FaceCard key={c.id} card={c} rotate={(i - (arr.length - 1) / 2) * 1.8} selected={selCard === c.id} dim={!myTurn} {...escobaDeco(c)}
             onClick={myTurn ? () => pickCard(c.id) : undefined} />
         ))}
       </div>

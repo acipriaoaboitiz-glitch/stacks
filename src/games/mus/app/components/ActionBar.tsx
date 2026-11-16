@@ -107,7 +107,7 @@ export function ActionBar({ view, legal, busy, waiting, onSend }: ActionBarProps
         ) : (
           <motion.div
             key="actions"
-            className="flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/75 p-[5px] shadow-[0_8px_24px_rgba(0,0,0,.28)] backdrop-blur-md"
+            className="flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/75 p-[5px] shadow-[0_8px_24px_rgba(0,0,0,.28)]"
             initial={{ opacity: 0, y: 14, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: 'easeOut' } }}
             exit={{ opacity: 0, y: 6, transition: { duration: 0.15 } }}

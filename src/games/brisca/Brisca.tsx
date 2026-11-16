@@ -9,12 +9,12 @@ import { Button } from '../mus/app/components/ui.tsx';
 import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
-import { SUIT_LABEL, type SpanishCard } from '../../engine/deck.ts';
+import { SUIT_LABEL, type AnyCard } from '../../engine/deck.ts';
 import { botDelay, aiDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
-import { useTapToPlay, Banner, FaceCard, briscaDeco, PhaseCinematic, PillBar, ResultOverlay, ScorePair, tilt, useBanner, useCine } from '../shared/kit.tsx';
+import { Banner, FaceCard, briscaDeco, PhaseCinematic, PillBar, ResultOverlay, ScorePair, tilt, useBanner, useCine } from '../shared/kit.tsx';
 import {
   applyBriscaAction, botChoose, evaluateBriscaTrick, getBriscaScores, initBriscaGame, playBriscaCard, resolveTrick, sidesFor, type BPlayer, type BriscaAction, type BriscaState,
 } from './engine.ts';
@@ -112,10 +112,15 @@ export default function Brisca() {
   const played = s?.currentTrick.length ?? 0;
   useEffect(() => { if (played > 0) feedback('deal'); }, [played]);
 
-  const play = useCallback((c: SpanishCard) => {
-    if (s && s.phase === 'playing' && s.players[s.turnIndex]!.id === me) dispatch(me, { k: 'play', cardId: c.id });
-  }, [s, me, dispatch]);
-  const { sel, tap } = useTapToPlay(play);
+  // Manejador estable (lee el estado más reciente de una ref) para que las cartas memoizadas no se repinten en cada frame.
+  const sRef = useRef(s);
+  sRef.current = s;
+  const play = useCallback((c: AnyCard) => {
+    const cur = sRef.current;
+    if (!cur || cur.phase !== 'playing' || cur.players[cur.turnIndex]!.id !== me) return;
+    feedback('play');
+    dispatch(me, { k: 'play', cardId: c.id });
+  }, [me, dispatch]);
 
   if (!s && online) {
     return (
@@ -172,7 +177,7 @@ export default function Brisca() {
     const sy = n === 4 ? 0.62 : 0.34;
     return { bottom: { x: 0, y: sy }, top: { x: 0, y: -sy }, right: { x: sx, y: 0 }, left: { x: -sx, y: 0 } }[slot];
   };
-  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? 'Te toca: toca una carta dos veces para jugarla' : `Juega ${s.players[s.turnIndex]!.name}…`;
+  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? 'Te toca: toca una carta' : `Juega ${s.players[s.turnIndex]!.name}…`;
   const myTricks = Math.round(s.wonCards[me]!.length / s.players.length);
 
   const felt = (
@@ -191,7 +196,7 @@ export default function Brisca() {
                   style={{ marginLeft: `calc(var(--card-w) * ${-0.36 + o.x})`, marginTop: `calc(var(--card-w) * ${-0.57 + o.y})`, zIndex: 2 }}
                   initial={human ? false : { x: DIR[slot].x * 160, y: DIR[slot].y * 160, opacity: 0, scale: 1.15 }}
                   animate={{ x: 0, y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 240, damping: 22 }}>
-                  <FaceCard card={t.card} scale={0.72} layoutId={t.card.id} rotate={tilt(t.card.id)} glow={decided === t.playerId} {...briscaDeco(t.card, s.trumpSuit)} />
+                  <FaceCard card={t.card} scale={0.72} rotate={tilt(t.card.id)} glow={decided === t.playerId} {...briscaDeco(t.card, s.trumpSuit)} />
                 </motion.div>
               );
             })}
@@ -232,8 +237,8 @@ export default function Brisca() {
       <PillBar pills={[]} idle={status} />
       <div className="flex items-end justify-center gap-[min(2vw,12px)] pt-[min(3.4dvh,26px)]" role="group" aria-label="Tu mano">
         {s.hands[me]!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} layoutId={c.id} rotate={(i - (arr.length - 1) / 2) * 1.8} dim={!myTurn} selected={sel === c.id} {...briscaDeco(c, s.trumpSuit)}
-            onClick={myTurn ? () => tap(c) : undefined} />
+          <FaceCard key={c.id} card={c} rotate={(i - (arr.length - 1) / 2) * 1.8} dim={!myTurn} {...briscaDeco(c, s.trumpSuit)}
+            onSelect={myTurn ? play : undefined} />
         ))}
       </div>
     </>

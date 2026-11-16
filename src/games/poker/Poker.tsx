@@ -248,7 +248,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
         <span className="truncate text-right text-[11px] text-stone-400">{myHand || status}</span>
       </div>
       {raising !== null && lg ? (
-        <div className="grid w-full max-w-md gap-2 rounded-2xl border border-white/10 bg-zinc-900/75 p-2.5 backdrop-blur-md" role="group" aria-label="Subir apuesta">
+        <div className="grid w-full max-w-md gap-2 rounded-2xl border border-white/10 bg-zinc-900/75 p-2.5" role="group" aria-label="Subir apuesta">
           <div className="flex items-end justify-between gap-2">
             <div className="flex flex-wrap gap-1.5">
               {([['2x BB', () => setRaising(((v: number) => Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))))(s.currentBet + BB * 2))], ['½ Bote', () => setRaising(((v: number) => Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))))(s.currentBet + total / 2))], ['Bote', () => setRaising(((v: number) => Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))))(s.currentBet + total))]] as const).map(([lab, fn]) => (

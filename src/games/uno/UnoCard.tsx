@@ -1,6 +1,6 @@
-import { useEffect, useSyncExternalStore, type CSSProperties } from 'react';
+import { memo, useEffect, useSyncExternalStore, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
-import { FAST_EASE } from '../../store/settings.ts';
+import { CARD_EASE } from '../../store/settings.ts';
 import { cardLabel, type Color, type UnoCard as UnoCardData } from './engine.ts';
 
 /** Colores oficiales del set. */
@@ -151,7 +151,7 @@ interface Props {
 }
 
 /** Carta de UNO: usa el set SVG de /public/cards/uno si existe y, si no, el diseño vectorial propio. */
-export function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, rotate = 0, style }: Props) {
+export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, rotate = 0, style }: Props) {
   const vectors = useVectorSet();
   const interactive = Boolean(onClick);
   const lit = glow || playable || selected;
@@ -162,22 +162,23 @@ export function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected
       onClick={onClick}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`relative block aspect-[2/3] shrink-0 touch-none overflow-hidden rounded-xl bg-white shadow-lg ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`relative block aspect-[2/3] shrink-0 touch-manipulation overflow-hidden rounded-xl bg-white will-change-transform ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
-        boxShadow: lit ? '0 0 0 2px #f0c35f, 0 0 16px rgba(240,195,95,.6), 0 8px 16px rgba(0,0,0,.5)' : '0 8px 18px rgba(0,0,0,.6)',
+        boxShadow: lit ? '0 0 0 2px #f0c35f' : '0 3px 6px rgba(0,0,0,.5)',
         ...style,
       }}
-      animate={{ y: selected ? -12 : 0, rotate, filter: dim ? 'brightness(0.55)' : 'brightness(1)' }}
+      animate={{ y: selected ? -12 : 0, rotate }}
       whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
-      transition={FAST_EASE}
+      transition={CARD_EASE}
     >
       {vectors
         ? <img src={`${BASE}${faceDown ? 'back.svg' : unoFile(card)}`} alt="" draggable={false} className="size-full object-contain" />
         : faceDown ? <UnoBack /> : <UnoFace card={card} />}
+      {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/45" />}
     </motion.button>
   );
-}
+});
 
 export const UNO_HEX = HEX;

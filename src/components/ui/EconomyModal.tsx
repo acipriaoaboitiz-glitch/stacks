@@ -12,7 +12,7 @@ export function EconomyModal({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label="Fichas gratis"
             className="glass-panel w-full max-w-sm rounded-3xl p-4" initial={{ scale: 0.94, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} transition={FAST_EASE}
             onClick={(e) => e.stopPropagation()}>

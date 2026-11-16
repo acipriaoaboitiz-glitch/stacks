@@ -75,6 +75,8 @@ export const botDelay = (): number => Math.max(250, aiDelay(400 + Math.random() 
 
 /** Transición estándar de las mesas: rápida y suave. */
 export const FAST_EASE = { duration: 0.22, ease: 'easeOut' } as const;
+/** Cartas en movimiento: solo transform/opacity y como máximo 0,18 s. */
+export const CARD_EASE = { duration: 0.18, ease: 'easeOut' } as const;
 
 let ctx: AudioContext | null = null;
 let noiseBuf: AudioBuffer | null = null;

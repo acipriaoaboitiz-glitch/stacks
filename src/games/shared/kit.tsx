@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AnimatedNumber } from '../mus/app/components/AnimatedNumber.tsx';
 import { CardBack, CardFace } from '../mus/app/components/CardFace.tsx';
@@ -7,7 +7,7 @@ import { Button } from '../mus/app/components/ui.tsx';
 import { CINE, type PhaseCine } from '../mus/app/game/useTableDirector.ts';
 import { CardBackArt, FrenchFace } from '../../components/cards/FrenchFace.tsx';
 import type { AnyCard, SpanishCard, SpanishSuit } from '../../engine/deck.ts';
-import { FAST_EASE, feedback, useSettings } from '../../store/settings.ts';
+import { CARD_EASE, FAST_EASE, useSettings } from '../../store/settings.ts';
 import { points as briscaPoints } from '../brisca/engine.ts';
 import { escobaValue } from '../escoba/engine.ts';
 
@@ -18,7 +18,7 @@ const CAN_HOVER = typeof window !== 'undefined' && window.matchMedia?.('(hover: 
 
 // ─── Píldoras de acción (mismas clases que la ActionBar de Mus Online) ────────────────────────────
 const PILL =
-  'relative inline-flex h-10 items-center justify-center gap-1 overflow-hidden rounded-full border px-[min(4vw,18px)] text-[13px] font-bold tracking-wide shadow-[0_5px_16px_rgba(0,0,0,.25),inset_0_1px_rgba(255,255,255,.12)] transition-transform duration-100 enabled:active:scale-95 disabled:opacity-40';
+  'relative inline-flex h-10 items-center justify-center gap-1 overflow-hidden rounded-full border px-[min(4vw,18px)] text-[13px] font-bold tracking-wide transition-transform duration-100 enabled:active:scale-95 disabled:opacity-40 touch-manipulation';
 const TONE = {
   gold: 'border-amber-200 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950',
   ok: 'border-emerald-400/60 bg-emerald-800 text-emerald-50',
@@ -40,11 +40,11 @@ export function PillBar({ pills, idle }: { pills: PillSpec[]; idle?: string }) {
           </motion.div>
         ) : (
           <motion.div key="actions" role="group" aria-label="Acciones"
-            className="flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/75 p-[5px] shadow-[0_8px_24px_rgba(0,0,0,.28)] backdrop-blur-md"
+            className="flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/95 p-[5px]"
             initial={{ opacity: 0, y: 14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1, transition: FAST_EASE }}
             exit={{ opacity: 0, y: 6, transition: { duration: 0.15 } }}>
             {pills.map((p) => (
-              <motion.button key={p.id} type="button" layout className={`${PILL} ${TONE[p.tone]}`} disabled={p.disabled} onClick={p.onPress}>
+              <motion.button key={p.id} type="button" className={`${PILL} ${TONE[p.tone]}`} disabled={p.disabled} onClick={p.onPress}>
                 {p.label}
               </motion.button>
             ))}
@@ -82,8 +82,10 @@ export function ScorePair({ labels = ['Nosotros', 'Ellos'], values, target, subs
 
 // ─── Naipes ──────────────────────────────────────────────────────────────────────────────────────
 /** Tamaño de carta: `--card-w` (definida por la mesa) multiplicada por `scale`. */
-export function FaceCard({ card, faceDown, scale = 1, onClick, selected, dim, glow, aura, shimmer, badge, title, layoutId, rotate = 0, className = '', style }: {
-  card: AnyCard; faceDown?: boolean; scale?: number; onClick?: () => void; selected?: boolean; dim?: boolean; glow?: boolean;
+export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onClick, onSelect, selected, dim, glow, aura, shimmer, badge, title, rotate = 0, className = '', style }: {
+  card: AnyCard; faceDown?: boolean; scale?: number; onClick?: () => void;
+  /** Alternativa estable a `onClick`: recibe la carta (así la carta no se vuelve a pintar en cada frame del padre). */
+  onSelect?: (card: AnyCard) => void; selected?: boolean; dim?: boolean; glow?: boolean;
   /** Aura dorada permanente (cartas de triunfo). */
   aura?: boolean;
   /** Brillo animado (7 de oros). */
@@ -91,9 +93,10 @@ export function FaceCard({ card, faceDown, scale = 1, onClick, selected, dim, gl
   /** Distintivo discreto de valor (+11, =8…). */
   badge?: string;
   title?: string;
-  layoutId?: string; rotate?: number; className?: string; style?: CSSProperties;
+  rotate?: number; className?: string; style?: CSSProperties;
 }) {
-  const interactive = Boolean(onClick);
+  const interactive = Boolean(onClick || onSelect);
+  const handle = useCallback(() => { if (onSelect) onSelect(card); else onClick?.(); }, [onSelect, onClick, card]);
   const { help } = useSettings();
   if (!help) { badge = undefined; aura = false; shimmer = false; }
   const content = faceDown
@@ -102,34 +105,33 @@ export function FaceCard({ card, faceDown, scale = 1, onClick, selected, dim, gl
   return (
     <motion.button
       type="button"
-      layoutId={layoutId}
       disabled={!interactive}
-      onClick={onClick}
+      onClick={handle}
       aria-pressed={interactive ? selected : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : undefined}
       title={faceDown ? undefined : title}
-      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-none overflow-hidden rounded-none border border-black/40 ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation overflow-hidden rounded-none border border-black/40 will-change-transform ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         aspectRatio: card.deck === 'fr' ? '167 / 243' : '12 / 19',
-        boxShadow: selected || glow ? '0 0 0 2px #f0c35f, 0 12px 24px rgba(226,180,85,.3)'
-          : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9), 0 0 16px rgba(240,195,95,.6), 0 8px 16px rgba(0,0,0,.4)'
-          : '0 12px 24px rgba(0,0,0,0.75)',
+        // Una sola sombra sencilla por carta: las sombras múltiples hunden los FPS en iOS Safari.
+        boxShadow: selected || glow ? '0 0 0 2px #f0c35f' : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9)' : '0 3px 6px rgba(0,0,0,.5)',
         ...style,
       }}
-      animate={{ y: selected ? -12 : 0, rotate, opacity: dim ? 0.55 : 1 }}
+      animate={{ y: selected ? -12 : 0, rotate }}
       whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
-      transition={{ ...FAST_EASE, type: 'tween' }}
+      transition={CARD_EASE}
     >
       {content}
+      {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/45" />}
       {badge && !faceDown && (
         <span aria-hidden="true" className="pointer-events-none absolute right-[5%] top-[3%] rounded-full bg-black/70 px-[.35em] py-[.05em] font-mono font-bold leading-none text-amber-200 shadow"
           style={{ fontSize: `max(8px, calc(var(--card-w) * ${scale} * 0.13))` }}>{badge}</span>
       )}
     </motion.button>
   );
-}
+});
 
 /** Giro natural estable por carta (-6°…+6°). */
 export const tilt = (id: string): number => {
@@ -190,7 +192,7 @@ export function ResultOverlay({ title, children, actions }: {
   title: string; children?: ReactNode; actions: { label: string; onClick: () => void; primary?: boolean }[];
 }) {
   return (
-    <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <motion.div role="dialog" aria-modal="true" aria-label={title}
         className="w-full max-w-sm rounded-3xl border border-amber-200/20 bg-zinc-900/90 p-5 shadow-[0_20px_60px_rgba(0,0,0,.6)]"
         initial={{ scale: 0.92, y: 18 }} animate={{ scale: 1, y: 0 }}>
@@ -236,19 +238,3 @@ export function ScoreStrip({ items, target }: { items: { name: string; value: nu
   );
 }
 
-// ─── Seleccionar y tirar ─────────────────────────────────────────────────────────────────────────
-/** Primer toque: la carta se eleva (seleccionada). Segundo toque sobre la misma: se juega. Con vibración corta. */
-export function useTapToPlay<T extends { id: string }>(play: (card: T) => void): { sel: string | null; tap: (card: T) => void; clear: () => void } {
-  const [sel, setSel] = useState<string | null>(null);
-  const playRef = useRef(play);
-  playRef.current = play;
-  const tap = useCallback((card: T) => {
-    setSel((cur) => {
-      if (cur === card.id) { feedback('play'); queueMicrotask(() => playRef.current(card)); return null; }
-      feedback('tap');
-      return card.id;
-    });
-  }, []);
-  const clear = useCallback(() => setSel(null), []);
-  return { sel, tap, clear };
-}

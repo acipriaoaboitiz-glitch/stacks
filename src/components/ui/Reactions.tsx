@@ -18,7 +18,7 @@ export function ReactionButton({ onSend }: { onSend: (text: string) => void }) {
     <div className="absolute bottom-2 right-2 z-20 flex flex-col items-end gap-1.5">
       <AnimatePresence>
         {open && (
-          <motion.div className="flex gap-1 rounded-full border border-white/10 bg-zinc-900/90 p-1 shadow-lg backdrop-blur" role="group" aria-label="Reacciones rápidas"
+          <motion.div className="flex gap-1 rounded-full border border-white/10 bg-zinc-900/90 p-1 shadow-lg" role="group" aria-label="Reacciones rápidas"
             initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6 }} transition={FAST_EASE}>
             {EMOTES.map((e) => (
               <button key={e.id} type="button" aria-label={e.label} title={e.label}
@@ -29,7 +29,7 @@ export function ReactionButton({ onSend }: { onSend: (text: string) => void }) {
         )}
       </AnimatePresence>
       <button type="button" aria-label={open ? 'Cerrar reacciones' : 'Reacciones rápidas'} aria-expanded={open} onClick={() => setOpen((v) => !v)}
-        className="grid size-10 place-items-center rounded-full border border-amber-300/50 bg-zinc-900/80 text-amber-200 shadow-[0_4px_14px_rgba(0,0,0,.4)] backdrop-blur transition active:scale-90">
+        className="grid size-10 place-items-center rounded-full border border-amber-300/50 bg-zinc-900/80 text-amber-200 shadow-[0_4px_14px_rgba(0,0,0,.4)] transition active:scale-90">
         {open ? <X size={18} /> : <Smile size={20} />}
       </button>
     </div>

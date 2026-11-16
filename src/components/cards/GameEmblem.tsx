@@ -64,6 +64,8 @@ function Body({ id }: { id: string }) {
         </g>
       );
     }
+    case 'seises':
+      return (<g><Real x={30} y={58} r={-12} w={38} file="05-oros" /><Real x={50} y={52} r={0} w={38} file="06-oros" /><Real x={70} y={58} r={12} w={38} file="07-oros" /></g>);
     case 'presidente':
       return (
         <g>

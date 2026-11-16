@@ -168,13 +168,13 @@ export function SignRadialMenu({ open, anchor, onClose, hand, config, onSend }: 
           aria-label="Señas para tu pareja"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.18 } }}
         >
-          <button type="button" aria-label="Cerrar señas" className="absolute inset-0 cursor-default bg-black/45 backdrop-blur-[3px]" onClick={onClose} />
+          <button type="button" aria-label="Cerrar señas" className="absolute inset-0 cursor-default bg-black/45" onClick={onClose} />
 
           <div className="pointer-events-none absolute" style={{ left: cx, top: cy }}>
             {/* Aro translúcido */}
             <motion.div
               aria-hidden="true"
-              className="absolute rounded-full border border-white/15 bg-zinc-950/50 shadow-[0_0_60px_rgba(0,0,0,.55),inset_0_0_30px_rgba(240,195,95,.06)] backdrop-blur-xl"
+              className="absolute rounded-full border border-white/15 bg-zinc-950/50 shadow-[0_0_60px_rgba(0,0,0,.55),inset_0_0_30px_rgba(240,195,95,.06)]"
               style={{ left: -(RADIUS + 26), top: -(RADIUS + 26), width: (RADIUS + 26) * 2, height: (RADIUS + 26) * 2 }}
               initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.7, opacity: 0 }} transition={spring}
             />
@@ -323,7 +323,7 @@ export function SignalCaughtOverlay({ caught, names, mySeat }: { caught: CaughtC
           initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.1 } }} exit={{ opacity: 0, transition: { duration: 0.4 } }}
         >
           {/* Filtro rojo/dorado oscuro */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(170,20,35,.55)_0%,rgba(60,8,14,.88)_50%,rgba(6,2,3,.97)_100%)] backdrop-blur-[3px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(170,20,35,.55)_0%,rgba(60,8,14,.88)_50%,rgba(6,2,3,.97)_100%)]" />
           <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_40%,rgba(240,195,95,.12)_50%,transparent_60%)]" />
           {/* Destello dorado del impacto */}
           <motion.div className="absolute inset-0 bg-amber-200" initial={{ opacity: 0.85 }} animate={{ opacity: 0 }} transition={{ duration: 0.55, ease: 'easeOut' }} />
@@ -393,7 +393,7 @@ export function FalseAlarmToast({ event, names, mySeat }: {
           initial={{ opacity: 0, y: -14, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
           transition={{ type: 'spring', stiffness: 260, damping: 20 }}
         >
-          <div className="grid max-w-[420px] gap-1 rounded-2xl border border-amber-300/40 bg-zinc-950/90 px-5 py-3 text-center shadow-[0_12px_40px_rgba(0,0,0,.5)] backdrop-blur-md">
+          <div className="grid max-w-[420px] gap-1 rounded-2xl border border-amber-300/40 bg-zinc-950/90 px-5 py-3 text-center shadow-[0_12px_40px_rgba(0,0,0,.5)]">
             <span className="text-[10px] font-black uppercase tracking-[.3em] text-amber-300">Falsa alarma</span>
             <b className="text-[15px] text-stone-50">{seatName(names, event.catcher, mySeat)}: no había una seña activa</b>
             <small className="text-[12px] text-stone-400">No podrá volver a sospechar durante 10 segundos</small>
@@ -413,7 +413,7 @@ export function SignToast({ sign, partner }: { sign: IncomingSign | null; partne
         <motion.div
           key={sign.at}
           role="status"
-          className="flex items-center gap-2.5 rounded-2xl border border-amber-300/70 bg-zinc-900/95 px-3 py-2 text-amber-300 shadow-[0_10px_24px_rgba(0,0,0,.4)] backdrop-blur-md"
+          className="flex items-center gap-2.5 rounded-2xl border border-amber-300/70 bg-zinc-900/95 px-3 py-2 text-amber-300 shadow-[0_10px_24px_rgba(0,0,0,.4)]"
           initial={{ opacity: 0, y: 16, scale: 0.92 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, transition: { duration: 0.2 } }}
           transition={{ type: 'spring', stiffness: 300, damping: 22 }}
         >
