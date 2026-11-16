@@ -20,7 +20,7 @@ export default function MusApp({ roomCode }: { roomCode?: string }) {
   const [source, setSource] = useState<GameSource | null>(null);
 
   useEffect(() => {
-    const s = createLocalSource({ name: name || 'Tú', config: { turnSeconds: 15 }, botDelay: [aiDelay(1500), aiDelay(2400)] });
+    const s = createLocalSource({ name: name || 'Tú', config: { turnSeconds: 15 }, botDelay: [aiDelay(650), aiDelay(1100)] });
     setSource(s);
     return () => s.destroy();
     // La partida se recrea solo al pedir otra (round); cambiar el nombre no debe reiniciarla.

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { setActiveRoom } from '../../services/multiplayer.ts';
+import { playersBySeat, teamTableSize, useReplica, useSeating } from '../../services/onlineGame.ts';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
@@ -8,13 +10,13 @@ import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SUIT_LABEL, type SpanishCard } from '../../engine/deck.ts';
-import { aiDelay, feedback } from '../../store/settings.ts';
+import { botDelay, aiDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
-import { Banner, FaceCard, briscaDeco, PhaseCinematic, PillBar, ResultOverlay, ScorePair, tilt, useBanner, useCine } from '../shared/kit.tsx';
+import { useTapToPlay, Banner, FaceCard, briscaDeco, PhaseCinematic, PillBar, ResultOverlay, ScorePair, tilt, useBanner, useCine } from '../shared/kit.tsx';
 import {
-  botChoose, evaluateBriscaTrick, getBriscaScores, initBriscaGame, playBriscaCard, resolveTrick, sides, type BPlayer, type BriscaState,
+  applyBriscaAction, botChoose, evaluateBriscaTrick, getBriscaScores, initBriscaGame, playBriscaCard, resolveTrick, sidesFor, type BPlayer, type BriscaAction, type BriscaState,
 } from './engine.ts';
 
 const WIN_BONUS = 100;
@@ -43,6 +45,8 @@ const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo
 export default function Brisca() {
   const nav = useNavigate();
   const t = useT();
+  const seating = useSeating('brisca');
+  const online = seating.online;
   // ?mode=1v1 | 2v2 arranca al instante (botón «Jugar contra la IA» del lobby).
   const [params] = useSearchParams();
   const preset = params.get('mode') === '1v1' ? 2 : params.get('mode') === '2v2' ? 4 : null;
@@ -52,6 +56,18 @@ export default function Brisca() {
   const { banner, show } = useBanner();
   const { cine, show: showCine } = useCine();
   const paidRef = useRef(false);
+  const me = online ? s?.players.find((p) => p.peerId === seating.myPeerId)?.id ?? 'p0' : 'p0';
+  const hostLike = !online || seating.isHost;
+  const lastShown = useRef('');
+
+  // Online: el anfitrión reparte según los asientos de la sala (parejas 0+2 contra 1+3).
+  const hostStart = () => {
+    const n = teamTableSize(seating);
+    setS(initBriscaGame(playersBySeat(seating, n, (i) => (n === 2 ? 'Bot' : `Bot ${i}`)) as BPlayer[])); setBubbles({}); paidRef.current = false; lastShown.current = '';
+  };
+  const noS = s === null;
+  useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
+  const { dispatch } = useReplica<BriscaState, BriscaAction>(seating, s, setS, applyBriscaAction, (st, peer) => st.players.find((q) => q.peerId === peer)?.id ?? null);
 
   const start = (n: 2 | 4) => { setCount(n); setS(initBriscaGame(makePlayers(n))); setBubbles({}); paidRef.current = false; };
 
@@ -60,7 +76,9 @@ export default function Brisca() {
     if (s.phase === 'trickDone') {
       const ev = evaluateBriscaTrick(s.currentTrick, s.trumpSuit);
       const winner = s.players.find((p) => p.id === ev.winnerId)!;
-      const t = window.setTimeout(() => {
+      const key = s.currentTrick.map((c) => c.card.id).join();
+      if (lastShown.current !== key) {
+        lastShown.current = key;
         feedback('trick');
         if (ev.points > 0) {
           show(`+${ev.points} PUNTOS`);
@@ -68,35 +86,46 @@ export default function Brisca() {
           setBubbles((b) => ({ ...b, [winner.id]: { text: `+${ev.points}`, tone: 'good', at } }));
           window.setTimeout(() => setBubbles((b) => (b[winner.id]?.at === at ? { ...b, [winner.id]: undefined } : b)), 2200);
         }
-        setS((cur) => (cur ? resolveTrick(cur) : cur));
-      }, aiDelay(1200));
+      }
+      if (!hostLike) return;
+      const t = window.setTimeout(() => setS((cur) => (cur ? resolveTrick(cur) : cur)), aiDelay(900));
       return () => window.clearTimeout(t);
     }
-    if (s.phase !== 'playing') return;
+    if (s.phase !== 'playing' || !hostLike) return;
     const p = s.players[s.turnIndex]!;
     if (p.human) return;
     const t = window.setTimeout(() => {
       setS((cur) => (cur && cur.phase === 'playing' && cur.players[cur.turnIndex]!.id === p.id
         ? playBriscaCard(cur, p.id, botChoose(cur, p.id)) : cur));
-    }, aiDelay(850));
+    }, botDelay());
     return () => window.clearTimeout(t);
-  }, [s, show]);
+  }, [s, show, hostLike]);
 
   useEffect(() => {
+    if (s?.phase === 'playing') paidRef.current = false;
     if (s?.phase !== 'finished' || paidRef.current) return;
     paidRef.current = true;
-    const { mine, theirs } = sides(s);
+    const { mine, theirs } = sidesFor(s, me);
     if (mine > theirs) { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
-  }, [s, showCine]);
+  }, [s, showCine, me]);
 
   const played = s?.currentTrick.length ?? 0;
   useEffect(() => { if (played > 0) feedback('deal'); }, [played]);
 
   const play = useCallback((c: SpanishCard) => {
-    setS((cur) => (cur && cur.phase === 'playing' && cur.players[cur.turnIndex]!.human ? playBriscaCard(cur, 'p0', c.id) : cur));
-  }, []);
+    if (s && s.phase === 'playing' && s.players[s.turnIndex]!.id === me) dispatch(me, { k: 'play', cardId: c.id });
+  }, [s, me, dispatch]);
+  const { sel, tap } = useTapToPlay(play);
 
-  if (!count || !s) {
+  if (!s && online) {
+    return (
+      <GameFrame gameId="brisca" onExit={() => { setActiveRoom(null); nav('/'); }}
+        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Brisca</p>}
+        felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
+        bottom={null} />
+    );
+  }
+  if (!s || (!online && !count)) {
     return (
       <GameFrame
         gameId="brisca"
@@ -116,32 +145,35 @@ export default function Brisca() {
     );
   }
 
-  const slots = SLOT[count];
-  const slotOf = (id: string): Slot => slots[s.players.findIndex((p) => p.id === id)]!;
-  const myTurn = s.phase === 'playing' && s.players[s.turnIndex]!.human;
+  const n = s.players.length;
+  const slots = SLOT[n as 2 | 4];
+  const myIdx = Math.max(0, s.players.findIndex((p) => p.id === me));
+  const slotOf = (id: string): Slot => slots[(s.players.findIndex((p) => p.id === id) - myIdx + n) % n]!;
+  const myTurn = s.phase === 'playing' && s.players[s.turnIndex]!.id === me;
   const done = s.phase === 'finished';
   const sc = getBriscaScores(s);
-  const { mine, theirs } = sides(s);
+  const { mine, theirs } = sidesFor(s, me);
   const winnerSlot: Slot = s.lastTrickWinner ? slotOf(s.lastTrickWinner) : 'bottom';
   const decided = s.phase === 'trickDone' ? evaluateBriscaTrick(s.currentTrick, s.trumpSuit).winnerId : null;
   const seat = (slot: 'top' | 'left' | 'right') => {
-    const i = slots.indexOf(slot);
-    if (i === -1) return null;
+    const k = slots.indexOf(slot);
+    if (k === -1) return null;
+    const i = (myIdx + k) % n;
     const p = s.players[i]!;
     return { p, i, hand: s.hands[p.id]!.length, active: s.turnIndex === i && s.phase === 'playing' };
   };
   const badge = (x: NonNullable<ReturnType<typeof seat>>, side: 'below' | 'left' | 'right') => (
-    <SeatBadge info={info(x.i, x.p.name)} tone={count === 4 ? (x.i % 2 === 0 ? 'us' : 'them') : 'them'} mano={false}
+    <SeatBadge info={info(x.i, x.p.name)} tone={n === 4 ? (x.i % 2 === myIdx % 2 ? 'us' : 'them') : 'them'} mano={false}
       turn={x.active} bubble={bubbles[x.p.id]} deadline={null} cards={x.hand} bubbleSide={side} />
   );
   const top = seat('top'), left = seat('left'), right = seat('right');
   const off = (slot: Slot) => {
-    const sx = count === 4 ? 0.58 : 0;
-    const sy = count === 4 ? 0.62 : 0.34;
+    const sx = n === 4 ? 0.58 : 0;
+    const sy = n === 4 ? 0.62 : 0.34;
     return { bottom: { x: 0, y: sy }, top: { x: 0, y: -sy }, right: { x: sx, y: 0 }, left: { x: -sx, y: 0 } }[slot];
   };
-  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? 'Tu turno: toca una carta' : `Juega ${s.players[s.turnIndex]!.name}…`;
-  const myTricks = Math.round(s.wonCards.p0!.length / s.players.length);
+  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? 'Te toca: toca una carta dos veces para jugarla' : `Juega ${s.players[s.turnIndex]!.name}…`;
+  const myTricks = Math.round(s.wonCards[me]!.length / s.players.length);
 
   const felt = (
     <>
@@ -153,7 +185,7 @@ export default function Brisca() {
             {s.currentTrick.map((t) => {
               const slot = slotOf(t.playerId);
               const o = off(slot);
-              const human = s.players.find((p) => p.id === t.playerId)!.human;
+              const human = t.playerId === me;
               return (
                 <motion.div key={t.card.id} className="absolute left-1/2 top-1/2" custom={winnerSlot} variants={trickVariants} exit="exit"
                   style={{ marginLeft: `calc(var(--card-w) * ${-0.36 + o.x})`, marginTop: `calc(var(--card-w) * ${-0.57 + o.y})`, zIndex: 2 }}
@@ -191,7 +223,7 @@ export default function Brisca() {
     <>
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <TableAvatar name="Tú" tone="me" className="size-9 text-[15px]" />
+          <TableAvatar name="Tú" tone="me" active={myTurn} className="size-9 text-[15px]" />
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>Tú</b>
           <span className="rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{myTricks} bazas</span>
         </div>
@@ -199,9 +231,9 @@ export default function Brisca() {
       </div>
       <PillBar pills={[]} idle={status} />
       <div className="flex items-end justify-center gap-[min(2vw,12px)] pt-[min(3.4dvh,26px)]" role="group" aria-label="Tu mano">
-        {s.hands.p0!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} layoutId={c.id} rotate={(i - (arr.length - 1) / 2) * 1.8} dim={!myTurn} {...briscaDeco(c, s.trumpSuit)}
-            onClick={myTurn ? () => play(c) : undefined} />
+        {s.hands[me]!.map((c, i, arr) => (
+          <FaceCard key={c.id} card={c} layoutId={c.id} rotate={(i - (arr.length - 1) / 2) * 1.8} dim={!myTurn} selected={sel === c.id} {...briscaDeco(c, s.trumpSuit)}
+            onClick={myTurn ? () => tap(c) : undefined} />
         ))}
       </div>
     </>
@@ -210,8 +242,9 @@ export default function Brisca() {
   return (
     <GameFrame
       gameId="brisca"
-      timer={{ active: myTurn, id: `${s.currentTrick.length}:${s.deck.length}`, onTimeout: () => { const h = s.hands.p0!; const c = h[Math.floor(Math.random() * h.length)]; if (c) play(c); } }}
-      header={<ScorePair labels={count === 4 ? ['Nosotros', 'Ellos'] : ['Tú', 'Bot']} values={[mine, theirs]} target={120} />}
+      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      timer={{ active: myTurn, id: `${s.currentTrick.length}:${s.deck.length}`, onTimeout: () => { const h = s.hands[me]!; const c = h[Math.floor(Math.random() * h.length)]; if (c) play(c); } }}
+      header={<ScorePair labels={n === 4 ? ['Nosotros', 'Ellos'] : ['Tú', online ? 'Rival' : 'Bot']} values={[mine, theirs]} target={120} />}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -222,9 +255,10 @@ export default function Brisca() {
               <ResultOverlay
                 title={mine > theirs ? '¡Ganas la partida!' : mine < theirs ? 'Pierdes la partida' : 'Empate a 60'}
                 actions={[
-                  { label: t('a.rematch'), primary: true, onClick: () => start(count) },
-                  { label: 'Cambiar formato', onClick: () => { setCount(null); setS(null); } },
-                  { label: t('a.lobby'), onClick: () => nav('/') },
+                  ...(online
+                    ? hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []
+                    : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }, { label: 'Cambiar formato', onClick: () => { setCount(null); setS(null); } }]),
+                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
                 ]}
               >
                 <ScorePair labels={sc.mode === 'teams' ? [sc.teamA.label, sc.teamB.label] : ['Tú', 'Bot']} values={[mine, theirs]} target={120} />

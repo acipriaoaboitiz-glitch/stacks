@@ -11,7 +11,7 @@ export type Color = (typeof COLORS)[number];
 export type Kind = 'num' | 'skip' | 'reverse' | 'draw2' | 'wild' | 'wild4';
 
 export interface UnoCard { id: string; color: Color | 'wild'; kind: Kind; n: number }
-export interface UnoPlayer { id: string; name: string; human: boolean }
+export interface UnoPlayer { id: string; name: string; human: boolean; /** Jugador de la sala (partida online). */ peerId?: string }
 
 export interface UnoState {
   players: UnoPlayer[];
@@ -26,8 +26,13 @@ export interface UnoState {
   /** Carta recién robada por quien tiene el turno y que se puede jugar (o pasar). */
   drawn: UnoCard | null;
   /** Último suceso, para avisos: `seq` cambia con cada uno. */
-  event: { seq: number; by: string; text: string } | null;
+  event: { seq: number; by: string; text: string; kind: 'info' | 'draw' | 'uno' } | null;
+  /** Jugador que se ha quedado con 1 carta sin cantar «¡UNO!»: cualquiera puede cantarlo antes (+2 para él). */
+  uno: { pid: string; at: number } | null;
 }
+
+/** Ventana (ms) para cantar «¡UNO!» o cazar al que no lo ha cantado. */
+export const UNO_WINDOW = 2800;
 
 export const COLOR_NAME: Record<Color, string> = { red: 'rojo', yellow: 'amarillo', green: 'verde', blue: 'azul' };
 
@@ -90,7 +95,10 @@ export function isPlayable(s: UnoState, card: UnoCard, hand: readonly UnoCard[])
 export const playableCards = (s: UnoState, pid: string): UnoCard[] => s.hands[pid]!.filter((c) => isPlayable(s, c, s.hands[pid]!));
 
 let seq = 0;
-const say = (s: UnoState, by: string, text: string): void => { s.event = { seq: ++seq, by, text }; };
+const say = (s: UnoState, by: string, text: string, kind: 'info' | 'draw' | 'uno' = 'info'): void => { s.event = { seq: ++seq, by, text, kind }; };
+
+/** Si quien debía cantar «¡UNO!» ya no tiene exactamente 1 carta, se anula el aviso. */
+const settleUno = (s: UnoState): void => { if (s.uno && s.hands[s.uno.pid]!.length !== 1) s.uno = null; };
 
 /** Aplica el efecto de la carta que acaba de caer y pasa el turno. */
 function applyEffect(s: UnoState, card: UnoCard, pid: string): void {
@@ -98,7 +106,7 @@ function applyEffect(s: UnoState, card: UnoCard, pid: string): void {
   const me = s.players.findIndex((p) => p.id === pid);
   s.turn = me;
   switch (card.kind) {
-    case 'skip': s.turn = nextIdx(s, me, 2); say(s, pid, 'Salta'); break;
+    case 'skip': s.turn = nextIdx(s, me, 2); say(s, pid, 'Salta turno'); break;
     case 'reverse':
       s.dir = (s.dir * -1) as 1 | -1;
       s.turn = n === 2 ? me : nextIdx(s, me); // con 2 jugadores equivale a «salta»
@@ -108,14 +116,14 @@ function applyEffect(s: UnoState, card: UnoCard, pid: string): void {
       const victim = s.players[nextIdx(s, me)]!;
       take(s, victim.id, 2);
       s.turn = nextIdx(s, me, 2);
-      say(s, pid, `+2 para ${victim.name}`);
+      say(s, pid, `+2 para ${victim.name}`, 'draw');
       break;
     }
     case 'wild4': {
       const victim = s.players[nextIdx(s, me)]!;
       take(s, victim.id, 4);
       s.turn = nextIdx(s, me, 2);
-      say(s, pid, `+4 para ${victim.name}`);
+      say(s, pid, `+4 para ${victim.name}`, 'draw');
       break;
     }
     default: s.turn = nextIdx(s, me);
@@ -125,7 +133,7 @@ function applyEffect(s: UnoState, card: UnoCard, pid: string): void {
 export function newGame(players: UnoPlayer[]): UnoState {
   const deck = shuffle(buildDeck());
   const s: UnoState = {
-    players, hands: {}, drawPile: deck, discard: [], color: 'red', dir: 1, turn: 0, winner: null, drawn: null, event: null,
+    players, hands: {}, drawPile: deck, discard: [], color: 'red', dir: 1, turn: 0, winner: null, drawn: null, event: null, uno: null,
   };
   for (const p of players) s.hands[p.id] = [];
   for (let i = 0; i < 7; i++) for (const p of players) take(s, p.id, 1);
@@ -137,7 +145,7 @@ export function newGame(players: UnoPlayer[]): UnoState {
   const p0 = players[0]!.id;
   if (first.kind === 'skip') { s.turn = 1 % players.length; say(s, p0, 'Empieza con «Salta»'); }
   else if (first.kind === 'reverse') { s.dir = -1; s.turn = 0; }
-  else if (first.kind === 'draw2') { take(s, p0, 2); s.turn = 1 % players.length; say(s, p0, 'Empieza con +2'); }
+  else if (first.kind === 'draw2') { take(s, p0, 2); s.turn = 1 % players.length; say(s, p0, 'Empieza con +2', 'draw'); }
   return s;
 }
 
@@ -152,10 +160,13 @@ export function playCard(prev: UnoState, pid: string, cardId: string, chosen?: C
   s.discard.push(card);
   s.color = isWild ? chosen! : (card.color as Color);
   s.drawn = null;
-  if (s.hands[pid]!.length === 0) { s.winner = pid; say(s, pid, '¡Se queda sin cartas!'); return s; }
+  if (s.hands[pid]!.length === 0) { s.winner = pid; s.uno = null; say(s, pid, '¡Se queda sin cartas!'); return s; }
   applyEffect(s, card, pid);
-  if (s.hands[pid]!.length === 1) say(s, pid, '¡UNO!');
-  else if (isWild && card.kind === 'wild') say(s, pid, `Color ${COLOR_NAME[chosen!]}`);
+  // Quedarse con 1 carta abre la ventana del «¡UNO!»: hay que cantarlo (o te cazan y robas 2).
+  if (s.hands[pid]!.length === 1) s.uno = { pid, at: Date.now() };
+  settleUno(s);
+  // Con 1 carta no hay aviso automático: lo canta el jugador (o lo caza otro).
+  if (isWild && card.kind === 'wild') say(s, pid, `Color ${COLOR_NAME[chosen!]}`);
   return s;
 }
 
@@ -166,6 +177,7 @@ export function drawCard(prev: UnoState, pid: string): UnoState | null {
   const s = structuredClone(prev);
   const got = take(s, pid, 1)[0];
   say(s, pid, 'Roba una carta');
+  settleUno(s);
   if (got && isPlayable(s, got, s.hands[pid]!)) s.drawn = got;
   else s.turn = nextIdx(s, s.turn);
   return s;
@@ -211,3 +223,39 @@ export function botMove(s: UnoState): BotMove {
 }
 
 export const handPoints = (hand: readonly UnoCard[]): number => hand.reduce((n, c) => n + cardPoints(c), 0);
+
+/** Canta «¡UNO!» quien se ha quedado con 1 carta. */
+export function callUno(prev: UnoState, pid: string): UnoState | null {
+  if (!prev.uno || prev.uno.pid !== pid || prev.winner) return null;
+  const s = structuredClone(prev);
+  s.uno = null;
+  say(s, pid, '¡UNO!', 'uno');
+  return s;
+}
+
+/** Otro jugador canta «¡UNO!» antes que el afectado: este roba 2 cartas de penalización. */
+export function catchUno(prev: UnoState, byPid: string): UnoState | null {
+  if (!prev.uno || prev.uno.pid === byPid || prev.winner) return null;
+  const s = structuredClone(prev);
+  const victim = s.players.find((p) => p.id === prev.uno!.pid)!;
+  const by = s.players.find((p) => p.id === byPid)!;
+  take(s, victim.id, 2);
+  s.uno = null;
+  say(s, byPid, `¡UNO! ${by.name} caza a ${victim.name}: +2`, 'draw');
+  return s;
+}
+
+/** Se acabó el tiempo de la ventana sin que nadie actuara. */
+export const expireUno = (prev: UnoState): UnoState | null => (prev.uno ? { ...prev, uno: null } : null);
+
+/** Acciones que un jugador puede enviar (en local o a través de la sala). «uno» canta el propio o caza a otro. */
+export type UnoAction = { k: 'play'; cardId: string; color?: Color } | { k: 'draw' } | { k: 'pass' } | { k: 'uno' };
+
+export function applyUnoAction(s: UnoState, pid: string, a: UnoAction): UnoState | null {
+  switch (a.k) {
+    case 'play': return playCard(s, pid, a.cardId, a.color);
+    case 'draw': return drawCard(s, pid);
+    case 'pass': return passTurn(s, pid);
+    case 'uno': return s.uno?.pid === pid ? callUno(s, pid) : catchUno(s, pid);
+  }
+}

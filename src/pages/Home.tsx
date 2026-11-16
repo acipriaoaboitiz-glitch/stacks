@@ -8,7 +8,7 @@ import { HoloCard } from '../components/ui/HoloCard.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
 import { QuickButtons } from '../components/ui/QuickButtons.tsx';
 import { ChipBalance } from '../components/ui/Hud.tsx';
-import { RefillButton } from '../components/ui/RefillButton.tsx';
+import { EconomyModal } from '../components/ui/EconomyModal.tsx';
 import { RulesModal } from '../components/ui/RulesModal.tsx';
 import { ProfileCard } from '../components/ui/ProfileModal.tsx';
 import { SettingsModal } from '../components/ui/SettingsModal.tsx';
@@ -88,8 +88,9 @@ export default function Home() {
   const nav = useNavigate();
   const t = useT();
   const [params, setParams] = useSearchParams();
-  const [online, setOnline] = useState<GameInfo | null>(() => (findGame(params.get('game') ?? '') && params.get('room') ? findGame(params.get('game')!)! : null));
-  const [inviteCode, setInviteCode] = useState<string | undefined>(() => params.get('room') ?? undefined);
+  const linkCode = params.get('sala') ?? params.get('room');
+  const [online, setOnline] = useState<GameInfo | null>(() => (linkCode ? findGame(params.get('game') ?? 'mus') ?? null : null));
+  const [inviteCode, setInviteCode] = useState<string | undefined>(() => linkCode ?? undefined);
   const [settings, setSettings] = useState(false);
   const [showRefill, setShowRefill] = useState(false);
   const [picker, setPicker] = useState(false);
@@ -103,7 +104,7 @@ export default function Home() {
   const closeOnline = () => {
     setOnline(null);
     setInviteCode(undefined);
-    if (params.has('room')) { params.delete('room'); params.delete('game'); setParams(params, { replace: true }); }
+    if (params.has('room') || params.has('sala')) { params.delete('room'); params.delete('sala'); params.delete('game'); setParams(params, { replace: true }); }
   };
 
   const N = GAMES.length;
@@ -126,18 +127,10 @@ export default function Home() {
     <div className="screen obsidian">
       <header className="glass-panel relative z-20 flex items-center gap-2 px-3 py-2" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
         <div className="min-w-0 flex-1"><ProfileCard /></div>
-        <ChipBalance onPlus={() => setShowRefill((v) => !v)} />
+        <ChipBalance onPlus={() => setShowRefill(true)} />
         <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />
-        <AnimatePresence>
-          {showRefill && (
-            <motion.div initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8 }}
-              className="glass-panel absolute right-3 top-full z-30 mt-2 w-64 rounded-2xl p-3">
-              <p className="mb-2 text-xs font-bold text-stone-400">{t('lobby.free')}</p>
-              <RefillButton />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
+      <EconomyModal open={showRefill} onClose={() => setShowRefill(false)} />
 
       <div className="relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between overflow-hidden px-4 pt-3" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
         <motion.div aria-hidden className="pointer-events-none absolute inset-0" animate={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} transition={{ duration: 0.6 }} />

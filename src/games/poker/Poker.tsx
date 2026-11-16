@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setActiveRoom } from '../../services/multiplayer.ts';
+import { useReplica, useSeating } from '../../services/onlineGame.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CASINO_VALUES, CasinoChip, ChipPile } from '../../components/cards/CasinoChip.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { useT } from '../../i18n/index.ts';
-import { aiDelay, feedback } from '../../store/settings.ts';
+import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScoreStrip, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
-import { BB, START_STACK, act, bestScore, botAct, handName, legal, newPoker, nextHand, pot, type PAction, type PokerState } from './engine.ts';
+import { BB, START_STACK, act, applyPokerAction, bestScore, botAct, handName, legal, newPoker, pot, type PAction, type PPlayer, type PokerAction, type PokerState } from './engine.ts';
 
 const WIN_BONUS = 200;
 const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor', 'Maite', 'Unai'];
@@ -21,14 +23,14 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
   const shown = !!s.result?.shown[i];
   const win = s.result?.wins.find((w) => w.seat === i);
   return (
-    <div className={`relative grid min-w-0 justify-items-center gap-[2px] ${x.out ? 'opacity-30' : x.folded ? 'opacity-55' : ''}`} aria-label={`${NAMES[i]}, ${x.stack} fichas`}>
+    <div className={`relative grid min-w-0 justify-items-center gap-[2px] ${x.out ? 'opacity-30' : x.folded ? 'opacity-55' : ''}`} aria-label={`${s.players[i]!.name}, ${x.stack} fichas`}>
       <div className="relative grid place-items-center rounded-full p-[3px]">
         {turn && <motion.span aria-hidden className="pointer-events-none absolute inset-[-2px] rounded-full border-[1.5px] border-amber-200/80 shadow-[0_0_14px_rgba(242,202,112,.55)]"
           animate={{ opacity: [0.7, 1, 0.7], scale: [0.98, 1.05, 0.98] }} transition={{ duration: 1.6, repeat: Infinity }} />}
-        <TableAvatar name={NAMES[i]!} tone="them" className="size-[min(11vw,6dvh,52px)] text-[min(4.4vw,2.4dvh)]" />
+        <TableAvatar name={s.players[i]!.name} tone="them" className="size-[min(11vw,6dvh,52px)] text-[min(4.4vw,2.4dvh)]" />
         {s.button === i && !x.out && <span title="Dealer" className="absolute -right-1 -top-1 grid size-[17px] place-items-center rounded-full border-2 border-[#0b211a] bg-white text-[9px] font-extrabold text-zinc-900">D</span>}
       </div>
-      <span className={`max-w-full truncate text-[11px] font-bold ${turn ? 'text-amber-200' : 'text-stone-200'}`}>{NAMES[i]}</span>
+      <span className={`max-w-full truncate text-[11px] font-bold ${turn ? 'text-amber-200' : 'text-stone-200'}`}>{s.players[i]!.name}</span>
       <span className="font-mono text-[11px] font-bold text-amber-200 tabular-nums">{x.out ? '✕' : x.stack}</span>
       {!x.out && !x.folded && slot !== 'bottom' && (
         <div className="flex">
@@ -51,9 +53,52 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
   );
 }
 
+interface TableProps {
+  s: PokerState;
+  setS: Dispatch<SetStateAction<PokerState | null>>;
+  dispatch: (a: PokerAction) => void;
+  online: boolean;
+  myIdx: number;
+  hostLike: boolean;
+  /** Online: el anfitrión vuelve a repartir la partida. Local: reinicia con el mismo tamaño de mesa. */
+  restart: () => void;
+  exit: () => void;
+}
+
 export default function Poker() {
+  const nav = useNavigate();
+  const seating = useSeating('poker');
+  const online = seating.online;
   const [n, setN] = useState<4 | 6 | null>(null);
-  if (!n) {
+  const [s, setS] = useState<PokerState | null>(null);
+  const hostLike = !online || seating.isHost;
+  const myIdx = online ? Math.max(0, s?.players.findIndex((p) => p.peerId === seating.myPeerId) ?? 0) : 0;
+  const meId = s?.players[myIdx]?.id ?? 'p0';
+  const local = (size: number): PokerState => newPoker(NAMES.slice(0, size).map((name, i) => ({ id: `p${i}`, name, human: i === 0 })));
+
+  // Online: el anfitrión reparte con los humanos de la sala (2–4) y rellena con bots si está activado.
+  const hostStart = () => {
+    const humans = seating.humans;
+    const size = Math.min(4, Math.max(2, seating.fillBots ? 4 : humans.length));
+    const players: PPlayer[] = Array.from({ length: size }, (_, i) => i < humans.length
+      ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
+      : { id: `p${i}`, name: NAMES[i - humans.length + 1] ?? `Bot ${i}`, human: false });
+    setS(newPoker(players));
+  };
+  const noS = s === null;
+  useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
+  const { dispatch } = useReplica<PokerState, PokerAction>(seating, s, setS, applyPokerAction, (st, peer) => st.players.find((q) => q.peerId === peer)?.id ?? null);
+  const exit = () => { if (online) setActiveRoom(null); nav('/'); };
+
+  if (online && !s) {
+    return (
+      <GameFrame gameId="poker" onExit={exit}
+        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Texas Hold’em</p>}
+        felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
+        bottom={null} />
+    );
+  }
+  if (!online && (!n || !s)) {
     return (
       <GameFrame
         gameId="poker"
@@ -62,8 +107,8 @@ export default function Poker() {
           <div className="grid h-full place-items-center p-6">
             <div className="grid w-full max-w-xs gap-3 text-center">
               <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">Elige la mesa</h2>
-              <button type="button" className="btn btn--gold" onClick={() => setN(4)}>Mesa de 4 · tú + 3 IA</button>
-              <button type="button" className="btn" onClick={() => setN(6)}>Mesa de 6 · tú + 5 IA</button>
+              <button type="button" className="btn btn--gold" onClick={() => { setN(4); setS(local(4)); }}>Mesa de 4 · tú + 3 IA</button>
+              <button type="button" className="btn" onClick={() => { setN(6); setS(local(6)); }}>Mesa de 6 · tú + 5 IA</button>
               <p className="text-xs text-stone-400">No-Limit Hold’em. Ciegas 10/20, 1000 fichas cada uno. 15 s por turno.</p>
             </div>
           </div>
@@ -72,32 +117,33 @@ export default function Poker() {
       />
     );
   }
-  return <PokerTable n={n} />;
+  return (
+    <PokerTable key={online ? 'online' : n} s={s!} setS={setS} online={online} myIdx={myIdx} hostLike={hostLike} exit={exit}
+      dispatch={(a) => dispatch(meId, a)} restart={online ? hostStart : () => setS(local(n!))} />
+  );
 }
 
-function PokerTable({ n }: { n: 4 | 6 }) {
-  const nav = useNavigate();
+function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit }: TableProps) {
   const t = useT();
-  const [s, setS] = useState<PokerState>(() => newPoker(NAMES.slice(0, n).map((name, i) => ({ id: `p${i}`, name, human: i === 0 }))));
+  const n = s.players.length;
+  const nm = (i: number): string => s.players[i]!.name;
   const [raising, setRaising] = useState<number | null>(null);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
-  const ref = useRef(s);
-  ref.current = s;
   const paid = useRef(false);
   const prevCommunity = useRef(0);
 
-  // Turno de los bots.
+  // Turno de los bots (solo el anfitrión, o en local).
   useEffect(() => {
-    if (s.phase !== 'betting' || s.turn === 0) return;
+    if (s.phase !== 'betting' || !hostLike || s.players[s.turn]!.human) return;
     const timer = window.setTimeout(() => {
-      const cur = ref.current;
-      if (cur.phase !== 'betting' || cur.turn === 0) return;
-      const nx = act(cur, botAct(cur)) ?? act(cur, { type: 'fold' });
-      if (nx) setS(nx);
-    }, aiDelay(950 + Math.random() * 500));
+      setS((cur) => {
+        if (!cur || cur.phase !== 'betting' || cur.players[cur.turn]!.human) return cur;
+        return act(cur, botAct(cur)) ?? act(cur, { type: 'fold' }) ?? cur;
+      });
+    }, botDelay());
     return () => window.clearTimeout(timer);
-  }, [s]);
+  }, [s, hostLike, setS]);
 
   // Sonidos y avisos.
   useEffect(() => {
@@ -111,19 +157,20 @@ function PokerTable({ n }: { n: 4 | 6 }) {
   }, [s]);
   useEffect(() => {
     if (s.phase === 'handOver' && s.result) {
-      const me = s.result.wins.find((w) => w.seat === 0);
-      if (me) { feedback('win'); show(`+${me.amount} ${me.hand ? `· ${me.hand}` : ''}`); }
+      const mine = s.result.wins.find((w) => w.seat === myIdx);
+      if (mine) { feedback('win'); show(`+${mine.amount} ${mine.hand ? `· ${mine.hand}` : ''}`); }
     }
+    if (s.phase === 'betting') paid.current = false;
     if (s.phase === 'gameOver' && !paid.current) {
       paid.current = true;
-      if (s.winner === 0) { wallet.add(WIN_BONUS); wallet.recordWin('poker'); feedback('win'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
+      if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('poker'); feedback('win'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
     }
-  }, [s.phase, s.result, s.winner, show, showCine]);
+  }, [s.phase, s.result, s.winner, show, showCine, myIdx]);
 
-  const me = s.seats[0]!;
-  const myTurn = s.phase === 'betting' && s.turn === 0;
+  const me = s.seats[myIdx]!;
+  const myTurn = s.phase === 'betting' && s.turn === myIdx;
   const lg = useMemo(() => (myTurn ? legal(s) : null), [s, myTurn]);
-  const send = (a: PAction) => { setRaising(null); const nx = act(s, a); if (nx) setS(nx); };
+  const send = (a: PAction) => { setRaising(null); if (myTurn) dispatch({ k: 'act', a }); };
   const total = pot(s);
   const myHand = me.hole.length === 2 && s.community.length >= 3 ? handName(bestScore([...me.hole, ...s.community])) : '';
 
@@ -135,14 +182,15 @@ function PokerTable({ n }: { n: 4 | 6 }) {
       : { id: 'call', tone: 'ok', label: `${t('a.call')} ${lg.callAmount}${lg.callAmount >= me.stack ? ' · all-in' : ''}`, onPress: () => send({ type: 'call' }) });
     if (lg.canRaise) pills.push({ id: 'raise', tone: 'gold', label: `${t('a.raise')}…`, onPress: () => setRaising(lg.minTo) });
   } else if (s.phase === 'handOver') {
-    pills.push({ id: 'next', tone: 'gold', label: t('a.next'), onPress: () => { setS(nextHand(s)); } });
+    pills.push({ id: 'next', tone: 'gold', label: t('a.next'), onPress: () => dispatch({ k: 'next' }) });
   }
 
   const status = s.phase === 'handOver' && s.result
-    ? s.result.wins.map((w) => `${NAMES[w.seat]} +${w.amount}${w.hand ? ` (${w.hand})` : ''}`).join(' · ')
-    : myTurn ? (lg!.canCheck ? 'Tu turno: pasa o apuesta' : `Tu turno: ${lg!.callAmount} para igualar`) : s.phase === 'betting' ? `Juega ${NAMES[s.turn]}…` : '';
+    ? s.result.wins.map((w) => `${nm(w.seat)} +${w.amount}${w.hand ? ` (${w.hand})` : ''}`).join(' · ')
+    : myTurn ? (lg!.canCheck ? 'Te toca: pasa o apuesta' : `Te toca: ${lg!.callAmount} para igualar`) : s.phase === 'betting' ? `Juega ${nm(s.turn)}…` : '';
 
-  const seat = (i: number, slot: Slot) => (i < n ? <SeatView s={s} i={i} slot={slot} /> : null);
+  // La posición k (1 = derecha, 2 = arriba, 3 = izquierda…) es el jugador que va k asientos después de mí.
+  const seat = (k: number, slot: Slot) => (k < n ? <SeatView s={s} i={(myIdx + k) % n} slot={slot} /> : null);
   const six = n === 6;
   const flip = (c: PokerState['community'][number], k: number) => (
     <motion.div key={c.id} style={{ perspective: 600 }} initial={{ rotateY: 90, y: -24, opacity: 0 }} animate={{ rotateY: 0, y: 0, opacity: 1 }}
@@ -192,10 +240,10 @@ function PokerTable({ n }: { n: 4 | 6 }) {
     <>
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <TableAvatar name="Tú" tone="me" className="size-9 text-[15px]" />
-          <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{t('g.you')}</b>
+          <TableAvatar name={nm(myIdx)} tone="me" active={myTurn} className="size-9 text-[15px]" />
+          <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{online ? nm(myIdx) : t('g.you')}</b>
           <span className="font-mono rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-amber-200">{me.stack}{me.bet > 0 ? ` · apuesta ${me.bet}` : ''}</span>
-          {s.button === 0 && <span className="grid size-[17px] place-items-center rounded-full bg-white text-[9px] font-extrabold text-zinc-900">D</span>}
+          {s.button === myIdx && <span className="grid size-[17px] place-items-center rounded-full bg-white text-[9px] font-extrabold text-zinc-900">D</span>}
         </div>
         <span className="truncate text-right text-[11px] text-stone-400">{myHand || status}</span>
       </div>
@@ -233,12 +281,12 @@ function PokerTable({ n }: { n: 4 | 6 }) {
   );
 
   const over = s.phase === 'gameOver';
-  const restart = () => { paid.current = false; setS(newPoker(NAMES.slice(0, n).map((name, i) => ({ id: `p${i}`, name, human: i === 0 })))); };
   return (
     <GameFrame
       gameId="poker"
+      onExit={online ? exit : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
-      header={<ScoreStrip items={(n === 6 ? s.seats.slice(0, 1) : s.seats).map((x, i) => ({ name: NAMES[i]!, value: x.stack, us: i === 0 })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} />}
+      header={<ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} />}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -247,19 +295,19 @@ function PokerTable({ n }: { n: 4 | 6 }) {
           <AnimatePresence>
             {over && (
               <ResultOverlay
-                title={s.winner === 0 ? t('g.win') : `Gana ${NAMES[s.winner ?? 0]}`}
-                actions={[{ label: t('a.rematch'), primary: true, onClick: restart }, { label: t('a.lobby'), onClick: () => nav('/') }]}
+                title={s.winner === myIdx ? t('g.win') : `Gana ${nm(s.winner ?? 0)}`}
+                actions={[...(hostLike ? [{ label: t('a.rematch'), primary: true, onClick: () => { paid.current = false; restart(); } }] : []), { label: t('a.lobby'), onClick: exit }]}
               >
                 <ul className="grid gap-1 text-sm">
                   {[...s.seats.keys()].sort((a, b) => s.seats[b]!.stack - s.seats[a]!.stack).map((i) => (
                     <li key={i} className="flex justify-between border-b border-white/10 py-1">
-                      <span className={i === s.winner ? 'font-bold text-amber-300' : ''}>{NAMES[i]}</span>
+                      <span className={i === s.winner ? 'font-bold text-amber-300' : ''}>{nm(i)}</span>
                       <span className="font-mono tabular-nums text-stone-300">{s.seats[i]!.stack} / {START_STACK * n}</span>
                     </li>
                   ))}
                 </ul>
                 <p className="mt-2 text-center text-[11px] text-stone-400">Ciegas {BB / 2}/{BB} · {s.handNo} manos</p>
-                {s.winner === 0 && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                {s.winner === myIdx && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
               </ResultOverlay>
             )}
           </AnimatePresence>

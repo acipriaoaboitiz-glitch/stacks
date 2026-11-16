@@ -9,7 +9,7 @@ import { BRISCA_POWER, points, power } from '../brisca/engine.ts';
  * Tras ganar una baza puedes cantar «las 20» (Rey + Caballo del mismo palo) o «las 40» (en el palo de triunfo).
  * Cuatro reyes o cuatro caballos en la mano son «Tute» y ganan la partida.
  */
-export interface TPlayer { id: string; name: string; human: boolean }
+export interface TPlayer { id: string; name: string; human: boolean; /** Jugador de la sala (partida online). */ peerId?: string }
 export interface TPlay { playerId: string; card: SpanishCard }
 
 export interface TuteState {
@@ -183,4 +183,14 @@ export function botTute(s: TuteState, pid: string): string {
   const winners = legal.filter((c) => beats(c, w.card, trump)).sort(cheap);
   if (winners.length > 0 && (onTable >= 8 || points(winners[0]!) < onTable || (onTable > 0 && winners[0]!.suit !== trump))) return winners[0]!.id;
   return [...legal].sort(cheap)[0]!.id;
+}
+
+export type TuteAction = { k: 'play'; cardId: string } | { k: 'sing'; suit: SpanishSuit } | { k: 'tute' };
+/** Reductor para partidas en sala: devuelve null si la acción no vale. */
+export function applyTuteAction(s: TuteState, pid: string, a: TuteAction): TuteState | null {
+  switch (a.k) {
+    case 'play': return playTute(s, pid, a.cardId);
+    case 'sing': return sing(s, pid, a.suit);
+    case 'tute': return declareTute(s, pid);
+  }
 }

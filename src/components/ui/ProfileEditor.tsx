@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { photoToDataUrl, TITLES, type Profile } from '../../store/profile.ts';
-import { AVATARS, PlayerAvatar } from './Hud.tsx';
+import { photoToDataUrl, TITLES, titleLevel, type Profile } from '../../store/profile.ts';
+import { useWallet } from '../../store/wallet.ts';
+import { AVATARS, PlayerAvatar, rankFor } from './Hud.tsx';
 
 /** Formulario de perfil: apodo, título, avatar predefinido o foto propia. Lo usan la bienvenida y el modal de edición. */
 export function ProfileEditor({ initial, submitLabel, onSubmit }: { initial: Profile; submitLabel: string; onSubmit: (p: Profile) => void }) {
   const [p, setP] = useState<Profile>(initial);
   const [err, setErr] = useState('');
+  const level = rankFor(useWallet().chips).level;
   const file = useRef<HTMLInputElement>(null);
   const upload = async (f?: File) => {
     if (!f) return;
@@ -39,10 +41,17 @@ export function ProfileEditor({ initial, submitLabel, onSubmit }: { initial: Pro
       <div>
         <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-amber-300/90">Título</p>
         <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Título">
-          {TITLES.map((t) => (
-            <button key={t} type="button" role="radio" aria-checked={p.title === t} onClick={() => setP({ ...p, title: t })}
-              className={`rounded-full border px-3 py-1.5 text-[12px] font-bold ${p.title === t ? 'border-amber-200 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950' : 'border-white/15 bg-white/5 text-stone-200'}`}>{t}</button>
-          ))}
+          {TITLES.map((t) => {
+            const need = titleLevel(t);
+            const locked = need > level;
+            return (
+              <button key={t} type="button" role="radio" aria-checked={p.title === t} disabled={locked} onClick={() => setP({ ...p, title: t })}
+                title={locked ? `Se desbloquea en el nivel ${need}` : undefined}
+                className={`flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12px] font-bold ${locked ? 'border-white/10 bg-white/5 text-stone-500' : p.title === t ? 'border-amber-200 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950' : 'border-white/15 bg-white/5 text-stone-200'}`}>
+                {locked && <Lock size={11} aria-hidden />}{t}{locked && <span className="text-[10px] font-extrabold">· Nv. {need}</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
       <motion.button type="submit" whileTap={{ scale: 0.96 }} disabled={!p.name.trim()} className="gold-foil min-h-12 rounded-2xl text-[15px] font-extrabold disabled:opacity-40">{submitLabel}</motion.button>

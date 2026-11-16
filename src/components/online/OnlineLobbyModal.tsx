@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Copy, Crown, Link2, Loader2, LogOut, Wifi, WifiOff, X } from 'lucide-react';
 import type { GameInfo } from '../../games/registry.ts';
 import {
-  createRoom, inviteLink, isSupabaseConfigured, joinRoom, normalizeRoomCode, setActiveRoom,
+  isPublicRoom, joinPublic, PUBLIC_WAIT_SECONDS,   createRoom, inviteLink, isSupabaseConfigured, joinRoom, normalizeRoomCode, setActiveRoom,
   teamOfSeat, useRoom, ROOM_CODE_LENGTH, isValidRoomCode, type PlayerView, type Room,
 } from '../../services/multiplayer.ts';
 import { feedback } from '../../store/settings.ts';
@@ -68,14 +68,36 @@ function RoomView({ room, game, onLeave }: { room: Room; game: GameInfo; onLeave
   // Asientos en cruz: 0 abajo, 1 izquierda, 2 arriba, 3 derecha.
   const cell: Record<number, string> = { 0: 'col-start-2 row-start-3', 1: 'col-start-1 row-start-2', 2: 'col-start-2 row-start-1', 3: 'col-start-3 row-start-2' };
   const copy = async (what: 'code' | 'link') => {
-    const text = what === 'code' ? snap.code : inviteLink(snap.code, game.id);
+    const url = inviteLink(snap.code, game.id);
+    const text = what === 'code' ? snap.code : url;
+    // «Compartir enlace»: hoja nativa (WhatsApp…) si existe; si no, copia al portapapeles.
+    if (what === 'link' && typeof navigator.share === 'function') {
+      try { await navigator.share({ title: `${game.name} · ClubStacks`, text: `Te espero en la mesa de ${game.name} (sala ${snap.code})`, url }); return; } catch (e) { if (e instanceof DOMException && e.name === 'AbortError') return; }
+    }
     try { await navigator.clipboard.writeText(text); } catch { /* sin permiso de portapapeles */ }
     feedback('chip');
     setCopied(what);
     window.setTimeout(() => setCopied(null), 1600);
   };
+  // Partida pública: si no se llena en 12 s, el anfitrión completa los huecos con bots y empieza.
+  const isPublic = isPublicRoom(snap.code, game.id);
+  const [left, setLeft] = useState(PUBLIC_WAIT_SECONDS);
+  const isHost = Boolean(snap.me?.isHost);
+  const full = snap.players.length >= snap.layout.capacity;
+  useEffect(() => {
+    if (!isPublic || snap.started) return;
+    if (!isHost) room.setReady(true);
+    const i = window.setInterval(() => setLeft((l) => Math.max(0, l - 1)), 1000);
+    return () => window.clearInterval(i);
+    // eslint-disable-next-line
+  }, [isPublic, snap.started, isHost]);
+  useEffect(() => {
+    if (!isPublic || !isHost || snap.started) return;
+    if (left === 0 || full) { room.setFillBots(true); room.start(); }
+    // eslint-disable-next-line
+  }, [left, full, isPublic, isHost, snap.started]);
   const missing = snap.layout.min - snap.players.length;
-  const hint = snap.canStart ? 'Todo listo' : !snap.me?.isHost ? 'Espera al anfitrión'
+  const hint = isPublic && !snap.started ? `Buscando jugadores… ${left} s · los huecos se rellenan con bots` : snap.canStart ? 'Todo listo' : !snap.me?.isHost ? 'Espera al anfitrión'
     : !snap.fillBots && missing > 0 ? `Faltan ${missing} jugador${missing > 1 ? 'es' : ''}` : 'Esperando a que todos estén listos';
 
   return (
@@ -91,7 +113,7 @@ function RoomView({ room, game, onLeave }: { room: Room; game: GameInfo; onLeave
         </button>
         <button type="button" className="btn gold-foil flex items-center gap-1.5" style={{ minHeight: 48, padding: '0 12px', fontSize: 13 }}
           onClick={() => copy('link')}>
-          {copied === 'link' ? <Check size={16} /> : <Link2 size={16} />} {copied === 'link' ? 'Copiado' : 'Invitar'}
+          {copied === 'link' ? <Check size={16} /> : <Link2 size={16} />} {copied === 'link' ? 'Copiado' : 'Compartir enlace'}
         </button>
       </div>
 
@@ -186,7 +208,7 @@ export function OnlineLobbyModal({ game, initialCode, onClose, onStart }: Props)
   const { name } = useWallet();
   const [room, setRoom] = useState<Room | null>(null);
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState<'create' | 'join' | null>(null);
+  const [busy, setBusy] = useState<'create' | 'join' | 'public' | null>(null);
   const [error, setError] = useState('');
   const unsub = useRef<(() => void) | null>(null);
   const started = useRef(false);
@@ -202,6 +224,12 @@ export function OnlineLobbyModal({ game, initialCode, onClose, onStart }: Props)
     if (!game) return;
     setBusy('create'); setError('');
     try { attach(await createRoom(game.id, name)); } catch (e) { setError(e instanceof Error ? e.message : 'Error al crear la sala'); }
+    setBusy(null);
+  };
+  const joinPub = async () => {
+    if (!game) return;
+    setBusy('public'); setError('');
+    try { attach(await joinPublic(game.id, name)); } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo abrir la partida pública'); }
     setBusy(null);
   };
   const join = async (c = code) => {
@@ -249,6 +277,9 @@ export function OnlineLobbyModal({ game, initialCode, onClose, onStart }: Props)
               <div className="flex flex-col gap-3">
                 <button type="button" className="btn btn--gold" onClick={create} disabled={busy !== null}>
                   {busy === 'create' ? 'Creando sala…' : 'Crear sala privada'}
+                </button>
+                <button type="button" className="btn" onClick={joinPub} disabled={busy !== null}>
+                  {busy === 'public' ? 'Buscando mesa…' : 'Partida pública'}
                 </button>
                 <div className="flex items-center gap-3 text-[11px] font-bold" style={{ color: 'var(--color-muted)' }}>
                   <span className="h-px flex-1" style={{ background: 'var(--line-2)' }} />o únete con un código<span className="h-px flex-1" style={{ background: 'var(--line-2)' }} />

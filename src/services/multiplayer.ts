@@ -27,6 +27,7 @@ export const ROOM_LAYOUTS: Record<string, RoomLayout> = {
   cinquillo: { capacity: 4, mode: 'table', min: 2 },
   escoba: { capacity: 4, mode: 'table', min: 2 },
   uno: { capacity: 4, mode: 'table', min: 2 },
+  presidente: { capacity: 4, mode: 'table', min: 2 },
   blackjack: { capacity: 4, mode: 'table', min: 1 },
   sieteymedia: { capacity: 4, mode: 'table', min: 2 },
 };
@@ -45,7 +46,7 @@ export function generateRoomCode(): string {
 
 export function inviteLink(code: string, gameId: string): string {
   const base = `${location.origin}${location.pathname}`;
-  return `${base}#/?room=${code}&game=${gameId}`;
+  return `${base}#/?sala=${code}&game=${gameId}`;
 }
 
 // ─── Tipos públicos ──────────────────────────────────────────────────────────────────────
@@ -391,8 +392,8 @@ export class Room {
   }
 }
 
-export const createRoom = async (gameId: string, name: string): Promise<Room> => {
-  const room = new Room(generateRoomCode(), gameId, name, true);
+export const createRoom = async (gameId: string, name: string, code?: string): Promise<Room> => {
+  const room = new Room(code ?? generateRoomCode(), gameId, name, true);
   await room.connect();
   return room;
 };
@@ -415,3 +416,19 @@ export const setActiveRoom = (r: Room | null): void => {
   activeRoom = r;
 };
 export const getActiveRoom = (): Room | null => activeRoom;
+
+// ─── Partida pública ─────────────────────────────────────────────────────────────────────
+/** Código fijo por juego: quien llega primero crea la sala pública y los demás entran en ella. */
+export function publicRoomCode(gameId: string): string {
+  let h = 7;
+  for (const ch of gameId) h = (h * 31 + ch.charCodeAt(0)) % 99991;
+  return 'P' + Array.from({ length: ROOM_CODE_LENGTH - 1 }, (_, i) => ALPHABET[Math.floor(h / 31 ** i) % ALPHABET.length]).join('');
+}
+export const isPublicRoom = (code: string, gameId: string): boolean => code === publicRoomCode(gameId);
+/** Entra en la sala pública del juego o, si no hay nadie, la abre. */
+export async function joinPublic(gameId: string, name: string): Promise<Room> {
+  const code = publicRoomCode(gameId);
+  try { return await joinRoom(code, gameId, name); } catch { return createRoom(gameId, name, code); }
+}
+/** Segundos de espera en una partida pública antes de completar los huecos con bots. */
+export const PUBLIC_WAIT_SECONDS = 12;

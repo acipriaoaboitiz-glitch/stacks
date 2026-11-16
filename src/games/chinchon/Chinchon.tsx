@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { setActiveRoom } from '../../services/multiplayer.ts';
+import { useReplica, useSeating } from '../../services/onlineGame.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
@@ -8,12 +10,12 @@ import { Button } from '../mus/app/components/ui.tsx';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import type { SpanishCard } from '../../engine/deck.ts';
 import { useT } from '../../i18n/index.ts';
-import { aiDelay, feedback } from '../../store/settings.ts';
+import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScoreStrip, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
-  CLOSE_LIMIT, OUT_AT, arrange, botMove, canClose, closeRound, discardCard, drawFrom, looseValue, newGame, nextRound, type ChPlayer, type ChState,
+  CLOSE_LIMIT, OUT_AT, applyChAction, arrange, botMove, canClose, looseValue, newGame, type ChAction, type ChPlayer, type ChState,
 } from './engine.ts';
 
 const WIN_BONUS = 100;
@@ -27,6 +29,8 @@ const makePlayers = (n: number): ChPlayer[] => Array.from({ length: n }, (_, i) 
 export default function Chinchon() {
   const nav = useNavigate();
   const t = useT();
+  const seating = useSeating('chinchon');
+  const online = seating.online;
   const [params] = useSearchParams();
   const preset = Number(params.get('players'));
   const [count, setCount] = useState<2 | 3 | 4 | null>(preset >= 2 && preset <= 4 ? (preset as 2 | 3 | 4) : null);
@@ -34,41 +38,60 @@ export default function Chinchon() {
   const [sel, setSel] = useState<string | null>(null);
   const { banner, show } = useBanner(1400);
   const { cine, show: showCine } = useCine();
-  const lastSeq = useRef(0);
+  const lastSeq = useRef('');
   const paid = useRef(false);
+  const myIdx = online ? Math.max(0, s?.players.findIndex((p) => p.peerId === seating.myPeerId) ?? 0) : 0;
+  const me = s?.players[myIdx]?.id ?? 'p0';
+  const hostLike = !online || seating.isHost;
+  const nm = (i: number): string => s?.players[i]?.name ?? nameOf(s?.players.length ?? 2, i);
 
   const start = (n: 2 | 3 | 4) => { setCount(n); setS(newGame(makePlayers(n))); setSel(null); paid.current = false; };
 
+  // Online: el anfitrión reparte con los humanos de la sala (2–4) y rellena con bots si está activado.
+  const hostStart = () => {
+    const humans = seating.humans;
+    const n = Math.min(4, Math.max(2, seating.fillBots ? 4 : humans.length));
+    const players: ChPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
+      ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
+      : { id: `p${i}`, name: NAMES[i - humans.length + 1] ?? `Bot ${i}`, human: false });
+    setS(newGame(players)); setSel(null); paid.current = false; lastSeq.current = '';
+  };
+  const noS = s === null;
+  useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
+  const { dispatch } = useReplica<ChState, ChAction>(seating, s, setS, applyChAction, (st, peer) => st.players.find((q) => q.peerId === peer)?.id ?? null);
+
   useEffect(() => {
-    if (!s || (s.phase !== 'draw' && s.phase !== 'discard') || s.turn === 0) return;
+    if (!s || (s.phase !== 'draw' && s.phase !== 'discard') || !hostLike || s.players[s.turn]!.human) return;
     const timer = window.setTimeout(() => {
       setS((cur) => {
-        if (!cur || cur.turn === 0 || (cur.phase !== 'draw' && cur.phase !== 'discard')) return cur;
+        if (!cur || cur.players[cur.turn]!.human || (cur.phase !== 'draw' && cur.phase !== 'discard')) return cur;
         const m = botMove(cur);
-        const next = m.type === 'draw' ? drawFrom(cur, m.source) : m.type === 'discard' ? discardCard(cur, m.cardId) : closeRound(cur, m.cardId);
-        return next ?? cur;
+        const act: ChAction = m.type === 'draw' ? { k: 'draw', source: m.source } : m.type === 'discard' ? { k: 'discard', cardId: m.cardId } : { k: 'close', cardId: m.cardId };
+        return applyChAction(cur, cur.players[cur.turn]!.id, act) ?? cur;
       });
-    }, aiDelay(900));
+    }, botDelay());
     return () => window.clearTimeout(timer);
-  }, [s]);
+  }, [s, hostLike]);
 
   useEffect(() => {
     const e = s?.event;
-    if (!s || !e || e.seq === lastSeq.current) return;
-    lastSeq.current = e.seq;
+    const key = `${e?.seq}:${e?.text}`;
+    if (!s || !e || key === lastSeq.current) return;
+    lastSeq.current = key;
     if (/CHINCH/.test(e.text)) { feedback('win'); showCine('¡CHINCHÓN!', '−10 puntos'); }
     else if (/anulada/.test(e.text)) show(e.text);
-    else if (/Cierra/.test(e.text)) { feedback('thud'); show(`${s.closer === 0 ? 'Cierras' : `${nameOf(s.players.length, s.closer ?? 0)} cierra`} la ronda`); }
+    else if (/Cierra/.test(e.text)) { feedback('thud'); show(`${s.closer === myIdx ? 'Cierras' : `${nm(s.closer ?? 0)} cierra`} la ronda`); }
     else feedback('deal');
-  }, [s, show, showCine]);
+  }, [s, show, showCine, myIdx]);
 
   useEffect(() => {
+    if (s && s.phase !== 'gameOver') paid.current = false;
     if (s?.phase !== 'gameOver' || paid.current) return;
     paid.current = true;
-    if (s.winner === 0) { wallet.add(WIN_BONUS); wallet.recordWin('chinchon'); feedback('win'); }
-  }, [s]);
+    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('chinchon'); feedback('win'); }
+  }, [s, myIdx]);
 
-  const hand = s?.hands[0] ?? [];
+  const hand = s?.hands[myIdx] ?? [];
   const arr = useMemo(() => (hand.length === 7 ? arrange(hand) : null), [hand]);
   const ordered = useMemo<{ card: SpanishCard; grouped: boolean; gap: boolean }[]>(() => {
     if (hand.length === 0) return [];
@@ -79,7 +102,15 @@ export default function Chinchon() {
     return out;
   }, [hand, arr]);
 
-  if (!count || !s) {
+  if (!s && online) {
+    return (
+      <GameFrame gameId="chinchon" onExit={() => { setActiveRoom(null); nav('/'); }}
+        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">{t('g.chinchon.name')}</p>}
+        felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
+        bottom={null} />
+    );
+  }
+  if (!s || (!online && !count)) {
     return (
       <GameFrame
         gameId="chinchon"
@@ -101,8 +132,8 @@ export default function Chinchon() {
   }
 
   const n = s.players.length;
-  const slots = SLOT[count];
-  const myTurn = (s.phase === 'draw' || s.phase === 'discard') && s.turn === 0;
+  const slots = SLOT[n as 2 | 3 | 4];
+  const myTurn = (s.phase === 'draw' || s.phase === 'discard') && s.turn === myIdx;
   const looseNow = s.phase === 'discard' && hand.length === 8
     ? Math.min(...hand.map((c) => arrange(hand.filter((x) => x.id !== c.id)).unmatched))
     : arr?.unmatched ?? 0;
@@ -110,20 +141,21 @@ export default function Chinchon() {
   const closable = !!selCard && canClose(s, selCard.id);
   const top = s.discard[s.discard.length - 1] ?? null;
   const status = s.phase === 'gameOver' || s.phase === 'roundOver' ? ''
-    : !myTurn ? `${t('g.thinking').replace('…', '')} ${nameOf(n, s.turn)}…`
+    : !myTurn ? `Juega ${nm(s.turn)}…`
     : s.phase === 'draw' ? 'Roba del mazo o del descarte' : selCard ? (closable ? 'Puedes cerrar con esta carta' : 'Elige qué hacer con la carta') : 'Elige una carta para descartar';
 
-  const draw = (source: 'stock' | 'discard') => { if (!(myTurn && s.phase === 'draw')) return; const nx = drawFrom(s, source); if (nx) { setSel(null); setS(nx); } };
+  const draw = (source: 'stock' | 'discard') => { if (!(myTurn && s.phase === 'draw')) return; setSel(null); dispatch(me, { k: 'draw', source }); };
   const pills: PillSpec[] = myTurn && s.phase === 'discard' && selCard ? [
-    { id: 'disc', tone: 'gold', label: t('a.discard'), onPress: () => { const nx = discardCard(s, selCard.id); if (nx) { setSel(null); setS(nx); } } },
-    { id: 'close', tone: 'ok', label: t('a.close'), disabled: !closable, onPress: () => { const nx = closeRound(s, selCard.id); if (nx) { setSel(null); setS(nx); } } },
+    { id: 'disc', tone: 'gold', label: t('a.discard'), onPress: () => { setSel(null); dispatch(me, { k: 'discard', cardId: selCard.id }); } },
+    { id: 'close', tone: 'ok', label: t('a.close'), disabled: !closable, onPress: () => { setSel(null); dispatch(me, { k: 'close', cardId: selCard.id }); } },
     { id: 'clr', tone: 'soft', label: t('a.clear'), onPress: () => setSel(null) },
   ] : [];
 
   const seat = (slot: 'top' | 'left' | 'right') => {
-    const i = slots.indexOf(slot);
-    if (i === -1) return null;
-    return <div className={s.out[i] ? 'opacity-40' : ''}><SeatBadge info={info(i, `${nameOf(n, i)}${s.out[i] ? ' ✕' : ''}`)} tone="them" mano={s.dealer === i} turn={s.turn === i && !s.out[i] && (s.phase === 'draw' || s.phase === 'discard')} deadline={null} cards={Math.min(s.hands[i]!.length, 7)} /></div>;
+    const k = slots.indexOf(slot);
+    if (k === -1) return null;
+    const i = (myIdx + k) % n;
+    return <div className={s.out[i] ? 'opacity-40' : ''}><SeatBadge info={info(i, `${nm(i)}${s.out[i] ? ' ✕' : ''}`)} tone="them" mano={s.dealer === i} turn={s.turn === i && !s.out[i] && (s.phase === 'draw' || s.phase === 'discard')} deadline={null} cards={Math.min(s.hands[i]!.length, 7)} /></div>;
   };
 
   const pileW = 'calc(var(--card-w) * 0.8)';
@@ -161,7 +193,7 @@ export default function Chinchon() {
     <>
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <TableAvatar name="Tú" tone="me" className="size-9 text-[15px]" />
+          <TableAvatar name="Tú" tone="me" active={myTurn} className="size-9 text-[15px]" />
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{t('g.you')}</b>
           <span className={`rounded-full border px-2 py-[2px] text-[10px] font-bold ${looseNow <= CLOSE_LIMIT ? 'border-emerald-400/50 bg-emerald-900/60 text-emerald-100' : 'border-white/10 bg-zinc-900/70 text-stone-300'}`}>
             Sueltas: {looseNow}
@@ -188,8 +220,9 @@ export default function Chinchon() {
   return (
     <GameFrame
       gameId="chinchon"
-      timer={{ active: myTurn, id: `${s.turn}:${s.phase}:${s.stock.length}`, onTimeout: () => { const nx = s.phase === 'draw' ? drawFrom(s, 'stock') : discardCard(s, s.drawn ?? hand[0]!.id); if (nx) { setSel(null); setS(nx); } } }}
-      header={<ScoreStrip items={s.scores.map((v, i) => ({ name: nameOf(n, i), value: v, us: i === 0 }))} target={OUT_AT} />}
+      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      timer={{ active: myTurn, id: `${s.turn}:${s.phase}:${s.stock.length}`, onTimeout: () => { setSel(null); dispatch(me, s.phase === 'draw' ? { k: 'draw', source: 'stock' } : { k: 'discard', cardId: s.drawn ?? hand[0]!.id }); } }}
+      header={<ScoreStrip items={s.scores.map((v, i) => ({ name: nm(i), value: v, us: i === myIdx }))} target={OUT_AT} />}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -198,20 +231,20 @@ export default function Chinchon() {
           <AnimatePresence>
             {(s.phase === 'roundOver' || over) && s.rows && (
               <ResultOverlay
-                title={over ? (s.winner === 0 ? t('g.win') : `Gana ${nameOf(n, s.winner ?? 0)}`) : s.closer === null ? 'Ronda anulada' : `Fin de la ronda · cierra ${nameOf(n, s.closer)}`}
+                title={over ? (s.winner === myIdx ? t('g.win') : `Gana ${nm(s.winner ?? 0)}`) : s.closer === null ? 'Ronda anulada' : `Fin de la ronda · cierra ${nm(s.closer)}`}
                 actions={over
-                  ? [{ label: t('a.rematch'), primary: true, onClick: () => start(count) }, { label: t('a.lobby'), onClick: () => nav('/') }]
-                  : [{ label: t('a.next'), primary: true, onClick: () => { setSel(null); setS(nextRound(s)); } }]}
+                  ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } }]
+                  : hostLike ? [{ label: t('a.next'), primary: true, onClick: () => { setSel(null); setS((cur) => (cur ? applyChAction(cur, me, { k: 'next' }) ?? cur : cur)); } }] : []}
               >
                 <ul className="grid gap-1 text-sm">
                   {s.rows.map((r, i) => (
                     <li key={i} className={`flex justify-between border-b border-white/10 py-1 ${s.out[i] ? 'opacity-50' : ''}`}>
-                      <span className={i === s.closer ? 'font-bold text-amber-300' : ''}>{nameOf(n, i)}{s.out[i] ? ' ✕' : ''}{r.chinchon ? ' · Chinchón' : ''}</span>
+                      <span className={i === s.closer ? 'font-bold text-amber-300' : ''}>{nm(i)}{s.out[i] ? ' ✕' : ''}{r.chinchon ? ' · Chinchón' : ''}</span>
                       <span className="tabular-nums text-stone-300">{r.delta >= 0 ? '+' : ''}{r.delta} → <b>{s.scores[i]}</b></span>
                     </li>
                   ))}
                 </ul>
-                {over && s.winner === 0 && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                {over && s.winner === myIdx && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
               </ResultOverlay>
             )}
           </AnimatePresence>

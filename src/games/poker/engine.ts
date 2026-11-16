@@ -56,7 +56,7 @@ export const handCategory = (score: number): number => Math.floor(score / 15 ** 
 export const handName = (score: number): string => (score < 0 ? '' : HAND_NAMES[handCategory(score)]!);
 
 // ─── Estado ──────────────────────────────────────────────────────────────────────────────────────
-export interface PPlayer { id: string; name: string; human: boolean }
+export interface PPlayer { id: string; name: string; human: boolean; /** Jugador de la sala (partida online). */ peerId?: string }
 export interface PSeat {
   stack: number;
   /** Apuesta de la ronda en curso. */
@@ -296,4 +296,12 @@ export function botAct(s: PokerState): PAction {
   if (eq > need + 0.04) return { type: 'call' };
   if (eq > need - 0.05 && Math.random() < 0.2) return { type: 'call' };
   return { type: 'fold' };
+}
+
+export type PokerAction = { k: 'act'; a: PAction } | { k: 'next' };
+/** Reductor para partidas en sala: solo mueve quien tiene el turno; «next» reparte la mano siguiente. */
+export function applyPokerAction(s: PokerState, pid: string, a: PokerAction): PokerState | null {
+  if (a.k === 'next') return s.phase === 'handOver' ? nextHand(s) : null;
+  if (s.phase !== 'betting' || s.players[s.turn]?.id !== pid) return null;
+  return act(s, a.a);
 }

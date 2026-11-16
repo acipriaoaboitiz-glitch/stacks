@@ -70,10 +70,16 @@ export const useSettings = (): Settings =>
 /** Pausa de la IA ajustada a la velocidad elegida (Normal / Rápida). */
 export const aiDelay = (ms: number): number => ms / SPEED_FACTOR[state.speed];
 
+/** Pausa natural antes de que un bot mueva: 400–650 ms (mínimo 250 ms en «Rápida» para que se lea la jugada). */
+export const botDelay = (): number => Math.max(250, aiDelay(400 + Math.random() * 250));
+
+/** Transición estándar de las mesas: rápida y suave. */
+export const FAST_EASE = { duration: 0.22, ease: 'easeOut' } as const;
+
 let ctx: AudioContext | null = null;
 let noiseBuf: AudioBuffer | null = null;
 
-export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big';
+export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn';
 
 function audio(): AudioContext | null {
   try {
@@ -118,15 +124,18 @@ function tone(c: AudioContext, at: number, freq: number, dur: number, gain: numb
 
 /** Respuesta háptica y sonido sintetizado con Web Audio (sin archivos), respetando Ajustes. */
 export function feedback(kind: Sfx = 'tap'): void {
-  if (state.vibration && 'vibrate' in navigator) {
-    try { navigator.vibrate(kind === 'big' || kind === 'win' ? [30, 40, 60] : kind === 'thud' ? 25 : 10); } catch { /* no soportado */ }
+  // Repartir y el roce de naipes solo suenan: vibrar con cada carta repartida cansa.
+  if (state.vibration && 'vibrate' in navigator && kind !== 'deal' && kind !== 'card') {
+    try { navigator.vibrate(kind === 'big' || kind === 'win' ? [30, 40, 60] : kind === 'thud' ? 25 : kind === 'play' || kind === 'turn' ? 15 : 10); } catch { /* no soportado */ }
   }
   if (!state.sound) return;
   const c = audio();
   if (!c) return;
   const t = c.currentTime;
   switch (kind) {
-    case 'deal': case 'card': // reparto: roce de naipe
+    case 'turn': // aviso suave de turno
+      tone(c, t, 700, 0.07, 0.04); break;
+    case 'deal': case 'card': case 'play': // reparto: roce de naipe
       noise(c, t, 0.09, 3200, 0.18); noise(c, t + 0.035, 0.06, 5200, 0.1); break;
     case 'thud': // golpe en la mesa (Paso / Órdago)
       tone(c, t, 150, 0.22, 0.35, 'sine', 45); noise(c, t, 0.08, 400, 0.25); break;
@@ -138,5 +147,23 @@ export function feedback(kind: Sfx = 'tap'): void {
       tone(c, t, 1200, 0.05, 0.05, 'square'); noise(c, t, 0.04, 6000, 0.08); break;
     default:
       tone(c, t, 520, 0.05, 0.04);
+  }
+}
+
+export type EmoteId = 'clap' | 'laugh' | 'fire' | 'turn' | 'hit';
+
+/** Sonido corto de cada reacción rápida (sintetizado, sin archivos). */
+export function emoteSound(id: EmoteId): void {
+  if (state.vibration && 'vibrate' in navigator) { try { navigator.vibrate(id === 'hit' ? [20, 30, 30] : 15); } catch { /* no soportado */ } }
+  if (!state.sound) return;
+  const c = audio();
+  if (!c) return;
+  const t = c.currentTime;
+  switch (id) {
+    case 'clap': [0, 0.11, 0.22, 0.31].forEach((d) => noise(c, t + d, 0.07, 2600, 0.22)); break;
+    case 'laugh': [620, 560, 620, 540, 600].forEach((f, k) => tone(c, t + k * 0.09, f, 0.08, 0.06, 'square')); break;
+    case 'fire': noise(c, t, 0.5, 900, 0.16); tone(c, t, 180, 0.5, 0.05, 'sawtooth', 520); break;
+    case 'turn': tone(c, t, 880, 0.1, 0.06); tone(c, t + 0.16, 880, 0.1, 0.06); break;
+    case 'hit': tone(c, t, 220, 0.18, 0.3, 'sine', 70); tone(c, t + 0.1, 1175, 0.2, 0.06); break;
   }
 }

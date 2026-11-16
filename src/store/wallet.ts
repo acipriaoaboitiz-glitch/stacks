@@ -5,6 +5,8 @@ export interface WalletState {
   chips: number;
   name: string;
   lastDailyClaim: string; // YYYY-MM-DD
+  /** Días seguidos cobrando el bono diario (1–7). */
+  streak: number;
   avatar: number;
   /** Partidas ganadas por juego. */
   wins: Record<string, number>;
@@ -12,13 +14,19 @@ export interface WalletState {
 
 const KEY = 'latimba.wallet.v1';
 export const START_CHIPS = 1000;
-export const DAILY_CHIPS = 500;
+/** Bono diario progresivo: el día 1 de la racha da el primero, y así hasta el séptimo (luego se mantiene). */
+export const DAILY_STREAK = [200, 300, 400, 500, 650, 800, 1000] as const;
+export const DAILY_CHIPS = DAILY_STREAK[0];
+export const RESCUE_CHIPS = 250;
+export const RESCUE_BELOW = 50;
 export const AD_CHIPS = 250;
 
-const today = (): string => new Date().toISOString().slice(0, 10);
+const dayKey = (d: Date): string => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const today = (): string => dayKey(new Date());
+const yesterday = (): string => dayKey(new Date(Date.now() - 86_400_000));
 
 function load(): WalletState {
-  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '', avatar: 0, wins: {} };
+  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '', streak: 0, avatar: 0, wins: {} };
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return fallback;
@@ -27,6 +35,7 @@ function load(): WalletState {
       chips: typeof p.chips === 'number' && p.chips >= 0 ? Math.floor(p.chips) : START_CHIPS,
       name: typeof p.name === 'string' && p.name.trim() ? p.name.slice(0, 16) : 'Jugador',
       lastDailyClaim: typeof p.lastDailyClaim === 'string' ? p.lastDailyClaim : '',
+      streak: typeof p.streak === 'number' && p.streak >= 0 ? Math.min(7, Math.floor(p.streak)) : 0,
       avatar: typeof p.avatar === 'number' ? p.avatar : 0,
       wins: p.wins && typeof p.wins === 'object' ? p.wins : {},
     };
@@ -57,6 +66,10 @@ export const getWallet = (): WalletState => state;
 export const useWallet = (): WalletState => useSyncExternalStore(subscribe, getWallet);
 
 export const canClaimDaily = (s: WalletState = state): boolean => s.lastDailyClaim !== today();
+/** Día de la racha que tocaría cobrar hoy (1–7): sigue si cobraste ayer, si no vuelve a 1. */
+export const nextStreak = (s: WalletState = state): number => (s.lastDailyClaim === yesterday() ? Math.min(7, s.streak + 1) : s.lastDailyClaim === today() ? s.streak : 1);
+export const dailyAmount = (s: WalletState = state): number => DAILY_STREAK[nextStreak(s) - 1]!;
+export const canRescue = (s: WalletState = state): boolean => s.chips < RESCUE_BELOW;
 
 export const wallet = {
   /** Suma (o resta, si es negativo) fichas. Nunca baja de 0. */
@@ -69,9 +82,18 @@ export const wallet = {
     set({ ...state, chips: state.chips - n });
     return true;
   },
-  claimDaily(): boolean {
-    if (!canClaimDaily()) return false;
-    set({ ...state, chips: state.chips + DAILY_CHIPS, lastDailyClaim: today() });
+  /** Bono diario progresivo. Devuelve las fichas cobradas (0 si ya se cobró hoy). */
+  claimDaily(): number {
+    if (!canClaimDaily()) return 0;
+    const streak = nextStreak();
+    const amount = DAILY_STREAK[streak - 1]!;
+    set({ ...state, chips: state.chips + amount, lastDailyClaim: today(), streak });
+    return amount;
+  },
+  /** Rescate: si bajas de 50 fichas, +250. */
+  claimRescue(): boolean {
+    if (!canRescue()) return false;
+    set({ ...state, chips: state.chips + RESCUE_CHIPS });
     return true;
   },
   /** Recompensa por ver un anuncio (el SDK real se enchufa aquí). */

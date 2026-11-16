@@ -9,8 +9,15 @@ import Uno from './games/uno/Uno.tsx';
 import MusPlay from './games/mus/MusPlay.tsx';
 import Chinchon from './games/chinchon/Chinchon.tsx';
 import Poker from './games/poker/Poker.tsx';
+import Presidente from './games/presidente/Presidente.tsx';
 import Tute from './games/tute/Tute.tsx';
 import Home from './pages/Home.tsx';
+
+// Enlace directo a mesa: «?sala=CODIGO» (WhatsApp, etc.) se traslada al hash que lee el router.
+try {
+  const q = new URLSearchParams(window.location.search);
+  if (q.has('sala')) window.history.replaceState(null, '', `${window.location.pathname}#/?${q.toString()}`);
+} catch { /* sin history */ }
 
 // HashRouter: funciona en hosting estático, PWA y dentro de Capacitor sin reescrituras de servidor.
 export default function App() {
@@ -29,6 +36,7 @@ export default function App() {
         <Route path="/play/chinchon" element={<Chinchon />} />
         <Route path="/play/tute" element={<Tute />} />
         <Route path="/play/poker" element={<Poker />} />
+        <Route path="/play/presidente" element={<Presidente />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

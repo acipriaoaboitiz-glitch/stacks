@@ -5,8 +5,8 @@ import { DealIn } from '../../components/cards/DealIn.tsx';
 import { AnimatedNumber } from '../mus/app/components/AnimatedNumber.tsx';
 import { CardBackArt } from '../../components/cards/FrenchFace.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
-import { canClaimDaily, useWallet, wallet } from '../../store/wallet.ts';
-import { aiDelay, feedback } from '../../store/settings.ts';
+import { canClaimDaily, dailyAmount, useWallet, wallet } from '../../store/wallet.ts';
+import { botDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
@@ -44,10 +44,8 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: 'us'
   const us = tone === 'us';
   return (
     <div className={`min-w-0 rounded-[13px] border border-white/10 px-[min(2.4vw,10px)] py-[min(1.1dvh,6px)] ${us ? 'bg-gradient-to-br from-amber-300/10 to-black/30' : 'bg-gradient-to-br from-teal-400/10 to-black/30'}`}>
-      <div className="flex items-baseline justify-between gap-1">
-        <span className={`truncate text-[9px] font-extrabold uppercase tracking-[.14em] ${us ? 'text-amber-300' : 'text-teal-300'}`}>{label}</span>
-        <b className="font-[var(--font-display)] text-[clamp(17px,5.4vw,22px)] leading-none tabular-nums"><AnimatedNumber value={value} duration={0.7} /></b>
-      </div>
+      <span className={`block whitespace-nowrap text-[9px] font-extrabold uppercase tracking-[.08em] ${us ? 'text-amber-300' : 'text-teal-300'}`}>{label}</span>
+      <b className="block font-[var(--font-display)] text-[clamp(17px,5.4vw,22px)] leading-none tabular-nums"><AnimatedNumber value={value} duration={0.7} /></b>
     </div>
   );
 }
@@ -83,7 +81,7 @@ export default function Blackjack() {
   // El crupier juega solo, carta a carta.
   useEffect(() => {
     if (!game || game.phase !== 'dealer') return;
-    const t = window.setTimeout(() => apply(dealerStep(game)), aiDelay(800));
+    const t = window.setTimeout(() => apply(dealerStep(game)), botDelay());
     return () => window.clearTimeout(t);
   }, [game, apply]);
 
@@ -126,7 +124,7 @@ export default function Blackjack() {
   let pills: PillSpec[] = [];
   if (inBetting) {
     pills = chips === 0 && bet === 0
-      ? [{ id: 'refill', tone: 'gold', label: canClaimDaily() ? 'Bono diario +500' : 'Ver anuncio +250', onPress: () => (canClaimDaily() ? wallet.claimDaily() : wallet.claimAd()) }]
+      ? [{ id: 'refill', tone: 'gold', label: canClaimDaily() ? `Bono diario +${dailyAmount()}` : 'Rescate +250', onPress: () => { if (canClaimDaily()) wallet.claimDaily(); else wallet.claimRescue(); } }]
       : [
           { id: 'clear', tone: 'soft', disabled: bet === 0, label: 'Limpiar ficha', onPress: () => setAmount(0) },
           { id: 'again', tone: 'soft', disabled: lastBet === 0 || chips === 0, label: 'Repetir apuesta', onPress: () => setAmount(lastBet) },
@@ -206,7 +204,7 @@ export default function Blackjack() {
     <>
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <TableAvatar name="Tú" tone="me" className="size-9 text-[15px]" />
+          <TableAvatar name="Tú" tone="me" active={myTurn} className="size-9 text-[15px]" />
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>Tú</b>
         </div>
         <span className="text-[11px] text-stone-400">{inBetting ? 'Baraja inglesa · 52 cartas' : 'El crupier se planta en todos los 17'}</span>

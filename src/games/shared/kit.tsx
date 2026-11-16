@@ -7,9 +7,12 @@ import { Button } from '../mus/app/components/ui.tsx';
 import { CINE, type PhaseCine } from '../mus/app/game/useTableDirector.ts';
 import { CardBackArt, FrenchFace } from '../../components/cards/FrenchFace.tsx';
 import type { AnyCard, SpanishCard, SpanishSuit } from '../../engine/deck.ts';
-import { useSettings } from '../../store/settings.ts';
+import { FAST_EASE, feedback, useSettings } from '../../store/settings.ts';
 import { points as briscaPoints } from '../brisca/engine.ts';
 import { escobaValue } from '../escoba/engine.ts';
+
+/** En pantallas táctiles el «hover» se queda pegado tras tocar: solo se usa con ratón. */
+const CAN_HOVER = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
 
 /* Kit de interfaz con el estilo de Mus Online: píldoras flotantes, marcador doble, naipes Fournier, cartel de fase. */
 
@@ -38,7 +41,7 @@ export function PillBar({ pills, idle }: { pills: PillSpec[]; idle?: string }) {
         ) : (
           <motion.div key="actions" role="group" aria-label="Acciones"
             className="flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/75 p-[5px] shadow-[0_8px_24px_rgba(0,0,0,.28)] backdrop-blur-md"
-            initial={{ opacity: 0, y: 14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.35, ease: 'easeOut' } }}
+            initial={{ opacity: 0, y: 14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1, transition: FAST_EASE }}
             exit={{ opacity: 0, y: 6, transition: { duration: 0.15 } }}>
             {pills.map((p) => (
               <motion.button key={p.id} type="button" layout className={`${PILL} ${TONE[p.tone]}`} disabled={p.disabled} onClick={p.onPress}>
@@ -63,7 +66,7 @@ export function ScorePair({ labels = ['Nosotros', 'Ellos'], values, target, subs
         return (
           <div key={i} className={`min-w-0 rounded-[13px] border border-white/10 px-[min(2.4vw,10px)] py-[min(1.1dvh,6px)] ${us ? 'bg-gradient-to-br from-teal-400/10 to-black/30' : 'bg-gradient-to-br from-orange-400/10 to-black/30'}`}>
             <div className="flex items-baseline justify-between gap-1">
-              <span className={`truncate text-[9px] font-extrabold uppercase tracking-[.14em] ${us ? 'text-teal-300' : 'text-orange-300'}`}>{labels[i]}</span>
+              <span className={`shrink-0 whitespace-nowrap text-[9px] font-extrabold uppercase tracking-[.08em] ${us ? 'text-teal-300' : 'text-orange-300'}`}>{labels[i]}</span>
               <b className="font-[var(--font-display)] text-[clamp(17px,5.4vw,22px)] leading-none tabular-nums">
                 <AnimatedNumber value={values[i]!} duration={0.7} />
                 {target !== undefined && <small className="font-sans text-[9px] font-bold text-stone-400">/{target}</small>}
@@ -114,10 +117,10 @@ export function FaceCard({ card, faceDown, scale = 1, onClick, selected, dim, gl
           : '0 12px 24px rgba(0,0,0,0.75)',
         ...style,
       }}
-      animate={{ y: selected ? -18 : 0, rotate, opacity: dim ? 0.55 : 1 }}
-      whileHover={interactive ? { y: selected ? -22 : -8 } : undefined}
+      animate={{ y: selected ? -12 : 0, rotate, opacity: dim ? 0.55 : 1 }}
+      whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
-      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+      transition={{ ...FAST_EASE, type: 'tween' }}
     >
       {content}
       {badge && !faceDown && (
@@ -157,7 +160,7 @@ export function Banner({ text }: { text: string | null }) {
           <motion.div key={text}
             className="px-2 text-center font-[var(--font-display)] text-[clamp(22px,7vw,34px)] font-bold leading-tight text-amber-300 [text-shadow:0_0_18px_rgba(240,195,95,.45)]"
             initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05, transition: { duration: 0.3 } }}
-            transition={{ type: 'spring', stiffness: 220, damping: 18 }}>
+            transition={FAST_EASE}>
             {text}
           </motion.div>
         )}
@@ -223,7 +226,7 @@ export function ScoreStrip({ items, target }: { items: { name: string; value: nu
     <div className="grid w-full gap-[min(1.4vw,6px)]" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }} role="group" aria-label="Marcador">
       {items.map((it) => (
         <div key={it.name} className={`min-w-0 rounded-[13px] border border-white/10 px-[min(2vw,8px)] py-[min(1dvh,5px)] ${it.us ? 'bg-gradient-to-br from-teal-400/10 to-black/30' : 'bg-gradient-to-br from-orange-400/10 to-black/30'}`}>
-          <span className={`block truncate text-[8px] font-extrabold uppercase tracking-[.1em] ${it.us ? 'text-teal-300' : 'text-orange-300'}`}>{it.name}</span>
+          <span className={`block truncate text-[8px] font-extrabold uppercase tracking-[.06em] ${it.us ? 'text-teal-300' : 'text-orange-300'}`}>{it.name}</span>
           <b className={`font-[var(--font-display)] leading-none tabular-nums ${items.length > 3 ? "text-[clamp(11px,3.3vw,15px)]" : "text-[clamp(15px,4.6vw,20px)]"}`}>
             <AnimatedNumber value={it.value} duration={0.7} />{target !== undefined && <small className="font-sans text-[8px] font-bold text-stone-400">/{target}</small>}
           </b>
@@ -231,4 +234,21 @@ export function ScoreStrip({ items, target }: { items: { name: string; value: nu
       ))}
     </div>
   );
+}
+
+// ─── Seleccionar y tirar ─────────────────────────────────────────────────────────────────────────
+/** Primer toque: la carta se eleva (seleccionada). Segundo toque sobre la misma: se juega. Con vibración corta. */
+export function useTapToPlay<T extends { id: string }>(play: (card: T) => void): { sel: string | null; tap: (card: T) => void; clear: () => void } {
+  const [sel, setSel] = useState<string | null>(null);
+  const playRef = useRef(play);
+  playRef.current = play;
+  const tap = useCallback((card: T) => {
+    setSel((cur) => {
+      if (cur === card.id) { feedback('play'); queueMicrotask(() => playRef.current(card)); return null; }
+      feedback('tap');
+      return card.id;
+    });
+  }, []);
+  const clear = useCallback(() => setSel(null), []);
+  return { sel, tap, clear };
 }

@@ -1,4 +1,7 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { feedback } from '../../store/settings.ts';
+import { getActiveRoom, useRoom } from '../../services/multiplayer.ts';
+import { useWallet } from '../../store/wallet.ts';
 import { useNavigate } from 'react-router-dom';
 import '../mus/app/mus.css';
 import { Toaster } from '../mus/app/components/ui.tsx';
@@ -6,6 +9,7 @@ import { GameSettingsProvider } from '../mus/app/lib/settings.tsx';
 import { ProfileCard } from "../../components/ui/ProfileModal.tsx";
 import { ExitButton, QuickButtons } from '../../components/ui/QuickButtons.tsx';
 import { TurnTimer, type TurnTimerSpec } from '../../components/ui/TurnTimer.tsx';
+import { EmoteBubble, ReactionButton } from '../../components/ui/Reactions.tsx';
 import { RulesModal } from '../../components/ui/RulesModal.tsx';
 import { SettingsModal } from '../../components/ui/SettingsModal.tsx';
 import { findGame } from '../registry.ts';
@@ -47,11 +51,31 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
   const game = findGame(gameId)!;
   const [settings, setSettings] = useState(false);
   const [rules, setRules] = useState(false);
+  const [emote, setEmote] = useState<string | null>(null);
+  // Reacciones compartidas: en una sala de este juego se envían a todos y se ven las de los demás.
+  const activeRoom = getActiveRoom();
+  const room = activeRoom && activeRoom.gameId === gameId ? activeRoom : null;
+  const roomSnap = useRoom(room);
+  const myName = useWallet().name;
+  const others = (roomSnap?.reactions ?? []).filter((r) => r.name !== myName);
+  const emoteTimer = useRef<number | null>(null);
+  const sendEmote = (text: string) => {
+    room?.react(text);
+    setEmote(text);
+    if (emoteTimer.current) window.clearTimeout(emoteTimer.current);
+    emoteTimer.current = window.setTimeout(() => setEmote(null), 2200);
+  };
+  useEffect(() => () => { if (emoteTimer.current) window.clearTimeout(emoteTimer.current); }, []);
 
   useEffect(() => {
     document.documentElement.classList.add('table-lock');
     return () => document.documentElement.classList.remove('table-lock');
   }, []);
+
+  // Vibración corta al recibir el turno (flanco de subida del turno humano).
+  const wasActive = useRef(false);
+  const active = Boolean(timer?.active);
+  useEffect(() => { if (active && !wasActive.current) feedback('turn'); wasActive.current = active; }, [active]);
 
   const exit = (): void => { if (onExit) onExit(); else void nav('/'); };
 
@@ -76,8 +100,14 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
               aria-label="Mesa de juego"
             >
               {felt}
+              <div className="pointer-events-none absolute inset-x-0 bottom-14 z-20 flex flex-col items-center gap-1" aria-live="polite">
+                {others.map((r) => (
+                  <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>
+                ))}
+              </div>
+              <ReactionButton onSend={sendEmote} />
             </section>
-            <section className="flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}</section>
+            <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<EmoteBubble text={emote} /></section>
           </div>
           {overlays}
         </main>

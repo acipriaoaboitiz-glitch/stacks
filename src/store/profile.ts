@@ -5,6 +5,11 @@ import { wallet } from './wallet.ts';
 export interface Profile { name: string; title: string; avatar: number; photo: string | null }
 
 export const TITLES = ['Socio Fundador', 'Rey del Órdago', 'Tiburón de Mesa', 'Jugador VIP', 'Maestro de Naipes', 'Novato con Suerte'] as const;
+/** Nivel necesario para cada título (el nivel es el rango del jugador: Novato 1 … Leyenda 5). */
+export const TITLE_LEVEL: Record<(typeof TITLES)[number], number> = {
+  'Novato con Suerte': 1, 'Jugador VIP': 1, 'Maestro de Naipes': 2, 'Tiburón de Mesa': 3, 'Rey del Órdago': 4, 'Socio Fundador': 5,
+};
+export const titleLevel = (t: string): number => TITLE_LEVEL[t as keyof typeof TITLE_LEVEL] ?? 1;
 const KEY = 'stacks_player_profile';
 
 function load(): Profile | null {

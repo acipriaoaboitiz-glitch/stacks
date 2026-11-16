@@ -38,6 +38,8 @@ export interface EscobaState {
   /** Desglose de la última ronda (solo en roundOver / matchOver). */
   summary: ScoreLine[] | null;
   roundNo: number;
+  /** Jugadores de la mesa (índice = asiento en la partida). Los rellena la mesa. */
+  players?: { id: string; name: string; human: boolean; peerId?: string }[];
 }
 
 const zeros = (n: number): number[] => Array.from({ length: n }, () => 0);
@@ -135,7 +137,15 @@ function finishRound(s: EscobaState): EscobaState {
   return { ...s, captured, table: [], scores, summary: lines, phase: over ? 'matchOver' : 'roundOver' };
 }
 
-export const nextRound = (s: EscobaState): EscobaState => newRound(s.n, (s.dealer + 1) % s.n, s.scores, s.roundNo + 1);
+export const nextRound = (s: EscobaState): EscobaState => ({ ...newRound(s.n, (s.dealer + 1) % s.n, s.scores, s.roundNo + 1), players: s.players });
+
+export type EscobaAction = { k: 'play'; cardId: string; take: number[] } | { k: 'next' };
+/** Reductor para partidas en sala (solo mueve quien tiene el turno). */
+export function applyEscobaAction(s: EscobaState, pid: string, a: EscobaAction): EscobaState | null {
+  if (a.k === 'next') return s.phase === 'roundOver' ? nextRound(s) : null;
+  if (s.players && s.players[s.turn]?.id !== pid) return null;
+  return play(s, a.cardId, a.take);
+}
 
 export interface Move { cardId: string; take: number[] }
 

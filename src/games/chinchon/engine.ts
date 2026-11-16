@@ -58,7 +58,7 @@ export function arrange(hand: readonly SpanishCard[]): Arrangement {
   return { unmatched: res.v, groups, loose: hand.filter((_, i) => !(used & (1 << i))) };
 }
 
-export interface ChPlayer { id: string; name: string; human: boolean }
+export interface ChPlayer { id: string; name: string; human: boolean; /** Jugador de la sala (partida online). */ peerId?: string }
 export interface RoundRow { hand: SpanishCard[]; unmatched: number; delta: number; chinchon: boolean }
 
 export interface ChState {
@@ -209,4 +209,16 @@ export function botMove(s: ChState): ChMove {
   }
   if (bestU <= 5 || (bestU <= CLOSE_LIMIT && Math.random() < 0.5)) return { type: 'close', cardId: bestId };
   return { type: 'discard', cardId: bestId };
+}
+
+export type ChAction = { k: 'draw'; source: 'stock' | 'discard' } | { k: 'discard'; cardId: string } | { k: 'close'; cardId: string } | { k: 'next' };
+/** Reductor para partidas en sala (solo mueve quien tiene el turno). */
+export function applyChAction(s: ChState, pid: string, a: ChAction): ChState | null {
+  if (a.k === 'next') return s.phase === 'roundOver' ? nextRound(s) : null;
+  if (s.players[s.turn]?.id !== pid) return null;
+  switch (a.k) {
+    case 'draw': return drawFrom(s, a.source);
+    case 'discard': return discardCard(s, a.cardId);
+    case 'close': return closeRound(s, a.cardId);
+  }
 }

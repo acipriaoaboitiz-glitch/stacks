@@ -13,7 +13,7 @@ export const BRISCA_POWER: readonly SpanishRank[] = [1, 3, 12, 11, 10, 7, 6, 5, 
 export const points = (c: SpanishCard): number => BRISCA_POINTS[c.rank];
 export const power = (c: SpanishCard): number => BRISCA_POWER.indexOf(c.rank); // menor = más fuerte
 
-export interface BPlayer { id: string; name: string; human: boolean }
+export interface BPlayer { id: string; name: string; human: boolean; /** Jugador de la sala (partida online). */ peerId?: string }
 export interface Play { playerId: string; card: SpanishCard }
 
 export interface BriscaState {
@@ -114,11 +114,22 @@ export function getBriscaScores(s: BriscaState): BriscaScores {
 }
 
 /** Puntos de «mi lado» y del rival para decidir ganador (el humano es siempre el asiento 0). */
-export function sides(s: BriscaState): { mine: number; theirs: number } {
+export function sides(s: BriscaState): { mine: number; theirs: number } { return sidesFor(s, 'p0'); }
+
+/** Puntos de «mi lado» y del contrario desde el punto de vista del jugador `me`. */
+export function sidesFor(s: BriscaState, me: string): { mine: number; theirs: number } {
   const sc = getBriscaScores(s);
-  return sc.mode === 'teams'
-    ? { mine: sc.teamA.points, theirs: sc.teamB.points }
-    : { mine: sc.scores[0]!.points, theirs: sc.scores[1]!.points };
+  if (sc.mode === 'teams') return teamOf(s, me) === 0 ? { mine: sc.teamA.points, theirs: sc.teamB.points } : { mine: sc.teamB.points, theirs: sc.teamA.points };
+  const mine = sc.scores.find((x) => x.playerId === me) ?? sc.scores[0]!;
+  const other = sc.scores.find((x) => x.playerId !== mine.playerId)!;
+  return { mine: mine.points, theirs: other.points };
+}
+
+export type BriscaAction = { k: 'play'; cardId: string };
+/** Reductor para partidas en sala: devuelve null si la jugada no vale. */
+export function applyBriscaAction(s: BriscaState, pid: string, a: BriscaAction): BriscaState | null {
+  const next = playBriscaCard(s, pid, a.cardId);
+  return next === s ? null : next;
 }
 
 // ─── IA ──────────────────────────────────────────────────────────────────────────────────

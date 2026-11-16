@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { setActiveRoom } from '../../services/multiplayer.ts';
+import { playersBySeat, teamTableSize, useReplica, useSeating } from '../../services/onlineGame.ts';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
@@ -9,13 +11,13 @@ import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import { SUIT_LABEL, type SpanishCard, type SpanishSuit } from '../../engine/deck.ts';
 import { useT } from '../../i18n/index.ts';
-import { aiDelay, feedback } from '../../store/settings.ts';
+import { aiDelay, botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { points as briscaPts } from '../brisca/engine.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
-import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, briscaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
+import { useTapToPlay, Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, briscaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
-  botTute, declareTute, hasTute, legalCards, newTute, playTute, resolveTute, sing, singable, teamOf, teamPoints, winnerTeam, type TPlayer, type TuteState,
+  applyTuteAction, botTute, declareTute, hasTute, legalCards, newTute, playTute, resolveTute, sing, singable, teamOf, teamPoints, winnerTeam, type TPlayer, type TuteAction, type TuteState,
 } from './engine.ts';
 
 const WIN_BONUS = 100;
@@ -32,6 +34,8 @@ const makePlayers = (n: 2 | 4): TPlayer[] => Array.from({ length: n }, (_, i) =>
 export default function Tute() {
   const nav = useNavigate();
   const t = useT();
+  const seating = useSeating('tute');
+  const online = seating.online;
   const [params] = useSearchParams();
   const preset = params.get('mode') === '1v1' ? 2 : params.get('mode') === '2v2' ? 4 : null;
   const [count, setCount] = useState<2 | 4 | null>(preset);
@@ -39,16 +43,27 @@ export default function Tute() {
   const [bubbles, setBubbles] = useState<Record<string, Bubble | undefined>>({});
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
-  const lastSeq = useRef(0);
+  const lastSeq = useRef('');
   const paid = useRef(false);
+  const me = online ? s?.players.find((p) => p.peerId === seating.myPeerId)?.id ?? 'p0' : 'p0';
+  const hostLike = !online || seating.isHost;
 
-  const start = (n: 2 | 4) => { setCount(n); setS(newTute(makePlayers(n))); setBubbles({}); paid.current = false; lastSeq.current = 0; };
+  const start = (n: 2 | 4) => { setCount(n); setS(newTute(makePlayers(n))); setBubbles({}); paid.current = false; lastSeq.current = ''; };
+
+  // Online: el anfitrión reparte según los asientos de la sala (parejas 0+2 contra 1+3).
+  const hostStart = () => {
+    const n = teamTableSize(seating);
+    setS(newTute(playersBySeat(seating, n, (i) => (n === 2 ? 'Bot' : `Bot ${i}`)) as TPlayer[])); setBubbles({}); paid.current = false; lastSeq.current = '';
+  };
+  const noS = s === null;
+  useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
+  const { dispatch } = useReplica<TuteState, TuteAction>(seating, s, setS, applyTuteAction, (st, peer) => st.players.find((q) => q.peerId === peer)?.id ?? null);
 
   // IA: canta, anuncia Tute y juega con pausa natural; la baza completa se queda un momento en mesa.
   useEffect(() => {
-    if (!s) return;
+    if (!s || !hostLike) return;
     if (s.phase === 'trickDone') {
-      const timer = window.setTimeout(() => { feedback('trick'); setS((cur) => (cur ? resolveTute(cur) : cur)); }, aiDelay(1200));
+      const timer = window.setTimeout(() => { feedback('trick'); setS((cur) => (cur ? resolveTute(cur) : cur)); }, aiDelay(900));
       return () => window.clearTimeout(timer);
     }
     if (s.phase !== 'playing') return;
@@ -63,41 +78,52 @@ export default function Tute() {
         if (su) return sing(cur, p.id, su) ?? cur;
         return playTute(cur, p.id, botTute(cur, p.id)) ?? cur;
       });
-    }, aiDelay(900));
+    }, botDelay());
     return () => window.clearTimeout(timer);
-  }, [s]);
+  }, [s, hostLike]);
 
   useEffect(() => {
     const e = s?.event;
-    if (!s || !e || e.seq === lastSeq.current) return;
-    lastSeq.current = e.seq;
+    const key = `${e?.seq}:${e?.by}:${e?.text}`;
+    if (!s || !e || key === lastSeq.current) return;
+    lastSeq.current = key;
     if (e.text === '¡TUTE!') { feedback('win'); showCine('¡TUTE!', 'Cuatro reyes o cuatro caballos'); return; }
     if (/Canta/.test(e.text)) {
       feedback('win');
       const who = s.players.find((p) => p.id === e.by)!;
-      if (who.human) show(e.text.replace('Canta', 'Cantas')); else {
+      if (who.id === me) show(e.text.replace('Canta', 'Cantas')); else {
         const at = Date.now();
         setBubbles((b) => ({ ...b, [who.id]: { text: e.text, tone: 'bet', at } }));
         window.setTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 2200);
       }
     }
-  }, [s, show, showCine]);
+  }, [s, show, showCine, me]);
 
   useEffect(() => {
+    if (s?.phase === 'playing') paid.current = false;
     if (s?.phase !== 'finished' || paid.current) return;
     paid.current = true;
-    if (winnerTeam(s) === 0) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); feedback('win'); }
-  }, [s]);
+    if (winnerTeam(s) === teamOf(s, s.players.findIndex((p) => p.id === me))) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); feedback('win'); }
+  }, [s, me]);
 
   const played = s?.trick.length ?? 0;
   useEffect(() => { if (played > 0) feedback('deal'); }, [played]);
 
-  const legalIds = useMemo(() => new Set(s && s.phase === 'playing' && s.players[s.turn]!.human ? legalCards(s, 'p0').map((c) => c.id) : []), [s]);
+  const legalIds = useMemo(() => new Set(s && s.phase === 'playing' && s.players[s.turn]!.id === me ? legalCards(s, me).map((c) => c.id) : []), [s, me]);
   const play = useCallback((c: SpanishCard) => {
-    setS((cur) => (cur && cur.phase === 'playing' && cur.players[cur.turn]!.human ? playTute(cur, 'p0', c.id) ?? cur : cur));
-  }, []);
+    if (s && s.phase === 'playing' && s.players[s.turn]!.id === me) dispatch(me, { k: 'play', cardId: c.id });
+  }, [s, me, dispatch]);
+  const { sel, tap } = useTapToPlay(play);
 
-  if (!count || !s) {
+  if (!s && online) {
+    return (
+      <GameFrame gameId="tute" onExit={() => { setActiveRoom(null); nav('/'); }}
+        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">{t('g.tute.name')}</p>}
+        felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
+        bottom={null} />
+    );
+  }
+  if (!s || (!online && !count)) {
     return (
       <GameFrame
         gameId="tute"
@@ -118,19 +144,24 @@ export default function Tute() {
   }
 
   const n = s.players.length;
-  const slots = SLOT[count];
-  const slotOf = (id: string): Slot => slots[s.players.findIndex((p) => p.id === id)]!;
-  const myTurn = s.phase === 'playing' && s.players[s.turn]!.human;
-  const pts = teamPoints(s);
+  const slots = SLOT[n as 2 | 4];
+  const myIdx = Math.max(0, s.players.findIndex((p) => p.id === me));
+  const myTeam = teamOf(s, myIdx);
+  const slotOf = (id: string): Slot => slots[(s.players.findIndex((p) => p.id === id) - myIdx + n) % n]!;
+  const myTurn = s.phase === 'playing' && s.players[s.turn]!.id === me;
+  const rawPts = teamPoints(s);
+  const pts = myTeam === 0 ? rawPts : [rawPts[1]!, rawPts[0]!];
+  const myCantes = myTeam === 0 ? s.cantes : [s.cantes[1]!, s.cantes[0]!];
   const done = s.phase === 'finished';
   const wt = done ? winnerTeam(s) : null;
   const winnerSlot: Slot = s.lastWinner ? slotOf(s.lastWinner) : 'bottom';
   const seat = (slot: 'top' | 'left' | 'right') => {
-    const i = slots.indexOf(slot);
-    if (i === -1) return null;
+    const k = slots.indexOf(slot);
+    if (k === -1) return null;
+    const i = (myIdx + k) % n;
     const p = s.players[i]!;
     return (
-      <SeatBadge info={info(i, p.name)} tone={n === 4 ? (i % 2 === 0 ? 'us' : 'them') : 'them'} mano={false} turn={s.turn === i && s.phase === 'playing'} deadline={null}
+      <SeatBadge info={info(i, p.name)} tone={n === 4 ? (i % 2 === myIdx % 2 ? 'us' : 'them') : 'them'} mano={false} turn={s.turn === i && s.phase === 'playing'} deadline={null}
         cards={Math.min(s.hands[p.id]!.length, 8)} bubble={bubbles[p.id]} bubbleSide={slot === 'top' ? 'below' : slot === 'left' ? 'left' : 'right'} />
     );
   };
@@ -139,16 +170,16 @@ export default function Tute() {
     const sy = n === 4 ? 0.62 : 0.34;
     return { bottom: { x: 0, y: sy }, top: { x: 0, y: -sy }, right: { x: sx, y: 0 }, left: { x: -sx, y: 0 } }[slot];
   };
-  const sings = myTurn ? singable(s, 'p0') : [];
+  const sings = myTurn ? singable(s, me) : [];
   const pills: PillSpec[] = [
-    ...(myTurn && hasTute(s, 'p0') ? [{ id: 'tute', tone: 'gold' as const, label: '¡TUTE!', onPress: () => setS((cur) => (cur ? declareTute(cur, 'p0') ?? cur : cur)) }] : []),
+    ...(myTurn && hasTute(s, me) ? [{ id: 'tute', tone: 'gold' as const, label: '¡TUTE!', onPress: () => dispatch(me, { k: 'tute' }) }] : []),
     ...sings.map((su: SpanishSuit): PillSpec => ({
       id: `s-${su}`, tone: su === s.trumpSuit ? 'gold' : 'ok', label: `${su === s.trumpSuit ? t('a.sing40') : t('a.sing20')} · ${SUIT_LABEL[su]}`,
-      onPress: () => setS((cur) => (cur ? sing(cur, 'p0', su) ?? cur : cur)),
+      onPress: () => dispatch(me, { k: 'sing', suit: su }),
     })),
   ];
-  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? (legalIds.size < s.hands.p0!.length ? 'Tu turno: asiste, monta o falla' : 'Tu turno: toca una carta') : `Juega ${s.players[s.turn]!.name}…`;
-  const myTricks = s.tricks[0] ?? 0;
+  const status = done ? '' : s.phase === 'trickDone' ? 'Baza completa…' : myTurn ? (legalIds.size < s.hands[me]!.length ? 'Te toca: asiste, monta o falla' : 'Te toca: toca una carta dos veces para jugarla') : `Juega ${s.players[s.turn]!.name}…`;
+  const myTricks = s.tricks[myTeam] ?? 0;
 
   const felt = (
     <>
@@ -160,7 +191,7 @@ export default function Tute() {
             {s.trick.map((tp) => {
               const slot = slotOf(tp.playerId);
               const o = off(slot);
-              const human = s.players.find((p) => p.id === tp.playerId)!.human;
+              const human = tp.playerId === me;
               return (
                 <motion.div key={tp.card.id} className="absolute left-1/2 top-1/2" custom={winnerSlot} variants={trickVariants} exit="exit"
                   style={{ marginLeft: `calc(var(--card-w) * ${-0.36 + o.x})`, marginTop: `calc(var(--card-w) * ${-0.57 + o.y})`, zIndex: 2 }}
@@ -193,7 +224,7 @@ export default function Tute() {
     <>
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <TableAvatar name="Tú" tone="me" className="size-9 text-[15px]" />
+          <TableAvatar name="Tú" tone="me" active={myTurn} className="size-9 text-[15px]" />
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{t('g.you')}</b>
           <span className="rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{myTricks} bazas</span>
         </div>
@@ -202,20 +233,21 @@ export default function Tute() {
       <PillBar pills={pills} idle={pills.length === 0 ? status : undefined} />
       {pills.length > 0 && <p className="text-center text-[11px] text-stone-400">{status}</p>}
       <div className="flex items-end justify-center gap-[min(1.2vw,8px)] pt-[min(3.2dvh,24px)]" role="group" aria-label="Tu mano">
-        {s.hands.p0!.map((c, i, arr) => (
+        {s.hands[me]!.map((c, i, arr) => (
           <FaceCard key={c.id} card={c} scale={arr.length > 6 ? 0.66 : 0.8} layoutId={c.id} rotate={(i - (arr.length - 1) / 2) * 1.4}
-            dim={myTurn && !legalIds.has(c.id)} {...briscaDeco(c, s.trumpSuit)} onClick={myTurn && legalIds.has(c.id) ? () => play(c) : undefined} />
+            dim={myTurn && !legalIds.has(c.id)} selected={sel === c.id} {...briscaDeco(c, s.trumpSuit)} onClick={myTurn && legalIds.has(c.id) ? () => tap(c) : undefined} />
         ))}
       </div>
     </>
   );
 
-  const labels: [string, string] = n === 4 ? ['Nosotros', 'Ellos'] : ['Tú', 'Bot'];
+  const labels: [string, string] = n === 4 ? ['Nosotros', 'Ellos'] : ['Tú', online ? 'Rival' : 'Bot'];
   return (
     <GameFrame
       gameId="tute"
-      timer={{ active: myTurn, id: `${s.trick.length}:${s.hands.p0!.length}`, onTimeout: () => { const l = legalCards(s, 'p0'); const c = l[Math.floor(Math.random() * l.length)]; if (c) play(c); } }}
-      header={<ScorePair labels={labels} values={[pts[0]!, pts[1]!]} subs={[s.cantes[0] ? `cantes +${s.cantes[0]}` : null, s.cantes[1] ? `cantes +${s.cantes[1]}` : null]} />}
+      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      timer={{ active: myTurn, id: `${s.trick.length}:${s.hands[me]!.length}`, onTimeout: () => { const l = legalCards(s, me); const c = l[Math.floor(Math.random() * l.length)]; if (c) play(c); } }}
+      header={<ScorePair labels={labels} values={[pts[0]!, pts[1]!]} subs={[myCantes[0] ? `cantes +${myCantes[0]}` : null, myCantes[1] ? `cantes +${myCantes[1]}` : null]} />}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -224,18 +256,19 @@ export default function Tute() {
           <AnimatePresence>
             {done && (
               <ResultOverlay
-                title={wt === null ? 'Empate' : wt === 0 ? t('g.win') : t('g.lose')}
+                title={wt === null ? 'Empate' : wt === myTeam ? t('g.win') : t('g.lose')}
                 actions={[
-                  { label: t('a.rematch'), primary: true, onClick: () => start(count) },
-                  { label: t('a.format'), onClick: () => { setCount(null); setS(null); } },
-                  { label: t('a.lobby'), onClick: () => nav('/') },
+                  ...(online
+                    ? hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []
+                    : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }, { label: t('a.format'), onClick: () => { setCount(null); setS(null); } }]),
+                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
                 ]}
               >
                 <ScorePair labels={labels} values={[pts[0]!, pts[1]!]} />
                 <p className="mt-2 text-center text-[12px] text-stone-400">
                   {s.tuteTeam !== null ? '¡Tute! Gana la partida.' : `Cartas ${s.tricks.map((_, tm) => s.players.reduce((a, p, i) => (teamOf(s, i) === tm ? a + s.won[p.id]!.reduce((x, c) => x + briscaPts(c), 0) : a), 0)).join(' · ')} · cantes ${s.cantes.join(' · ')} · +10 de últimas`}
                 </p>
-                {wt === 0 && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                {wt === myTeam && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
               </ResultOverlay>
             )}
           </AnimatePresence>

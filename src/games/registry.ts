@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Crown, Diamond, Flame, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
+import { Crown, Diamond, Flame, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
 
 export type GameCategory = 'espanola' | 'francesa' | 'familiar';
 
@@ -101,6 +101,17 @@ export const GAMES: GameInfo[] = [
       '«Salta» quita el turno al siguiente, «+2» y «+4» le hacen robar y perder el turno, y el sentido se invierte con «Cambio».',
       'El comodín elige color; el «+4» solo se puede jugar si no tienes cartas del color en juego. Sin jugada, robas una.',
       'Gana quien se queda sin cartas. Al quedarte con una, se canta «¡UNO!».',
+    ],
+  },
+  {
+    id: 'presidente', name: 'El Presidente', tagline: 'De mendigo a rey de la mesa', category: 'familiar', deck: 'fr', players: '3–6 jugadores',
+    icon: Landmark, route: '/play/presidente', playable: true, accent: '#d4af37', tint: ['#2e2608', '#0d1a12'],
+    rules: [
+      'Se reparten todas las cartas (baraja española de 40 o inglesa de 52). De menor a mayor: 3, 4, 5, 6, 7, Sota, Caballo, Rey, As y 2.',
+      'Empieza quien tiene el 3 de oros (o de tréboles). Se juega una carta, una pareja, un trío o un póker del mismo valor.',
+      'El siguiente jugador debe superar el valor con la misma cantidad de cartas, o pasar. Un 2 suelto corta cualquier jugada.',
+      'Si todos pasan o alguien corta con un 2, se limpia la mesa y vuelve a salir quien ganó la baza.',
+      'Quien se queda sin cartas el primero es Presidente; el último, Mendigo. En la ronda siguiente el Mendigo entrega sus 2 mejores cartas al Presidente, que le devuelve 2 a su elección.',
     ],
   },
 ];

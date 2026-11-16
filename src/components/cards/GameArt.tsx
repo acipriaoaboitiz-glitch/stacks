@@ -18,6 +18,7 @@ const ART: Record<string, { cards: Piece[]; chips?: { v: 1 | 5 | 25 | 100 | 500;
   tute: { cards: [{ src: es('12-bastos'), x: -40, y: 8, r: -12 }, { src: es('11-bastos'), x: 0, y: -2, r: 0 }, { src: es('01-oros'), x: 40, y: 8, r: 12 }] },
   blackjack: { cards: [{ src: fr('ace_of_spades'), x: -34, y: 4, r: -10 }, { src: fr('king_of_hearts'), x: 34, y: 0, r: 10 }], chips: [{ v: 100, x: -64, y: 66 }, { v: 25, x: -38, y: 76 }, { v: 500, x: 64, y: 70 }] },
   poker: { cards: [{ src: fr('ace_of_spades'), x: -68, y: 14, r: -20 }, { src: fr('ace_of_hearts'), x: -34, y: 2, r: -9 }, { src: fr('king_of_spades'), x: 0, y: -4, r: 0 }, { src: fr('queen_of_spades'), x: 34, y: 2, r: 9 }, { src: fr('jack_of_spades'), x: 68, y: 14, r: 20 }], chips: [{ v: 500, x: 0, y: 78 }] },
+  presidente: { cards: [{ src: fr('2_of_spades'), x: -60, y: 14, r: -20 }, { src: fr('king_of_hearts'), x: -20, y: 2, r: -7 }, { src: fr('ace_of_spades'), x: 20, y: 2, r: 8 }, { src: fr('2_of_hearts'), x: 60, y: 14, r: 22 }] },
   uno: { cards: [{ uno: U('red', 'num', 7), x: -58, y: 12, r: -20 }, { uno: U('blue', 'draw2'), x: -20, y: 0, r: -6 }, { uno: U('wild', 'wild4'), x: 20, y: 0, r: 8 }, { uno: U('green', 'reverse'), x: 58, y: 12, r: 22 }] },
 };
 
@@ -25,7 +26,7 @@ const ART: Record<string, { cards: Piece[]; chips?: { v: 1 | 5 | 25 | 100 | 500;
 export function GameArt({ id, size = 150 }: { id: string; size?: number }) {
   const art = ART[id] ?? ART.mus!;
   const k = size / 150;
-  const french = id === 'blackjack' || id === 'poker';
+  const french = id === 'blackjack' || id === 'poker' || id === 'presidente';
   const w = (french ? 62 : 56) * k;
   const h = w * (french ? 1.452 : 1.583);
   const card = (p: Piece, i: number) => {
