@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Globe, Play, Users, X } from 'lucide-react';
@@ -108,12 +108,30 @@ export default function Home() {
     return a && b ? b.offsetLeft - a.offsetLeft : el.clientWidth;
   };
   // El scroll nativo con snap lo gestiona el navegador (GPU); aquí solo se averigua qué tarjeta queda centrada.
+  const cards = useRef<(HTMLDivElement | null)[]>([]);
+  /** Efecto de profundidad tipo anillo: giro, escala y brillo según la distancia al centro. Solo transform/opacity, sin re-render. */
+  const applyFx = useCallback(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const step = stepOf(el);
+    const pos = el.scrollLeft / step;
+    cards.current.forEach((c, i) => {
+      if (!c) return;
+      const d = Math.max(-2, Math.min(2, i - pos));
+      const a = Math.abs(d);
+      c.style.transform = `perspective(900px) translateZ(${-a * 70}px) rotateY(${-d * 38}deg) scale(${1 - a * 0.06})`;
+      c.style.opacity = String(Math.max(0.25, 1 - a * 0.32));
+      c.style.zIndex = String(10 - Math.round(a));
+    });
+  }, []);
+  useEffect(() => { applyFx(); window.addEventListener('resize', applyFx); return () => window.removeEventListener('resize', applyFx); }, [applyFx]);
   const onScroll = useCallback(() => {
     const el = scroller.current;
     if (!el) return;
+    applyFx();
     const i = Math.max(0, Math.min(N - 1, Math.round(el.scrollLeft / stepOf(el))));
     setCur((c) => (c === i ? c : i));
-  }, [N]);
+  }, [N, applyFx]);
   const goTo = useCallback((i: number) => {
     const el = scroller.current;
     if (!el) return;
@@ -140,11 +158,17 @@ export default function Home() {
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
         <div className="relative z-10 w-full" style={{ height: 'min(44dvh, 370px)' }}>
           <div ref={scroller} onScroll={onScroll} role="group" aria-label="Juegos"
-            className="no-scrollbar flex h-full snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain]">
+            className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain]">
             {GAMES.map((g, i) => (
-              <div key={g.id} className={`h-full w-[min(62vw,240px)] shrink-0 snap-center transition-[opacity,transform] duration-150 will-change-transform ${i === cur ? 'opacity-100' : 'scale-95 opacity-65'}`}
+              <div key={g.id} ref={(n) => { cards.current[i] = n; }}
+                className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform"
                 role="group" aria-label={t(`g.${g.id}.name`)} aria-current={i === cur} onClick={() => { if (i !== cur) { feedback('tap'); goTo(i); } }}>
-                <Slide game={g} active={i === cur} />
+                <div className="h-full w-full rounded-[28px] transition-shadow duration-200"
+                  style={{ boxShadow: i === cur ? `0 0 0 1px ${g.accent}aa, 0 14px 34px rgba(0,0,0,.55), 0 0 30px ${g.accent}44` : '0 8px 18px rgba(0,0,0,.5)' }}>
+                  <Slide game={g} active={i === cur} />
+                </div>
+                {/* brillo de cristal sobre la tarjeta activa */}
+                {i === cur && <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[28px]" style={{ background: 'linear-gradient(115deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 38%, rgba(255,255,255,0) 70%, rgba(255,255,255,.07) 100%)' }} />}
               </div>
             ))}
           </div>
