@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ClubStacks">
+  <defs>
+    <radialGradient id="bg1" cx="30%" cy="22%" r="95%"><stop offset="0" stop-color="#0B1F17"/><stop offset="1" stop-color="#06120D"/></radialGradient>
+    <linearGradient id="gold1" x1="12%" y1="8%" x2="88%" y2="94%"><stop offset="0" stop-color="#FBE08A"/><stop offset=".35" stop-color="#F5D061"/><stop offset=".62" stop-color="#D4AF37"/><stop offset="1" stop-color="#9A741B"/></linearGradient>
+    <linearGradient id="card1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9E4D2"/></linearGradient>
+    <linearGradient id="shine1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF6CF" stop-opacity=".9"/><stop offset="1" stop-color="#FFF6CF" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg1)"/>
+  <rect x="10" y="10" width="492" height="492" rx="102" fill="none" stroke="url(#gold1)" stroke-width="5" opacity=".55"/>
+  <g transform="rotate(-15 256 300)"><rect x="144" y="92" width="170" height="240" rx="22" fill="url(#card1)" stroke="url(#gold1)" stroke-width="7"/><rect x="162" y="110" width="134" height="204" rx="12" fill="none" stroke="#D4AF37" stroke-width="3" opacity=".45"/></g>
+  <g transform="rotate(15 256 300)"><rect x="198" y="92" width="170" height="240" rx="22" fill="url(#card1)" stroke="url(#gold1)" stroke-width="7"/><rect x="216" y="110" width="134" height="204" rx="12" fill="none" stroke="#D4AF37" stroke-width="3" opacity=".45"/></g>
+  <circle cx="256" cy="290" r="150" fill="#06120D" opacity=".86"/>
+  <circle cx="256" cy="290" r="150" fill="none" stroke="url(#gold1)" stroke-width="5"/>
+  <path d="M338 214 C338 160 174 160 174 232 C174 304 338 276 338 348 C338 418 174 410 174 358" fill="none" stroke="#6E4E0E" stroke-width="58" stroke-linecap="round" transform="translate(5 7)" opacity=".7"/>
+  <path d="M338 214 C338 160 174 160 174 232 C174 304 338 276 338 348 C338 418 174 410 174 358" fill="none" stroke="url(#gold1)" stroke-width="54" stroke-linecap="round"/>
+  <path d="M338 214 C338 160 174 160 174 232 C174 304 338 276 338 348 C338 418 174 410 174 358" fill="none" stroke="url(#shine1)" stroke-width="12" stroke-linecap="round" transform="translate(-9 -9)" opacity=".7"/>
+</svg>
