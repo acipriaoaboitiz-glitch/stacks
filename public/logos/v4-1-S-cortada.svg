@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="STACKS">
+  <defs>
+    <clipPath id="sq"><path d="M0 256C0 38 38 0 256 0S512 38 512 256 474 512 256 512 0 474 0 256Z"/></clipPath>
+    <clipPath id="low"><polygon points="0,338 512,226 512,512 0,512"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14402F"/><stop offset="1" stop-color="#050E0A"/></linearGradient>
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="150" y1="130" x2="370" y2="390"><stop offset="0" stop-color="#FBE08A"/><stop offset=".45" stop-color="#F5D061"/><stop offset=".78" stop-color="#D4AF37"/><stop offset="1" stop-color="#9A741B"/></linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <path id="s" d="M352 168H218Q166 168 166 222Q166 276 218 276H294Q346 276 346 330Q346 384 294 384H160" fill="none" stroke-width="56" stroke-linejoin="round"/>
+  </defs>
+  <g clip-path="url(#sq)">
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <rect width="512" height="250" fill="url(#gloss)"/>
+    <use href="#s" stroke="#4A3308" opacity=".5" transform="translate(6 12)"/>
+    <use href="#s" stroke="url(#gold)"/>
+    <g clip-path="url(#low)"><use href="#s" stroke="#6B4B0C" opacity=".55"/></g>
+    <line x1="120" y1="350" x2="392" y2="244" stroke="#0A241A" stroke-width="9" stroke-linecap="round"/>
+    <line x1="120" y1="344" x2="392" y2="238" stroke="#FBE08A" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+  </g>
+  <path d="M0 256C0 38 38 0 256 0S512 38 512 256 474 512 256 512 0 474 0 256Z" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width="3"/>
+</svg>
