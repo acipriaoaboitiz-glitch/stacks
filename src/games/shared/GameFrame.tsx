@@ -3,6 +3,8 @@ import { feedback } from '../../store/settings.ts';
 import { getActiveRoom, useRoom } from '../../services/multiplayer.ts';
 import { useWallet } from '../../store/wallet.ts';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { subscribeJuice, type Callout } from '../../services/juice.ts';
 import '../mus/app/mus.css';
 import { Toaster } from '../mus/app/components/ui.tsx';
 import { GameSettingsProvider } from '../mus/app/lib/settings.tsx';
@@ -52,11 +54,19 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
   const [settings, setSettings] = useState(false);
   const [rules, setRules] = useState(false);
   const [emote, setEmote] = useState<string | null>(null);
+  // Game Feel: temblor de mesa (250 ms) y textos de impacto, disparados desde `juice` por cualquier juego.
+  const [shaking, setShaking] = useState(false);
+  const [callouts, setCallouts] = useState<Callout[]>([]);
+  const shakeTimer = useRef<number | null>(null);
+  useEffect(() => subscribeJuice({
+    onShake: () => { setShaking(false); window.requestAnimationFrame(() => setShaking(true)); if (shakeTimer.current) window.clearTimeout(shakeTimer.current); shakeTimer.current = window.setTimeout(() => setShaking(false), 280); },
+    onCallout: (c) => { setCallouts((cur) => [...cur.slice(-1), c]); window.setTimeout(() => setCallouts((cur) => cur.filter((x) => x.id !== c.id)), 1100); },
+  }), []);
   // Reacciones compartidas: en una sala de este juego se envían a todos y se ven las de los demás.
   const activeRoom = getActiveRoom();
   const room = activeRoom && activeRoom.gameId === gameId ? activeRoom : null;
   const roomSnap = useRoom(room);
-  const myName = useWallet().name;
+  const { name: myName, winStreak } = useWallet();
   const others = (roomSnap?.reactions ?? []).filter((r) => r.name !== myName);
   const emoteTimer = useRef<number | null>(null);
   const sendEmote = (text: string) => {
@@ -83,7 +93,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
     <div className="musapp">
       <div className="app">
         <main
-          className="relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100"
+          className={`relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden ${shaking ? 'animate-shake' : ''} pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100`}
           style={{ '--card-w': 'min(19vw,10.2dvh,118px)' } as CSSProperties}
         >
           <div className="mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
@@ -105,10 +115,22 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
                   <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>
                 ))}
               </div>
+              {winStreak >= 2 && <span className="pointer-events-none absolute right-2 top-2 z-20 rounded-full border border-orange-300/50 bg-orange-950/90 px-2.5 py-1 text-[11px] font-extrabold text-orange-200">🔥 Racha x{winStreak}</span>}
+              <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center" aria-live="assertive">
+                <AnimatePresence>
+                  {callouts.map((c) => (
+                    <motion.div key={c.id} className={`absolute px-3 text-center font-[var(--font-display)] text-[clamp(30px,10vw,52px)] font-black leading-none will-change-transform ${c.tone === 'red' ? 'text-red-400' : c.tone === 'neon' ? 'text-cyan-300' : 'text-amber-300'}`}
+                      style={{ textShadow: '0 3px 0 rgba(0,0,0,.7), 0 0 18px currentColor' }}
+                      initial={{ scale: 0.3, opacity: 0, y: 20 }} animate={{ scale: [0.3, 1.18, 1], opacity: 1, y: 0 }} exit={{ scale: 1.15, opacity: 0, y: -24 }}
+                      transition={{ duration: 0.28, ease: 'easeOut' }}>{c.text}</motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
               <ReactionButton onSend={sendEmote} />
             </section>
             <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<EmoteBubble text={emote} /></section>
           </div>
+          {timer?.active && <div aria-hidden className="turn-glow pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20" style={{ background: 'linear-gradient(to top, rgba(240,195,95,.5), transparent)' }} />}
           {overlays}
         </main>
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { playersBySeat, teamTableSize, useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
@@ -80,6 +81,7 @@ export default function Brisca() {
       if (lastShown.current !== key) {
         lastShown.current = key;
         feedback('trick');
+        if (ev.points >= 10) juice.points(`+${ev.points}`, 'gold');
         if (ev.points > 0) {
           show(`+${ev.points} PUNTOS`);
           const at = Date.now();
@@ -106,7 +108,7 @@ export default function Brisca() {
     if (s?.phase !== 'finished' || paidRef.current) return;
     paidRef.current = true;
     const { mine, theirs } = sidesFor(s, me);
-    if (mine > theirs) { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+    if (mine > theirs) { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
   }, [s, showCine, me]);
 
   const played = s?.currentTrick.length ?? 0;
@@ -258,6 +260,9 @@ export default function Brisca() {
           <AnimatePresence>
             {done && (
               <ResultOverlay
+                outcome={mine === theirs ? undefined : mine > theirs ? 'win' : 'lose'}
+                prize={WIN_BONUS}
+                taunt={Math.abs(mine - theirs) < 10 ? 'Por los pelos' : 'Te arrastraron las bazas'}
                 title={mine > theirs ? '¡Ganas la partida!' : mine < theirs ? 'Pierdes la partida' : 'Empate a 60'}
                 actions={[
                   ...(online

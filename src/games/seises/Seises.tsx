@@ -9,6 +9,7 @@ import type { SeatInfo } from '../mus/app/game/types.ts';
 import { SPANISH_SUITS, SUIT_LABEL, type AnyCard, type SpanishCard, type SpanishSuit } from '../../engine/deck.ts';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { useT } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
@@ -116,7 +117,8 @@ export default function Seises() {
     const key = `${e?.seq}:${e?.by}`;
     if (!s || !e || key === lastEv.current) return;
     lastEv.current = key;
-    if (e.by === myIdx) { if (e.kind === 'out') feedback('win'); return; }
+    if (e.kind === 'out') juice.impact(e.by === myIdx ? '¡SIN CARTAS! −10' : `${nm(e.by)} · −10`, e.by === myIdx ? 'gold' : 'neon');
+    if (e.by === myIdx) return;
     const at = Date.now();
     setBubbles((b) => ({ ...b, [e.by]: { text: e.kind === 'out' ? '¡Sin cartas!' : e.text, tone: e.kind === 'out' ? 'good' : 'neutral', at } }));
     window.setTimeout(() => setBubbles((b) => (b[e.by]?.at === at ? { ...b, [e.by]: undefined } : b)), 1500);
@@ -125,7 +127,7 @@ export default function Seises() {
     if (s && s.phase === 'playing') paid.current = false;
     if (!s || s.phase !== 'gameOver' || paid.current) return;
     paid.current = true;
-    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('seises'); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('seises'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
   }, [s, myIdx, showCine]);
 
   // Un solo toque en una carta jugable la lanza a la mesa.
@@ -242,6 +244,9 @@ export default function Seises() {
           <AnimatePresence>
             {(s.phase === 'roundOver' || over) && s.lines && (
               <ResultOverlay
+                outcome={over ? (s.winner === myIdx ? 'win' : 'lose') : undefined}
+                prize={WIN_BONUS}
+                taunt="Se te fueron los puntos"
                 title={over ? (s.winner === myIdx ? t('g.win') : `Gana ${nm(s.winner ?? 0)}`) : s.roundWinner === myIdx ? '¡Ganas la ronda!' : `Gana la ronda ${nm(s.roundWinner ?? 0)}`}
                 actions={[
                   ...(over

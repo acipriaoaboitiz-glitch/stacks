@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
@@ -111,7 +112,10 @@ export default function Uno() {
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
     const who = s.players.find((p) => p.id === e.by)!;
-    feedback(e.kind === 'uno' ? 'win' : e.kind === 'draw' ? 'thud' : 'deal');
+    if (e.kind === 'uno') juice.callout('¡UNO!', 'neon');
+    if (e.kind === 'draw') juice.impact(e.text.includes('+4') ? '+4' : e.text.includes('+2') ? '+2' : undefined, 'red');
+    else if (e.text === 'Roba una carta') feedback('draw');
+    else feedback(e.kind === 'uno' ? 'trick' : 'deal');
     if (who.id === me) show(e.text);
     else {
       const at = Date.now();
@@ -125,7 +129,7 @@ export default function Uno() {
     if (s && !s.winner) paid.current = false;
     if (!s?.winner || paid.current) return;
     paid.current = true;
-    if (s.winner === me) { wallet.add(WIN_BONUS); wallet.recordWin('uno'); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+    if (s.winner === me) { wallet.add(WIN_BONUS); wallet.recordWin('uno'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
   }, [s, showCine, me]);
 
   const myHand = s?.hands[me] ?? [];
@@ -304,6 +308,9 @@ export default function Uno() {
           <AnimatePresence>
             {winner && (
               <ResultOverlay
+                outcome={winner.id === me ? 'win' : 'lose'}
+                prize={WIN_BONUS}
+                taunt={myHand.length <= 2 ? 'Por los pelos' : 'Te comiste el +4'}
                 title={winner.id === me ? '¡Has ganado!' : `Gana ${winner.name}`}
                 actions={[
                   ...(online

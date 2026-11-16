@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
@@ -79,7 +80,8 @@ export default function Presidente() {
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
     const who = s.players.find((p) => p.id === e.by);
-    feedback(e.kind === 'clear' ? 'trick' : e.kind === 'out' ? 'win' : 'deal');
+    if (e.text === '¡Corta con un 2!') juice.impact('¡LIMPIA MESA!', 'gold');
+    else feedback(e.kind === 'clear' ? 'trick' : e.kind === 'out' ? 'chip' : 'deal');
     if (!who) return;
     if (who.id === me) { if (e.kind !== 'info' || e.text !== 'Pasa') show(e.text); return; }
     const at = Date.now();
@@ -95,7 +97,7 @@ export default function Presidente() {
     const r = roleOf(s, me);
     if (!r) return;
     if (ROLE_PRIZE[r] > 0) wallet.add(ROLE_PRIZE[r]);
-    if (r === 'presidente') { wallet.recordWin('presidente'); feedback('win'); showCine('¡PRESIDENTE!', `+${ROLE_PRIZE[r]} fichas`); }
+    if (r === 'presidente') { wallet.recordWin('presidente'); showCine('¡PRESIDENTE!', `+${ROLE_PRIZE[r]} fichas`); }
   }, [s, showCine, me]);
 
   if (!s && online) {
@@ -264,6 +266,9 @@ export default function Presidente() {
           <AnimatePresence>
             {s.phase === 'done' && (
               <ResultOverlay
+                outcome={myRole === 'presidente' ? 'win' : myRole === 'mendigo' ? 'lose' : undefined}
+                prize={myRole ? ROLE_PRIZE[myRole] : 0}
+                taunt="Te han dejado de Mendigo"
                 title={myRole === 'presidente' ? '¡Eres el Presidente!' : myRole === 'mendigo' ? 'Te toca ser el Mendigo' : `Has quedado ${ROLE_NAME[myRole ?? 'pueblo']}`}
                 actions={[
                   ...(hostLike ? [{ label: 'Siguiente ronda', primary: true, onClick: nextRound }] : []),

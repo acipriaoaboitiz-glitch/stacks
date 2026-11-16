@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { playersBySeat, teamTableSize, useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
@@ -87,9 +88,9 @@ export default function Tute() {
     const key = `${e?.seq}:${e?.by}:${e?.text}`;
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
-    if (e.text === '¡TUTE!') { feedback('win'); showCine('¡TUTE!', 'Cuatro reyes o cuatro caballos'); return; }
+    if (e.text === '¡TUTE!') { juice.impact(); showCine('¡TUTE!', 'Cuatro reyes o cuatro caballos'); return; }
     if (/Canta/.test(e.text)) {
-      feedback('win');
+      juice.points(e.text.replace('Canta', '¡Canta'), 'gold');
       const who = s.players.find((p) => p.id === e.by)!;
       if (who.id === me) show(e.text.replace('Canta', 'Cantas')); else {
         const at = Date.now();
@@ -103,7 +104,7 @@ export default function Tute() {
     if (s?.phase === 'playing') paid.current = false;
     if (s?.phase !== 'finished' || paid.current) return;
     paid.current = true;
-    if (winnerTeam(s) === teamOf(s, s.players.findIndex((p) => p.id === me))) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); feedback('win'); }
+    if (winnerTeam(s) === teamOf(s, s.players.findIndex((p) => p.id === me))) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); }
   }, [s, me]);
 
   const played = s?.trick.length ?? 0;
@@ -261,6 +262,9 @@ export default function Tute() {
           <AnimatePresence>
             {done && (
               <ResultOverlay
+                outcome={wt === null ? undefined : wt === myTeam ? 'win' : 'lose'}
+                prize={WIN_BONUS}
+                taunt="Te han cantado las cuarenta"
                 title={wt === null ? 'Empate' : wt === myTeam ? t('g.win') : t('g.lose')}
                 actions={[
                   ...(online

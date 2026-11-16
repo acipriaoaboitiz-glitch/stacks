@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CASINO_VALUES, CasinoChip, ChipPile } from '../../components/cards/CasinoChip.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
@@ -158,12 +159,12 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   useEffect(() => {
     if (s.phase === 'handOver' && s.result) {
       const mine = s.result.wins.find((w) => w.seat === myIdx);
-      if (mine) { feedback('win'); show(`+${mine.amount} ${mine.hand ? `· ${mine.hand}` : ''}`); }
+      if (mine) { juice.points(`+${mine.amount}`, 'gold'); show(`+${mine.amount} ${mine.hand ? `· ${mine.hand}` : ''}`); }
     }
     if (s.phase === 'betting') paid.current = false;
     if (s.phase === 'gameOver' && !paid.current) {
       paid.current = true;
-      if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('poker'); feedback('win'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
+      if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('poker'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
     }
   }, [s.phase, s.result, s.winner, show, showCine, myIdx]);
 
@@ -295,6 +296,9 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
           <AnimatePresence>
             {over && (
               <ResultOverlay
+                outcome={s.winner === myIdx ? 'win' : 'lose'}
+                prize={WIN_BONUS}
+                taunt="Te han dejado sin fichas"
                 title={s.winner === myIdx ? t('g.win') : `Gana ${nm(s.winner ?? 0)}`}
                 actions={[...(hostLike ? [{ label: t('a.rematch'), primary: true, onClick: () => { paid.current = false; restart(); } }] : []), { label: t('a.lobby'), onClick: exit }]}
               >

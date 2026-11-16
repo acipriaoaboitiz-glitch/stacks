@@ -7,7 +7,8 @@ import { Button } from '../mus/app/components/ui.tsx';
 import { CINE, type PhaseCine } from '../mus/app/game/useTableDirector.ts';
 import { CardBackArt, FrenchFace } from '../../components/cards/FrenchFace.tsx';
 import type { AnyCard, SpanishCard, SpanishSuit } from '../../engine/deck.ts';
-import { CARD_EASE, FAST_EASE, useSettings } from '../../store/settings.ts';
+import { CARD_EASE, FAST_EASE, feedback, useSettings } from '../../store/settings.ts';
+import { wallet } from '../../store/wallet.ts';
 import { points as briscaPoints } from '../brisca/engine.ts';
 import { escobaValue } from '../escoba/engine.ts';
 
@@ -188,19 +189,71 @@ export function useCine(): { cine: PhaseCine | null; show: (title: string, subti
 export { PhaseCinematic };
 
 // ─── Resultado ───────────────────────────────────────────────────────────────────────────────────
-export function ResultOverlay({ title, children, actions }: {
+const CONFETTI_COLORS = ['#f0c35f', '#fde68a', '#f59e0b', '#34d399', '#f472b6', '#60a5fa'];
+/** 45 partículas como máximo, animadas con CSS (transform): ligeras incluso en móviles modestos. */
+const CONFETTI = Array.from({ length: 42 }, (_, i) => ({
+  left: (i * 37) % 100, dx: ((i * 53) % 120) - 60, rot: 180 + ((i * 71) % 540), dur: 1.6 + ((i * 13) % 14) / 10, delay: ((i * 7) % 12) / 20, color: CONFETTI_COLORS[i % CONFETTI_COLORS.length]!,
+}));
+const DROPS = Array.from({ length: 6 }, (_, i) => ({ left: 8 + i * 16, r0: -20 + i * 9, r1: 160 + i * 40, dur: 1.5 + (i % 3) * 0.3, delay: i * 0.12 }));
+
+/** Número que sube de 0 al premio con tintineo de fichas. */
+function useCountUp(target: number): number {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (target <= 0) return;
+    const t0 = performance.now();
+    const dur = 900;
+    let raf = 0;
+    let ticks = 0;
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / dur);
+      setV(Math.round(target * (1 - (1 - k) ** 3)));
+      if (Math.floor(k * 7) > ticks) { ticks = Math.floor(k * 7); feedback('chip'); }
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return v;
+}
+
+export function ResultOverlay({ title, children, actions, outcome, prize = 0, taunt }: {
   title: string; children?: ReactNode; actions: { label: string; onClick: () => void; primary?: boolean }[];
+  /** Fin de partida: «win» lanza confeti y el premio sube desde 0; «lose» destello rojo, cartas cayendo y un mensaje con guasa. */
+  outcome?: 'win' | 'lose'; prize?: number; taunt?: string;
 }) {
+  const shown = useCountUp(outcome === 'win' ? prize : 0);
+  useEffect(() => {
+    if (!outcome) return;
+    wallet.recordResult(outcome === 'win');
+    feedback(outcome === 'win' ? 'win' : 'defeat');
+  }, [outcome]);
+  const win = outcome === 'win';
   return (
     <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {win && <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">{CONFETTI.map((c, i) => (
+        <span key={i} className="confetti" style={{ left: `${c.left}%`, background: c.color, ['--dx' as string]: `${c.dx}px`, ['--rot' as string]: `${c.rot}deg`, ['--dur' as string]: `${c.dur}s`, ['--delay' as string]: `${c.delay}s` }} />
+      ))}</div>}
+      {outcome === 'lose' && <>
+        <div aria-hidden className="red-flash pointer-events-none absolute inset-0" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">{DROPS.map((d, i) => (
+          <span key={i} className="card-drop" style={{ left: `${d.left}%`, ['--r0' as string]: `${d.r0}deg`, ['--r1' as string]: `${d.r1}deg`, ['--dur' as string]: `${d.dur}s`, ['--delay' as string]: `${d.delay}s` }} />
+        ))}</div>
+      </>}
       <motion.div role="dialog" aria-modal="true" aria-label={title}
-        className="w-full max-w-sm rounded-3xl border border-amber-200/20 bg-zinc-900/90 p-5 shadow-[0_20px_60px_rgba(0,0,0,.6)]"
-        initial={{ scale: 0.92, y: 18 }} animate={{ scale: 1, y: 0 }}>
-        <h2 className="mb-3 text-center font-[var(--font-display)] text-2xl font-bold text-amber-300">{title}</h2>
+        className={`relative w-full max-w-sm rounded-3xl border bg-zinc-900/95 p-5 ${win ? 'border-amber-300/50' : outcome === 'lose' ? 'border-red-400/40' : 'border-amber-200/20'}`}
+        initial={{ scale: 0.8, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 380, damping: 24 }}>
+        <h2 className={`mb-1 text-center font-[var(--font-display)] text-2xl font-bold ${outcome === 'lose' ? 'text-red-300' : 'text-amber-300'}`}>{title}</h2>
+        {outcome === 'lose' && taunt && <p className="mb-3 text-center text-[13px] font-semibold text-red-200/90">{taunt}</p>}
+        {win && prize > 0 && (
+          <p className="mb-3 text-center font-mono text-3xl font-black tabular-nums text-amber-300" aria-label={`${prize} fichas ganadas`}>+{shown} <span className="text-base font-bold text-amber-200/80">fichas</span></p>
+        )}
         {children}
         <div className="mt-4 grid gap-2">
           {actions.map((a) => (
-            <Button key={a.label} variant={a.primary ? 'primary' : 'secondary'} block onClick={a.onClick}>{a.label}</Button>
+            <div key={a.label} className={a.primary && outcome ? 'cta-pulse' : ''}>
+              <Button variant={a.primary ? 'primary' : 'secondary'} block onClick={a.onClick}>{outcome && a.primary ? (win ? '¡Revancha!' : 'Revancha rápida') : a.label}</Button>
+            </div>
           ))}
         </div>
       </motion.div>

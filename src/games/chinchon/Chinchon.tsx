@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
@@ -78,9 +79,9 @@ export default function Chinchon() {
     const key = `${e?.seq}:${e?.text}`;
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
-    if (/CHINCH/.test(e.text)) { feedback('win'); showCine('¡CHINCHÓN!', '−10 puntos'); }
+    if (/CHINCH/.test(e.text)) { juice.impact(); showCine('¡CHINCHÓN!', '−25 puntos'); }
     else if (/anulada/.test(e.text)) show(e.text);
-    else if (/Cierra/.test(e.text)) { feedback('thud'); show(`${s.closer === myIdx ? 'Cierras' : `${nm(s.closer ?? 0)} cierra`} la ronda`); }
+    else if (/Cierra/.test(e.text)) { juice.impact('¡CIERRE! −10', 'neon'); show(`${s.closer === myIdx ? 'Cierras' : `${nm(s.closer ?? 0)} cierra`} la ronda`); }
     else feedback('deal');
   }, [s, show, showCine, myIdx]);
 
@@ -88,7 +89,7 @@ export default function Chinchon() {
     if (s && s.phase !== 'gameOver') paid.current = false;
     if (s?.phase !== 'gameOver' || paid.current) return;
     paid.current = true;
-    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('chinchon'); feedback('win'); }
+    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('chinchon'); }
   }, [s, myIdx]);
 
   const hand = s?.hands[myIdx] ?? [];
@@ -144,7 +145,7 @@ export default function Chinchon() {
     : !myTurn ? `Juega ${nm(s.turn)}…`
     : s.phase === 'draw' ? 'Roba del mazo o del descarte' : selCard ? (closable ? 'Puedes cerrar con esta carta' : 'Elige qué hacer con la carta') : 'Elige una carta para descartar';
 
-  const draw = (source: 'stock' | 'discard') => { if (!(myTurn && s.phase === 'draw')) return; setSel(null); dispatch(me, { k: 'draw', source }); };
+  const draw = (source: 'stock' | 'discard') => { if (!(myTurn && s.phase === 'draw')) return; feedback('draw'); setSel(null); dispatch(me, { k: 'draw', source }); };
   const pills: PillSpec[] = myTurn && s.phase === 'discard' && selCard ? [
     { id: 'disc', tone: 'gold', label: 'Tirar selección', onPress: () => { setSel(null); dispatch(me, { k: 'discard', cardId: selCard.id }); } },
     { id: 'close', tone: 'ok', label: t('a.close'), disabled: !closable, onPress: () => { setSel(null); dispatch(me, { k: 'close', cardId: selCard.id }); } },
@@ -231,6 +232,9 @@ export default function Chinchon() {
           <AnimatePresence>
             {(s.phase === 'roundOver' || over) && s.rows && (
               <ResultOverlay
+                outcome={over ? (s.winner === myIdx ? 'win' : 'lose') : undefined}
+                prize={WIN_BONUS}
+                taunt="Por los pelos"
                 title={over ? (s.winner === myIdx ? t('g.win') : `Gana ${nm(s.winner ?? 0)}`) : s.closer === null ? 'Ronda anulada' : `Fin de la ronda · cierra ${nm(s.closer)}`}
                 actions={over
                   ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } }]

@@ -9,6 +9,7 @@ import { canClaimDaily, dailyAmount, useWallet, wallet } from '../../store/walle
 import { botDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
+import { juice } from '../../services/juice.ts';
 import { Banner, FaceCard, PhaseCinematic, PillBar, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
   canDouble, canHit, canSplit, deal, dealerStep, double, handValue, hit, newShoe, split, stand,
@@ -71,7 +72,7 @@ export default function Blackjack() {
       const pay = totalPayout(next);
       const net = pay - totalBet(next);
       if (pay > 0) wallet.add(pay);
-      if (next.hands.some((h) => h.outcome === 'blackjack')) { feedback('win'); showCine('BLACKJACK 21', 'Pago 3 a 2'); }
+      if (next.hands.some((h) => h.outcome === 'blackjack')) { juice.impact('¡BLACKJACK!', 'gold'); showCine('BLACKJACK 21', 'Pago 3 a 2'); }
       else if (net > 0) { wallet.recordWin('blackjack'); feedback('trick'); show(`+${net} fichas`); }
       else if (net < 0) show(`${net} fichas`);
       else show('Empate');
@@ -92,7 +93,7 @@ export default function Blackjack() {
   const startRound = (amount: number) => {
     if (amount <= 0 || !wallet.spend(amount)) return;
     setLastBet(amount);
-    if (amount === chips && amount >= 100) showCine('¡ALL-IN!', 'Todas las fichas al centro');
+    if (amount === chips && amount >= 100) { juice.impact('¡ALL-IN!', 'red'); showCine('¡ALL-IN!', 'Todas las fichas al centro'); }
     apply(deal(shoe, amount));
   };
 

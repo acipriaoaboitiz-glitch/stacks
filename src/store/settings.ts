@@ -81,7 +81,7 @@ export const CARD_EASE = { duration: 0.18, ease: 'easeOut' } as const;
 let ctx: AudioContext | null = null;
 let noiseBuf: AudioBuffer | null = null;
 
-export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn';
+export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn' | 'draw' | 'impact' | 'defeat';
 
 function audio(): AudioContext | null {
   try {
@@ -124,31 +124,53 @@ function tone(c: AudioContext, at: number, freq: number, dur: number, gain: numb
   o.stop(at + dur);
 }
 
-/** Respuesta háptica y sonido sintetizado con Web Audio (sin archivos), respetando Ajustes. */
-export function feedback(kind: Sfx = 'tap'): void {
-  // Repartir y el roce de naipes solo suenan: vibrar con cada carta repartida cansa.
-  if (state.vibration && 'vibrate' in navigator && kind !== 'deal' && kind !== 'card') {
-    try { navigator.vibrate(kind === 'big' || kind === 'win' ? [30, 40, 60] : kind === 'thud' ? 25 : kind === 'play' || kind === 'turn' ? 15 : 10); } catch { /* no soportado */ }
-  }
+// ─── Game Feel: efectos procedurales (Web Audio, sin archivos, latencia ~0) ─────────────────────
+const buzz = (pattern: number | number[]): void => {
+  if (!state.vibration || !('vibrate' in navigator)) return;
+  try { navigator.vibrate(pattern); } catch { /* iOS / sin soporte */ }
+};
+/** Ejecuta `fn` con el contexto de audio solo si el sonido global está activo. */
+const withAudio = (fn: (c: AudioContext, t: number) => void): void => {
   if (!state.sound) return;
   const c = audio();
-  if (!c) return;
-  const t = c.currentTime;
+  if (c) fn(c, c.currentTime);
+};
+
+/** Chasquido seco de una carta contra el tapete (~40 ms). */
+export function playCardSnap(): void { buzz([12]); withAudio((c, t) => { noise(c, t, 0.04, 3400, 0.26); tone(c, t, 190, 0.035, 0.12, 'sine', 120); }); }
+/** Robar: barrido ascendente corto (~60 ms). */
+export function playCardDraw(): void { buzz(8); withAudio((c, t) => { tone(c, t, 420, 0.06, 0.06, 'sine', 780); noise(c, t, 0.05, 5200, 0.06); }); }
+/** Tu turno: campanilla doble con quinta limpia. */
+export function playTurnPing(): void { buzz([20, 40, 20]); withAudio((c, t) => { tone(c, t, 880, 0.28, 0.045, 'sine'); tone(c, t + 0.005, 1320, 0.28, 0.03, 'sine'); tone(c, t + 0.11, 1320, 0.3, 0.04, 'sine'); tone(c, t + 0.115, 1980, 0.3, 0.025, 'sine'); }); }
+/** Jugada fuerte (+4, corte, Órdago, cierre): golpe grave con sub-bass (~120 ms). */
+export function playImpact(): void { buzz([45]); withAudio((c, t) => { tone(c, t, 120, 0.12, 0.5, 'sine', 42); noise(c, t, 0.08, 320, 0.3); }); }
+/** Fichas / puntos: tintineo metálico 1200 → 1800 Hz. */
+export function playChipClink(): void { buzz(6); withAudio((c, t) => { tone(c, t, 1200, 0.09, 0.07, 'triangle', 1800); tone(c, t + 0.05, 1500, 0.09, 0.06, 'triangle', 2100); noise(c, t, 0.03, 7000, 0.06); }); }
+/** Victoria: arpegio Do-Mi-Sol-Do con brillo. */
+export function playVictoryFanfare(): void {
+  buzz([30, 50, 30, 50, 80]);
+  withAudio((c, t) => {
+    [523, 659, 784, 1046].forEach((fq, k) => { tone(c, t + k * 0.075, fq, 0.32, 0.07, 'triangle'); tone(c, t + k * 0.075, fq * 2, 0.22, 0.02, 'sine'); });
+    tone(c, t + 0.34, 2093, 0.4, 0.03, 'sine');
+  });
+}
+/** Derrota: dos notas graves descendentes y suaves. */
+export function playDefeatTone(): void { buzz([60, 40, 60]); withAudio((c, t) => { tone(c, t, 233, 0.3, 0.06, 'sine'); tone(c, t + 0.22, 175, 0.42, 0.06, 'sine'); }); }
+
+/** Respuesta háptica y sonido de las acciones de las mesas (los juegos llaman siempre a esta función). */
+export function feedback(kind: Sfx = 'tap'): void {
   switch (kind) {
-    case 'turn': // aviso suave de turno
-      tone(c, t, 700, 0.07, 0.04); break;
-    case 'deal': case 'card': case 'play': // reparto: roce de naipe
-      noise(c, t, 0.09, 3200, 0.18); noise(c, t + 0.035, 0.06, 5200, 0.1); break;
-    case 'thud': // golpe en la mesa (Paso / Órdago)
-      tone(c, t, 150, 0.22, 0.35, 'sine', 45); noise(c, t, 0.08, 400, 0.25); break;
-    case 'trick': // baza ganada
-      tone(c, t, 660, 0.16, 0.08); tone(c, t + 0.09, 880, 0.24, 0.08); break;
-    case 'win': case 'big': // victoria
-      [523, 659, 784, 1046].forEach((fq, k) => tone(c, t + k * 0.09, fq, 0.3, 0.07)); break;
-    case 'chip':
-      tone(c, t, 1200, 0.05, 0.05, 'square'); noise(c, t, 0.04, 6000, 0.08); break;
-    default:
-      tone(c, t, 520, 0.05, 0.04);
+    case 'play': case 'card': playCardSnap(); return;
+    case 'draw': playCardDraw(); return;
+    case 'turn': playTurnPing(); return;
+    case 'thud': case 'impact': playImpact(); return;
+    case 'chip': playChipClink(); return;
+    case 'win': case 'big': playVictoryFanfare(); return;
+    case 'defeat': playDefeatTone(); return;
+    case 'deal': // reparto y avisos de otros: solo roce, sin vibrar
+      withAudio((c, t) => { noise(c, t, 0.07, 3200, 0.14); }); return;
+    case 'trick': buzz(10); withAudio((c, t) => { tone(c, t, 660, 0.16, 0.08); tone(c, t + 0.09, 880, 0.24, 0.08); }); return;
+    default: buzz(10); withAudio((c, t) => { tone(c, t, 520, 0.05, 0.04); });
   }
 }
 

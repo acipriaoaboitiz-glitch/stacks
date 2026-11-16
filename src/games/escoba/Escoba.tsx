@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
+import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
@@ -78,7 +79,7 @@ export default function Escoba() {
     if (lp && lp !== prev?.lastPlay && JSON.stringify(lp) !== JSON.stringify(prev?.lastPlay)) {
       feedback(lp.taken.length ? 'trick' : 'deal');
       if (lp.taken.length) show(`${lp.by === myIdx ? 'Te llevas' : `${nm(lp.by)} se lleva`} ${lp.taken.length + 1} cartas`);
-      if (lp.escoba) { feedback('win'); showCine('¡ESCOBA!', '+1 punto'); }
+      if (lp.escoba) { juice.impact(); showCine('¡ESCOBA!', '+1 punto'); }
     }
     if (s.phase === 'playing') paid.current = false;
     if (s.phase === 'matchOver' && !paid.current) {
@@ -255,6 +256,9 @@ export default function Escoba() {
           <AnimatePresence>
             {over && s.summary && (
               <ResultOverlay
+                outcome={s.phase === 'matchOver' ? (iWon ? 'win' : 'lose') : undefined}
+                prize={WIN_BONUS}
+                taunt="La escoba barrió contigo"
                 title={s.phase === 'matchOver' ? (iWon ? t('g.win') : t('g.lose')) : 'Fin de la ronda'}
                 actions={s.phase === 'matchOver'
                   ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } }]

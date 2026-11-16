@@ -10,6 +10,8 @@ export interface WalletState {
   avatar: number;
   /** Partidas ganadas por juego. */
   wins: Record<string, number>;
+  /** Victorias seguidas (se corta con una derrota). */
+  winStreak: number;
 }
 
 const KEY = 'latimba.wallet.v1';
@@ -26,7 +28,7 @@ const today = (): string => dayKey(new Date());
 const yesterday = (): string => dayKey(new Date(Date.now() - 86_400_000));
 
 function load(): WalletState {
-  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '', streak: 0, avatar: 0, wins: {} };
+  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '', streak: 0, avatar: 0, wins: {}, winStreak: 0 };
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return fallback;
@@ -38,6 +40,7 @@ function load(): WalletState {
       streak: typeof p.streak === 'number' && p.streak >= 0 ? Math.min(7, Math.floor(p.streak)) : 0,
       avatar: typeof p.avatar === 'number' ? p.avatar : 0,
       wins: p.wins && typeof p.wins === 'object' ? p.wins : {},
+      winStreak: typeof p.winStreak === 'number' && p.winStreak > 0 ? Math.floor(p.winStreak) : 0,
     };
   } catch {
     return fallback;
@@ -101,6 +104,8 @@ export const wallet = {
     set({ ...state, chips: state.chips + AD_CHIPS });
   },
   setAvatar(avatar: number): void { set({ ...state, avatar }); },
+  /** Fin de partida: suma o corta la racha de victorias. */
+  recordResult(won: boolean): void { set({ ...state, winStreak: won ? state.winStreak + 1 : 0 }); },
   recordWin(gameId: string): void { set({ ...state, wins: { ...state.wins, [gameId]: (state.wins[gameId] ?? 0) + 1 } }); },
   setName(name: string): void {
     set({ ...state, name: name.trim().slice(0, 16) || 'Jugador' });
