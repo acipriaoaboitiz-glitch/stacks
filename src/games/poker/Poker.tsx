@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BetStack, Chip, CHIP_VALUES, chipBreakdown, ChipStack } from '../../components/cards/Chip.tsx';
+import { CASINO_VALUES, CasinoChip, ChipPile } from '../../components/cards/CasinoChip.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { useT } from '../../i18n/index.ts';
 import { aiDelay, feedback } from '../../store/settings.ts';
@@ -11,9 +11,8 @@ import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScoreStrip, u
 import { BB, START_STACK, act, bestScore, botAct, handName, legal, newPoker, nextHand, pot, type PAction, type PokerState } from './engine.ts';
 
 const WIN_BONUS = 200;
-const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor'];
+const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor', 'Maite', 'Unai'];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
-const SLOT: Slot[] = ['bottom', 'right', 'top', 'left'];
 const STREET: Record<string, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River', showdown: 'Showdown' };
 
 function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
@@ -38,6 +37,7 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
           ))}
         </div>
       )}
+      {x.bet > 0 && !x.out && <ChipPile amount={x.bet} size={15} maxCols={3} />}
       <AnimatePresence>
         {(x.last || x.bet > 0) && !x.out && (
           <motion.span key={`${x.last}-${x.bet}`} initial={{ opacity: 0, y: -4, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
@@ -52,11 +52,34 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
 }
 
 export default function Poker() {
+  const [n, setN] = useState<4 | 6 | null>(null);
+  if (!n) {
+    return (
+      <GameFrame
+        gameId="poker"
+        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Texas Hold’em</p>}
+        felt={
+          <div className="grid h-full place-items-center p-6">
+            <div className="grid w-full max-w-xs gap-3 text-center">
+              <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">Elige la mesa</h2>
+              <button type="button" className="btn btn--gold" onClick={() => setN(4)}>Mesa de 4 · tú + 3 IA</button>
+              <button type="button" className="btn" onClick={() => setN(6)}>Mesa de 6 · tú + 5 IA</button>
+              <p className="text-xs text-stone-400">No-Limit Hold’em. Ciegas 10/20, 1000 fichas cada uno. 15 s por turno.</p>
+            </div>
+          </div>
+        }
+        bottom={null}
+      />
+    );
+  }
+  return <PokerTable n={n} />;
+}
+
+function PokerTable({ n }: { n: 4 | 6 }) {
   const nav = useNavigate();
   const t = useT();
-  const [s, setS] = useState<PokerState>(() => newPoker(NAMES.map((name, i) => ({ id: `p${i}`, name, human: i === 0 }))));
+  const [s, setS] = useState<PokerState>(() => newPoker(NAMES.slice(0, n).map((name, i) => ({ id: `p${i}`, name, human: i === 0 }))));
   const [raising, setRaising] = useState<number | null>(null);
-  const [lastRaise, setLastRaise] = useState(0);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
   const ref = useRef(s);
@@ -100,7 +123,7 @@ export default function Poker() {
   const me = s.seats[0]!;
   const myTurn = s.phase === 'betting' && s.turn === 0;
   const lg = useMemo(() => (myTurn ? legal(s) : null), [s, myTurn]);
-  const send = (a: PAction) => { if (a.type === 'raise') setLastRaise(a.to); setRaising(null); const nx = act(s, a); if (nx) setS(nx); };
+  const send = (a: PAction) => { setRaising(null); const nx = act(s, a); if (nx) setS(nx); };
   const total = pot(s);
   const myHand = me.hole.length === 2 && s.community.length >= 3 ? handName(bestScore([...me.hole, ...s.community])) : '';
 
@@ -119,32 +142,47 @@ export default function Poker() {
     ? s.result.wins.map((w) => `${NAMES[w.seat]} +${w.amount}${w.hand ? ` (${w.hand})` : ''}`).join(' · ')
     : myTurn ? (lg!.canCheck ? 'Tu turno: pasa o apuesta' : `Tu turno: ${lg!.callAmount} para igualar`) : s.phase === 'betting' ? `Juega ${NAMES[s.turn]}…` : '';
 
-  const slotIdx = (slot: Slot): number => SLOT.indexOf(slot);
+  const seat = (i: number, slot: Slot) => (i < n ? <SeatView s={s} i={i} slot={slot} /> : null);
+  const six = n === 6;
+  const flip = (c: PokerState['community'][number], k: number) => (
+    <motion.div key={c.id} style={{ perspective: 600 }} initial={{ rotateY: 90, y: -24, opacity: 0 }} animate={{ rotateY: 0, y: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 160, damping: 18, delay: k >= 3 ? 0 : k * 0.12 }}>
+      <FaceCard card={c} scale={0.5} />
+    </motion.div>
+  );
   const felt = (
     <>
       <div className="grid h-full grid-cols-[minmax(0,.8fr)_minmax(0,2.5fr)_minmax(0,.8fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
-        <div className="col-start-2 row-start-1 justify-self-center"><SeatView s={s} i={slotIdx('top')} slot="top" /></div>
-        <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center"><SeatView s={s} i={slotIdx('left')} slot="left" /></div>
+        {six ? (
+          <>
+            <div className="col-start-1 row-start-1 justify-self-center">{seat(4, 'left')}</div>
+            <div className="col-start-2 row-start-1 justify-self-center">{seat(3, 'top')}</div>
+            <div className="col-start-3 row-start-1 justify-self-center">{seat(2, 'right')}</div>
+            <div className="col-start-1 row-start-2 self-center justify-self-center">{seat(5, 'left')}</div>
+            <div className="col-start-3 row-start-2 self-center justify-self-center">{seat(1, 'right')}</div>
+          </>
+        ) : (
+          <>
+            <div className="col-start-2 row-start-1 justify-self-center">{seat(2, 'top')}</div>
+            <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat(3, 'left')}</div>
+            <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center">{seat(1, 'right')}</div>
+          </>
+        )}
         <div className="col-start-2 row-start-2 grid min-h-0 place-items-center">
           <div className="grid justify-items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-3 py-1" aria-label={`Bote ${total}`}>
-              {total > 0 && <ChipStack amount={Math.min(total, 500)} size={22} />}
-              <span className="font-mono text-sm font-bold text-amber-200 tabular-nums">Bote {total}</span>
+            <div className="grid justify-items-center gap-1" aria-label={`Bote ${total}`}>
+              <ChipPile amount={s.seats.reduce((a2, x) => a2 + x.committed, 0)} size={22} />
+              <span className="font-mono rounded-full border border-white/10 bg-black/35 px-3 py-0.5 text-sm font-bold text-amber-200 tabular-nums">Bote {total}</span>
             </div>
             <div className="flex items-center justify-center gap-[min(1vw,5px)]" aria-label="Cartas comunitarias">
               {Array.from({ length: 5 }, (_, k) => {
                 const c = s.community[k];
-                return c ? (
-                  <motion.div key={c.id} initial={{ y: -30, opacity: 0, rotate: -8 }} animate={{ y: 0, opacity: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 22, delay: (k >= 3 ? 0 : k * 0.08) }}>
-                    <FaceCard card={c} scale={0.5} />
-                  </motion.div>
-                ) : <span key={k} className="block aspect-[167/243] rounded-[6px] border border-dashed border-white/15" style={{ width: 'calc(var(--card-w) * 0.5)' }} />;
+                return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] border border-dashed border-white/15" style={{ width: 'calc(var(--card-w) * 0.5)' }} />;
               })}
             </div>
             <span className="rounded-full bg-black/35 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-200/80">{STREET[s.street]} · mano {s.handNo}</span>
           </div>
         </div>
-        <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center"><SeatView s={s} i={slotIdx('right')} slot="right" /></div>
       </div>
       <Banner text={banner} />
     </>
@@ -165,15 +203,16 @@ export default function Poker() {
         <div className="grid w-full max-w-md gap-2 rounded-2xl border border-white/10 bg-zinc-900/75 p-2.5 backdrop-blur-md" role="group" aria-label="Subir apuesta">
           <div className="flex items-end justify-between gap-2">
             <div className="flex flex-wrap gap-1.5">
-              <button type="button" className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(lg.minTo)}>Limpiar ficha</button>
-              <button type="button" disabled={!lastRaise} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold disabled:opacity-40" onClick={() => setRaising(Math.min(lg.maxTo, Math.max(lg.minTo, lastRaise)))}>Repetir apuesta</button>
-              <button type="button" className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(Math.min(lg.maxTo, Math.max(lg.minTo, raising * 2)))}>Doblar apuesta (2x)</button>
-              <button type="button" className="rounded-full border border-red-300/40 bg-red-950 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(lg.maxTo)}>All-in</button>
+              {([['2x BB', () => setRaising(((v: number) => Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))))(s.currentBet + BB * 2))], ['½ Bote', () => setRaising(((v: number) => Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))))(s.currentBet + total / 2))], ['Bote', () => setRaising(((v: number) => Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))))(s.currentBet + total))]] as const).map(([lab, fn]) => (
+                <button key={lab} type="button" className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold" onClick={fn}>{lab}</button>
+              ))}
+              <button type="button" className="rounded-full border border-red-300/40 bg-red-950 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(lg.maxTo)}>All-In</button>
+              <button type="button" className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(lg.minTo)}>Mín.</button>
             </div>
-            <div className="grid justify-items-center"><BetStack chips={chipBreakdown(raising).slice(0, 14)} size={30} /><b className="font-mono text-lg text-amber-300 tabular-nums">{raising}</b></div>
+            <div className="grid justify-items-center"><ChipPile amount={raising} size={22} maxCols={4} /><b className="font-mono text-lg text-amber-300 tabular-nums">{raising}</b></div>
           </div>
           <div className="flex items-center justify-between" role="group" aria-label="Rack de fichas">
-            {CHIP_VALUES.map((v) => <Chip key={v} value={v} size={42} onClick={() => setRaising(Math.min(lg.maxTo, Math.max(lg.minTo, raising + v)))} disabled={raising >= lg.maxTo} label={`Ficha de ${v}`} />)}
+            {CASINO_VALUES.map((v) => <CasinoChip key={v} value={v} size={40} onClick={() => setRaising(((v: number) => Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))))(raising + v))} disabled={raising >= lg.maxTo} />)}
           </div>
           <input type="range" min={lg.minTo} max={lg.maxTo} step={Math.max(1, Math.min(10, lg.maxTo - lg.minTo))} value={raising} aria-label="Cantidad"
             onChange={(e) => setRaising(Number(e.target.value))} className="w-full accent-amber-400" />
@@ -194,12 +233,12 @@ export default function Poker() {
   );
 
   const over = s.phase === 'gameOver';
-  const restart = () => { paid.current = false; setS(newPoker(NAMES.map((name, i) => ({ id: `p${i}`, name, human: i === 0 })))); };
+  const restart = () => { paid.current = false; setS(newPoker(NAMES.slice(0, n).map((name, i) => ({ id: `p${i}`, name, human: i === 0 })))); };
   return (
     <GameFrame
       gameId="poker"
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
-      header={<ScoreStrip items={s.seats.map((x, i) => ({ name: NAMES[i]!, value: x.stack, us: i === 0 }))} />}
+      header={<ScoreStrip items={(n === 6 ? s.seats.slice(0, 1) : s.seats).map((x, i) => ({ name: NAMES[i]!, value: x.stack, us: i === 0 })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} />}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -215,7 +254,7 @@ export default function Poker() {
                   {[...s.seats.keys()].sort((a, b) => s.seats[b]!.stack - s.seats[a]!.stack).map((i) => (
                     <li key={i} className="flex justify-between border-b border-white/10 py-1">
                       <span className={i === s.winner ? 'font-bold text-amber-300' : ''}>{NAMES[i]}</span>
-                      <span className="font-mono tabular-nums text-stone-300">{s.seats[i]!.stack} / {START_STACK * 4}</span>
+                      <span className="font-mono tabular-nums text-stone-300">{s.seats[i]!.stack} / {START_STACK * n}</span>
                     </li>
                   ))}
                 </ul>
