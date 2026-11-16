@@ -105,13 +105,13 @@ export function FaceCard({ card, faceDown, scale = 1, onClick, selected, dim, gl
       aria-pressed={interactive ? selected : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : undefined}
       title={faceDown ? undefined : title}
-      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-none overflow-hidden rounded-[10px] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-none overflow-hidden rounded-none border border-black/40 ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         aspectRatio: card.deck === 'fr' ? '167 / 243' : '12 / 19',
         boxShadow: selected || glow ? '0 0 0 2px #f0c35f, 0 12px 24px rgba(226,180,85,.3)'
           : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9), 0 0 16px rgba(240,195,95,.6), 0 8px 16px rgba(0,0,0,.4)'
-          : '0 10px 20px rgba(0,0,0,.4), 0 2px 3px rgba(0,0,0,.25)',
+          : '0 12px 24px rgba(0,0,0,0.75)',
         ...style,
       }}
       animate={{ y: selected ? -18 : 0, rotate, opacity: dim ? 0.55 : 1 }}

@@ -5,6 +5,9 @@ export interface WalletState {
   chips: number;
   name: string;
   lastDailyClaim: string; // YYYY-MM-DD
+  avatar: number;
+  /** Partidas ganadas por juego. */
+  wins: Record<string, number>;
 }
 
 const KEY = 'latimba.wallet.v1';
@@ -15,7 +18,7 @@ export const AD_CHIPS = 250;
 const today = (): string => new Date().toISOString().slice(0, 10);
 
 function load(): WalletState {
-  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '' };
+  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '', avatar: 0, wins: {} };
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return fallback;
@@ -24,6 +27,8 @@ function load(): WalletState {
       chips: typeof p.chips === 'number' && p.chips >= 0 ? Math.floor(p.chips) : START_CHIPS,
       name: typeof p.name === 'string' && p.name.trim() ? p.name.slice(0, 16) : 'Jugador',
       lastDailyClaim: typeof p.lastDailyClaim === 'string' ? p.lastDailyClaim : '',
+      avatar: typeof p.avatar === 'number' ? p.avatar : 0,
+      wins: p.wins && typeof p.wins === 'object' ? p.wins : {},
     };
   } catch {
     return fallback;
@@ -73,6 +78,8 @@ export const wallet = {
   claimAd(): void {
     set({ ...state, chips: state.chips + AD_CHIPS });
   },
+  setAvatar(avatar: number): void { set({ ...state, avatar }); },
+  recordWin(gameId: string): void { set({ ...state, wins: { ...state.wins, [gameId]: (state.wins[gameId] ?? 0) + 1 } }); },
   setName(name: string): void {
     set({ ...state, name: name.trim().slice(0, 16) || 'Jugador' });
   },

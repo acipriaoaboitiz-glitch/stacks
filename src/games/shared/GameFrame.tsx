@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import '../mus/app/mus.css';
 import { Toaster } from '../mus/app/components/ui.tsx';
 import { GameSettingsProvider } from '../mus/app/lib/settings.tsx';
+import { ProfileCard } from "../../components/ui/ProfileModal.tsx";
 import { ExitButton, QuickButtons } from '../../components/ui/QuickButtons.tsx';
+import { TurnTimer, type TurnTimerSpec } from '../../components/ui/TurnTimer.tsx';
 import { RulesModal } from '../../components/ui/RulesModal.tsx';
 import { SettingsModal } from '../../components/ui/SettingsModal.tsx';
 import { findGame } from '../registry.ts';
@@ -24,6 +26,8 @@ interface Props {
   /** Capas encima de todo (cartel de fase, resultado…). */
   overlays?: ReactNode;
   onExit?: () => void;
+  /** Temporizador de turno de 15 s (si hay turno humano). */
+  timer?: TurnTimerSpec;
 }
 
 /**
@@ -38,7 +42,7 @@ export function GameFrame(props: Props) {
   );
 }
 
-function Frame({ gameId, header, strip, felt, bottom, overlays, onExit }: Props) {
+function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }: Props) {
   const nav = useNavigate();
   const game = findGame(gameId)!;
   const [settings, setSettings] = useState(false);
@@ -60,10 +64,11 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit }: Props)
         >
           <div className="mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
             <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-              <ExitButton onClick={exit} />
+              <div className="flex items-center gap-1.5"><ExitButton onClick={exit} /><ProfileCard compact /></div>
               <div className="min-w-0">{header}</div>
               <QuickButtons onRules={() => setRules(true)} onSettings={() => setSettings(true)} />
             </header>
+            {timer && <TurnTimer spec={timer} />}
             {strip && <section aria-label="Estado">{strip}</section>}
             <section
               className="relative min-h-0 flex-1 overflow-hidden rounded-[clamp(22px,5vw,38px)] border border-amber-200/10 shadow-[inset_0_0_60px_rgba(0,0,0,.4),0_10px_30px_rgba(0,0,0,.3)]"

@@ -7,16 +7,16 @@ import { GameArt } from '../components/cards/GameArt.tsx';
 import { HoloCard } from '../components/ui/HoloCard.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
 import { QuickButtons } from '../components/ui/QuickButtons.tsx';
-import { ChipBalance, PlayerAvatar, rankFor } from '../components/ui/Hud.tsx';
+import { ChipBalance } from '../components/ui/Hud.tsx';
 import { RefillButton } from '../components/ui/RefillButton.tsx';
 import { RulesModal } from '../components/ui/RulesModal.tsx';
+import { ProfileCard } from '../components/ui/ProfileModal.tsx';
 import { SettingsModal } from '../components/ui/SettingsModal.tsx';
 import { APP_NAME } from '../config.ts';
 import { GAMES, findGame, type GameInfo } from '../games/registry.ts';
 import { useT } from '../i18n/index.ts';
 import type { Room } from '../services/multiplayer.ts';
 import { feedback } from '../store/settings.ts';
-import { useWallet } from '../store/wallet.ts';
 
 /** Tarjeta del anillo: foco de luz, rayos giratorios, medallón dorado y emblema flotante con reflejo. */
 function Slide({ game, active }: { game: GameInfo; active: boolean }) {
@@ -88,8 +88,6 @@ export default function Home() {
   const nav = useNavigate();
   const t = useT();
   const [params, setParams] = useSearchParams();
-  const w = useWallet();
-  const rank = rankFor(w.chips);
   const [online, setOnline] = useState<GameInfo | null>(() => (findGame(params.get('game') ?? '') && params.get('room') ? findGame(params.get('game')!)! : null));
   const [inviteCode, setInviteCode] = useState<string | undefined>(() => params.get('room') ?? undefined);
   const [settings, setSettings] = useState(false);
@@ -127,11 +125,7 @@ export default function Home() {
   return (
     <div className="screen obsidian">
       <header className="glass-panel relative z-20 flex items-center gap-2 px-3 py-2" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
-        <PlayerAvatar name={w.name} chips={w.chips} />
-        <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-sm font-extrabold">{w.name}</p>
-          <p className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: rank.color }}>{rank.name}</p>
-        </div>
+        <div className="min-w-0 flex-1"><ProfileCard /></div>
         <ChipBalance onPlus={() => setShowRefill((v) => !v)} />
         <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />
         <AnimatePresence>

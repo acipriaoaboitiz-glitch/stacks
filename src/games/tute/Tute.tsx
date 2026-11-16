@@ -86,7 +86,7 @@ export default function Tute() {
   useEffect(() => {
     if (s?.phase !== 'finished' || paid.current) return;
     paid.current = true;
-    if (winnerTeam(s) === 0) { wallet.add(WIN_BONUS); feedback('win'); }
+    if (winnerTeam(s) === 0) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); feedback('win'); }
   }, [s]);
 
   const played = s?.trick.length ?? 0;
@@ -214,6 +214,7 @@ export default function Tute() {
   return (
     <GameFrame
       gameId="tute"
+      timer={{ active: myTurn, id: `${s.trick.length}:${s.hands.p0!.length}`, onTimeout: () => { const l = legalCards(s, 'p0'); const c = l[Math.floor(Math.random() * l.length)]; if (c) play(c); } }}
       header={<ScorePair labels={labels} values={[pts[0]!, pts[1]!]} subs={[s.cantes[0] ? `cantes +${s.cantes[0]}` : null, s.cantes[1] ? `cantes +${s.cantes[1]}` : null]} />}
       felt={felt}
       bottom={bottom}

@@ -31,7 +31,7 @@ export function GameArt({ id, size = 150 }: { id: string; size?: number }) {
   const card = (p: Piece, i: number) => {
     const style: CSSProperties = {
       position: 'absolute', left: '50%', top: '42%', width: w, height: p.uno ? w * 1.5 : h, marginLeft: -w / 2, marginTop: -h / 2,
-      transform: `translate(${p.x * k}px, ${p.y * k}px) rotate(${p.r}deg)`, transformOrigin: '50% 120%', borderRadius: 6 * k, overflow: 'hidden', background: '#fdfbf7',
+      transform: `translate(${p.x * k}px, ${p.y * k}px) rotate(${p.r}deg)`, transformOrigin: '50% 120%', borderRadius: 0, overflow: 'hidden', background: '#fdfbf7',
       boxShadow: `0 ${10 * k}px ${16 * k}px rgba(0,0,0,.55), 0 ${2 * k}px ${3 * k}px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.25)`, zIndex: i,
     };
     return (

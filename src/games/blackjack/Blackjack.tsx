@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { Chip, CHIP_VALUES, ChipStack } from '../../components/cards/Chip.tsx';
+import { BetStack, Chip, CHIP_VALUES, chipBreakdown, type ChipValue } from '../../components/cards/Chip.tsx';
 import { DealIn } from '../../components/cards/DealIn.tsx';
 import { AnimatedNumber } from '../mus/app/components/AnimatedNumber.tsx';
 import { CardBackArt } from '../../components/cards/FrenchFace.tsx';
@@ -58,6 +58,7 @@ export default function Blackjack() {
   const [shoe, setShoe] = useState<BJCard[]>(() => newShoe());
   const [game, setGame] = useState<BJState | null>(null);
   const [bet, setBet] = useState(0);
+  const [stack, setStack] = useState<ChipValue[]>([]);
   const [lastBet, setLastBet] = useState(0);
   const { banner, show } = useBanner(2200);
   const { cine, show: showCine } = useCine();
@@ -73,7 +74,7 @@ export default function Blackjack() {
       const net = pay - totalBet(next);
       if (pay > 0) wallet.add(pay);
       if (next.hands.some((h) => h.outcome === 'blackjack')) { feedback('win'); showCine('BLACKJACK 21', 'Pago 3 a 2'); }
-      else if (net > 0) { feedback('trick'); show(`+${net} fichas`); }
+      else if (net > 0) { wallet.recordWin('blackjack'); feedback('trick'); show(`+${net} fichas`); }
       else if (net < 0) show(`${net} fichas`);
       else show('Empate');
     }
@@ -86,7 +87,9 @@ export default function Blackjack() {
     return () => window.clearTimeout(t);
   }, [game, apply]);
 
-  const addBet = (v: number) => setBet((b) => Math.min(b + v, chips, MAX_BET));
+  const cap = Math.min(chips, MAX_BET);
+  const setAmount = (n: number) => { const v = Math.max(0, Math.min(Math.floor(n), cap)); setBet(v); setStack(chipBreakdown(v)); };
+  const addBet = (v: ChipValue) => { if (bet + v > cap) return; setBet(bet + v); setStack((st) => [...st, v]); };
 
   const startRound = (amount: number) => {
     if (amount <= 0 || !wallet.spend(amount)) return;
@@ -98,7 +101,7 @@ export default function Blackjack() {
   const newRound = () => {
     gameRef.current = null;
     setGame(null);
-    setBet(Math.min(lastBet, chips));
+    setAmount(lastBet);
   };
 
   const act = {
@@ -125,8 +128,10 @@ export default function Blackjack() {
     pills = chips === 0 && bet === 0
       ? [{ id: 'refill', tone: 'gold', label: canClaimDaily() ? 'Bono diario +500' : 'Ver anuncio +250', onPress: () => (canClaimDaily() ? wallet.claimDaily() : wallet.claimAd()) }]
       : [
-          { id: 'clear', tone: 'soft', disabled: bet === 0, label: t('a.clear'), onPress: () => setBet(0) },
-          { id: 'again', tone: 'soft', disabled: lastBet === 0 || chips === 0, label: t('a.again'), onPress: () => setBet(Math.min(chips, lastBet)) },
+          { id: 'clear', tone: 'soft', disabled: bet === 0, label: 'Limpiar ficha', onPress: () => setAmount(0) },
+          { id: 'again', tone: 'soft', disabled: lastBet === 0 || chips === 0, label: 'Repetir apuesta', onPress: () => setAmount(lastBet) },
+          { id: 'x2', tone: 'soft', disabled: bet === 0 || bet * 2 > cap, label: 'Doblar apuesta (2x)', onPress: () => setAmount(bet * 2) },
+          { id: 'allin', tone: 'danger', disabled: cap <= 0, label: 'All-in', onPress: () => setAmount(cap) },
           { id: 'deal', tone: 'gold', disabled: bet <= 0, label: t('a.deal'), onPress: () => startRound(bet) },
         ];
   } else if (settled) {
@@ -160,7 +165,7 @@ export default function Blackjack() {
           {inBetting && (
             <div className="grid justify-items-center gap-1">
               <div className="grid size-[min(24vw,12dvh)] place-items-center rounded-full border-2 border-dashed border-amber-300/50 bg-black/25">
-                {bet > 0 ? <ChipStack amount={bet} size={44} /> : <span className="text-[11px] font-bold text-white/40">Tu apuesta</span>}
+                {bet > 0 ? <BetStack chips={stack} size={44} /> : <span className="text-[11px] font-bold text-white/40">Tu apuesta</span>}
               </div>
               <b className="font-[var(--font-display)] text-2xl text-amber-300 tabular-nums">{bet}</b>
             </div>
@@ -210,7 +215,7 @@ export default function Blackjack() {
       {inBetting && !(chips === 0 && bet === 0) && (
         <motion.div className="flex w-full items-center justify-between px-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           {CHIP_VALUES.map((v) => (
-            <Chip key={v} value={v} size={46} onClick={() => addBet(v)} disabled={bet + v > chips} />
+            <Chip key={v} value={v} size={46} onClick={() => addBet(v)} disabled={bet + v > cap} label={`Ficha de ${v}`} />
           ))}
         </motion.div>
       )}
@@ -220,6 +225,7 @@ export default function Blackjack() {
   return (
     <GameFrame
       gameId="blackjack"
+      timer={{ active: myTurn, id: `${game?.active}:${game?.hands.reduce((n, h) => n + h.cards.length, 0)}`, onTimeout: () => act.stand() }}
       header={
         <div className="grid w-full grid-cols-2 gap-[min(1.8vw,8px)]" role="group" aria-label="Saldo">
           <Stat label="Fichas" value={chips} tone="us" />

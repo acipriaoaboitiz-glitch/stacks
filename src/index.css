@@ -197,3 +197,8 @@ input { font-family: inherit; -webkit-user-select: text; user-select: text; }
 /* Fondo galaxia: el contenido va por encima del canvas. */
 #root { position: relative; z-index: 1; }
 .musapp { background: transparent !important; }
+
+/* Naipes con corte recto (sin esquinas redondeadas) y sombra de contacto. */
+.musapp .card, .musapp .card-svg, .musapp .card-back, .musapp .seat__card, .musapp .seat__card .card-back, .musapp .table__seat .seat__card .card-back,
+.pcard, .card-face, .card-btn { border-radius: 0 !important; }
+.musapp .card-svg, .musapp .card-back { box-shadow: 0 12px 24px rgba(0, 0, 0, .75); border: 1px solid rgba(0, 0, 0, .45); }

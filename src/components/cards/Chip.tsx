@@ -1,15 +1,17 @@
 import { motion } from 'framer-motion';
 import { feedback } from '../../store/settings.ts';
 
-export const CHIP_VALUES = [1, 5, 25, 100, 500] as const;
-export type ChipValue = (typeof CHIP_VALUES)[number];
+/** Rack de apuestas: blanca 5, roja 25, verde 100, negra 500 y dorada/púrpura 1.000. */
+export const CHIP_VALUES = [5, 25, 100, 500, 1000] as const;
+export type ChipValue = 1 | (typeof CHIP_VALUES)[number];
 
 const COLORS: Record<ChipValue, { base: string; ring: string; ink: string }> = {
-  1: { base: '#e8e4d4', ring: '#8a8774', ink: '#2a2a22' },
-  5: { base: '#d14b4b', ring: '#f4c1c1', ink: '#fff' },
-  25: { base: '#2f9e6b', ring: '#bdeed7', ink: '#fff' },
-  100: { base: '#23262e', ring: '#f0c35f', ink: '#f0c35f' },
-  500: { base: '#6a3fb5', ring: '#f0c35f', ink: '#fff6d8' },
+  1: { base: '#cfd3d8', ring: '#7b818a', ink: '#23262e' },
+  5: { base: '#f4f1e8', ring: '#c23a3a', ink: '#23262e' },
+  25: { base: '#c62f2f', ring: '#fbd5d5', ink: '#fff' },
+  100: { base: '#1f8a4c', ring: '#c6f0d6', ink: '#fff' },
+  500: { base: '#17181d', ring: '#f0c35f', ink: '#f0c35f' },
+  1000: { base: '#6a3fb5', ring: '#f0c35f', ink: '#fff6d8' },
 };
 
 /** Ficha de casino en SVG. `onClick` la convierte en botón táctil. */
@@ -32,7 +34,7 @@ export function Chip({
       <circle cx="50" cy="50" r="31" fill="none" stroke={c.ring} strokeWidth="2.5" strokeDasharray="3 4" />
       <circle cx="50" cy="50" r="47" fill={`url(#chip-${value})`} />
       <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fontFamily="JetBrains Mono, monospace"
-        fontWeight="800" fontSize={value >= 100 ? 24 : 30} fill={c.ink}>{value}</text>
+        fontWeight="800" fontSize={value >= 1000 ? 19 : value >= 100 ? 24 : 30} fill={c.ink}>{value}</text>
     </svg>
   );
   if (!onClick) return svg;
@@ -48,25 +50,32 @@ export function Chip({
   );
 }
 
-/** Descompone un importe en fichas (las mayores primero) para dibujar una pila. */
-export function chipBreakdown(amount: number, max = 8): ChipValue[] {
+const ALL: ChipValue[] = [1000, 500, 100, 25, 5, 1];
+/** Descompone un importe en fichas (las mayores primero). */
+export function chipBreakdown(amount: number, max = 60): ChipValue[] {
   const out: ChipValue[] = [];
   let rest = Math.max(0, Math.floor(amount));
-  for (const v of [...CHIP_VALUES].reverse()) {
-    while (rest >= v && out.length < max) { out.push(v); rest -= v; }
-  }
+  for (const v of ALL) while (rest >= v && out.length < max) { out.push(v); rest -= v; }
   return out;
 }
 
 export function ChipStack({ amount, size = 38 }: { amount: number; size?: number }) {
-  const chips = chipBreakdown(amount);
-  if (chips.length === 0) return null;
+  return <BetStack chips={chipBreakdown(amount, 12)} size={size} />;
+}
+
+/**
+ * Pila de apuesta: cada ficha entra deslizándose desde el rack (abajo) y se apila con un desplazamiento
+ * vertical de -4 px por ficha. Se dibujan como máximo las 14 últimas.
+ */
+export function BetStack({ chips, size = 44 }: { chips: ChipValue[]; size?: number }) {
+  const shown = chips.slice(-14);
+  if (shown.length === 0) return null;
   return (
-    <div className="relative" style={{ width: size, height: size + chips.length * 5 }}>
-      {chips.map((v, i) => (
-        <motion.div key={i} initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: i * 0.04 }}
-          className="absolute left-0" style={{ bottom: i * 5 }}>
+    <div className="relative" style={{ width: size, height: size + shown.length * 4 }} aria-hidden>
+      {shown.map((v, i) => (
+        <motion.div key={chips.length - shown.length + i} className="absolute left-0" style={{ bottom: i * 4, filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.55))' }}
+          initial={{ y: 150, x: (i % 2 ? 14 : -14), opacity: 0, scale: 1.15, rotate: 18 }} animate={{ y: 0, x: 0, opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20, delay: Math.min(i, 8) * 0.02 }}>
           <Chip value={v} size={size} />
         </motion.div>
       ))}

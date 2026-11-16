@@ -1,4 +1,5 @@
 import type { Card } from '@mus/engine';
+import { CardBackArt } from '../../../../components/cards/FrenchFace.tsx';
 import { cardName } from '../game/describe.ts';
 import { useSettings } from '../../../../store/settings.ts';
 
@@ -36,5 +37,5 @@ export function CardFace({ card, eightKings = true }: { card: Card; eightKings?:
 }
 
 export function CardBack() {
-  return <img src={`${CARD_ASSET_BASE}reverso.webp`} className="card-back" alt="" aria-hidden="true" draggable={false} />;
+  return <span className="card-back block h-full w-full overflow-hidden" aria-hidden="true"><CardBackArt variant="midnight" seal="STACKS" /></span>;
 }

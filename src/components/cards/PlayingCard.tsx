@@ -51,7 +51,7 @@ export function PlayingCard({
   card, faceDown = false, width = 72, selected, dimmed, onClick, layoutId, back = 'emerald', vip, rotate = 0, seal, lift, className,
 }: Props) {
   const height = Math.round(width / (card.deck === 'fr' ? FRENCH_ASPECT : ASPECT));
-  const radius = Math.max(5, Math.round(width * 0.07));
+  const radius = 0;
   const side: CSSProperties = {
     position: 'absolute', inset: 0, backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
     borderRadius: radius, overflow: 'hidden',
@@ -98,7 +98,7 @@ export function PlayingCard({
 export function DeckPile({ count, width = 60, back = 'emerald', seal }: { count: number; width?: number; deck?: 'es' | 'fr'; back?: BackVariant; seal?: string }) {
   const height = Math.round(width / ASPECT);
   const layers = Math.max(1, Math.min(14, Math.ceil(count / 3)));
-  const radius = Math.max(5, Math.round(width * 0.07));
+  const radius = 0;
   return (
     <div style={{ position: 'relative', width: width + layers * 1.1, height: height + layers * 1.5 }} aria-label={`Mazo: ${count} cartas`}>
       {Array.from({ length: layers - 1 }, (_, k) => {

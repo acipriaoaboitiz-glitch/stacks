@@ -91,10 +91,10 @@ export function UnoCardView({ card, faceDown, scale = 1, onClick, playable, dim,
       disabled={!interactive}
       onClick={onClick}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`relative block aspect-[2/3] shrink-0 touch-none overflow-hidden rounded-[10px] ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`relative block aspect-[2/3] shrink-0 touch-none overflow-hidden rounded-none border border-black/40 shadow-[0_12px_24px_rgba(0,0,0,0.75)] ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
-        boxShadow: glow || playable ? '0 0 0 2px #f0c35f, 0 0 16px rgba(240,195,95,.6)' : '0 10px 20px rgba(0,0,0,.4), 0 2px 3px rgba(0,0,0,.25)',
+        boxShadow: glow || playable ? '0 0 0 2px #f0c35f, 0 0 16px rgba(240,195,95,.6)' : '0 12px 24px rgba(0,0,0,0.75)',
         ...style,
       }}
       animate={{ y: playable ? -10 : 0, rotate, opacity: dim ? 0.5 : 1 }}

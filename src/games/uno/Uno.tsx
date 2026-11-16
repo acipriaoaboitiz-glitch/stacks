@@ -81,7 +81,7 @@ export default function Uno() {
   useEffect(() => {
     if (!s?.winner || paid.current) return;
     paid.current = true;
-    if (s.players.find((p) => p.id === s.winner)!.human) { wallet.add(WIN_BONUS); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+    if (s.players.find((p) => p.id === s.winner)!.human) { wallet.add(WIN_BONUS); wallet.recordWin('uno'); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
   }, [s, showCine]);
 
   const myHand = s?.hands.p0 ?? [];
@@ -142,6 +142,7 @@ export default function Uno() {
   const pills: PillSpec[] = pickFor ? [] : myTurn && s.drawn
     ? [{ id: 'pass', tone: 'soft', label: t('a.pass'), onPress: () => act((cur) => passTurn(cur, 'p0')) }]
     : canDraw ? [{ id: 'draw', tone: 'gold', label: t('a.draw'), onPress: () => act((cur) => drawCard(cur, 'p0')) }] : [];
+  if (!pickFor && myHand.length === 1 && !s.winner) pills.unshift({ id: 'uno', tone: 'danger', label: '¡UNO!', onPress: () => { feedback('win'); show('¡UNO!'); } });
   const status = s.winner ? '' : myTurn ? (s.drawn ? 'Puedes jugar la carta robada o pasar' : canDraw ? 'No tienes jugada: roba' : 'Tu turno: juega una carta') : `Juega ${s.players[s.turn]!.name}…`;
 
   const felt = (
@@ -211,6 +212,7 @@ export default function Uno() {
   return (
     <GameFrame
       gameId="uno"
+      timer={{ active: myTurn, id: `${s.turn}:${myHand.length}:${s.drawn?.id ?? ''}:${s.drawPile.length}`, onTimeout: () => act((cur) => { const m = botMove(cur); return m.type === 'play' ? playCard(cur, 'p0', m.cardId, m.color) : m.type === 'draw' ? drawCard(cur, 'p0') : passTurn(cur, 'p0'); }) }}
       header={
         <div className="grid grid-cols-2 gap-[min(1.8vw,8px)]" role="group" aria-label="Estado">
           <div className="min-w-0 rounded-[13px] border border-white/10 bg-gradient-to-br from-teal-400/10 to-black/30 px-3 py-1.5">

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { THEMES, useSettings } from '../../store/settings.ts';
 
 const VERT = 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0., 1.); }';
 
@@ -21,7 +22,7 @@ vec3 stars(vec2 uv, float scale, float seed){
   float tw = .55 + .45 * sin(uTime * (.8 + 2.4 * h) + h * 40.);
   float s = (1. - smoothstep(0., size, d)) * tw * step(.42, h);
   s += (1. - smoothstep(0., size * 4., d)) * .12 * tw * step(.42, h);
-  vec3 col = hsv(fract(uHue - .06 + h * .14), .18 + .35 * h, 1.);
+  vec3 col = mix(vec3(1., .93, .7), hsv(fract(uHue + h * .08), .3, 1.), .55 + .3 * h);
   return col * s;
 }
 void main(){
@@ -37,12 +38,13 @@ void main(){
   float n = fbm(uv * 2.2 + vec2(uTime * .01, -uTime * .006));
   float n2 = fbm(uv * 3.4 - uTime * .008 + 4.);
   col += hsv(fract(uHue + .02), .7, 1.) * pow(n, 2.6) * .22;
-  col += hsv(fract(uHue + .35), .6, 1.) * pow(n2, 3.) * .16;
+  col += hsv(fract(uHue + .07), .55, 1.) * pow(n2, 3.) * .14;
   col *= 1. - .35 * length(gl_FragCoord.xy / uRes - .5);
   gl_FragColor = vec4(clamp(col, 0., 1.), 1.);
 }`;
 
-export function Galaxy({ hue = 0.62 }: { hue?: number }) {
+export function Galaxy() {
+  const hue = THEMES[useSettings().theme].hue;
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

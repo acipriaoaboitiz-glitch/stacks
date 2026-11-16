@@ -74,7 +74,8 @@ export function createLocalSource(opts: LocalOptions): GameSource {
   }));
   const build = (): Snapshot => ({
     status: 'playing', error: null, connected: true, mySeat: 0, isHost: true, room: null,
-    seats, view: publicView(state), hand: state.hands[0], deadline: null,
+    seats, view: publicView(state), hand: state.hands[0],
+    deadline: state.phase !== 'handEnd' && state.phase !== 'matchEnd' && legalActions(state, 0).length > 0 ? Date.now() + 15_000 : null,
   });
   let snap = build();
 
@@ -219,7 +220,13 @@ export function createLocalSource(opts: LocalOptions): GameSource {
       eventListeners.add(cb);
       return () => { eventListeners.delete(cb); };
     },
-    tick() { /* sin límite de tiempo en local */ },
+    tick() {
+      // Turno de 15 s: si caduca, juega la acción segura (cortar mus, pasar, no querer…).
+      if (destroyed || paused || snap.deadline === null || Date.now() < snap.deadline) return;
+      const a = autoAction(state, 0);
+      const res = a ? act(state, 0, a) : null;
+      if (res && res.ok) commit(res.state, res.events);
+    },
     setPaused(next: boolean) {
       if (paused === next) return;
       paused = next;

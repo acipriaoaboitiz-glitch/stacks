@@ -1,4 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { WelcomeGate } from './components/ui/WelcomeGate.tsx';
 import { Galaxy } from './components/ui/Galaxy.tsx';
 import { ErrorBoundary } from './components/ui/ErrorBoundary.tsx';
 import Blackjack from './games/blackjack/Blackjack.tsx';
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <Galaxy />
+    <WelcomeGate>
     <HashRouter>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -30,6 +32,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
+    </WelcomeGate>
     </ErrorBoundary>
   );
 }

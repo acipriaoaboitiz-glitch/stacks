@@ -86,7 +86,7 @@ export default function Brisca() {
     if (s?.phase !== 'finished' || paidRef.current) return;
     paidRef.current = true;
     const { mine, theirs } = sides(s);
-    if (mine > theirs) { wallet.add(WIN_BONUS); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+    if (mine > theirs) { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); feedback('win'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
   }, [s, showCine]);
 
   const played = s?.currentTrick.length ?? 0;
@@ -210,6 +210,7 @@ export default function Brisca() {
   return (
     <GameFrame
       gameId="brisca"
+      timer={{ active: myTurn, id: `${s.currentTrick.length}:${s.deck.length}`, onTimeout: () => { const h = s.hands.p0!; const c = h[Math.floor(Math.random() * h.length)]; if (c) play(c); } }}
       header={<ScorePair labels={count === 4 ? ['Nosotros', 'Ellos'] : ['Tú', 'Bot']} values={[mine, theirs]} target={120} />}
       felt={felt}
       bottom={bottom}

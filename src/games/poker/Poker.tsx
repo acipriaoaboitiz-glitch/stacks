@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChipStack } from '../../components/cards/Chip.tsx';
+import { BetStack, Chip, CHIP_VALUES, chipBreakdown, ChipStack } from '../../components/cards/Chip.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { useT } from '../../i18n/index.ts';
 import { aiDelay, feedback } from '../../store/settings.ts';
@@ -56,6 +56,7 @@ export default function Poker() {
   const t = useT();
   const [s, setS] = useState<PokerState>(() => newPoker(NAMES.map((name, i) => ({ id: `p${i}`, name, human: i === 0 }))));
   const [raising, setRaising] = useState<number | null>(null);
+  const [lastRaise, setLastRaise] = useState(0);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
   const ref = useRef(s);
@@ -92,14 +93,14 @@ export default function Poker() {
     }
     if (s.phase === 'gameOver' && !paid.current) {
       paid.current = true;
-      if (s.winner === 0) { wallet.add(WIN_BONUS); feedback('win'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
+      if (s.winner === 0) { wallet.add(WIN_BONUS); wallet.recordWin('poker'); feedback('win'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
     }
   }, [s.phase, s.result, s.winner, show, showCine]);
 
   const me = s.seats[0]!;
   const myTurn = s.phase === 'betting' && s.turn === 0;
   const lg = useMemo(() => (myTurn ? legal(s) : null), [s, myTurn]);
-  const send = (a: PAction) => { setRaising(null); const nx = act(s, a); if (nx) setS(nx); };
+  const send = (a: PAction) => { if (a.type === 'raise') setLastRaise(a.to); setRaising(null); const nx = act(s, a); if (nx) setS(nx); };
   const total = pot(s);
   const myHand = me.hole.length === 2 && s.community.length >= 3 ? handName(bestScore([...me.hole, ...s.community])) : '';
 
@@ -162,15 +163,17 @@ export default function Poker() {
       </div>
       {raising !== null && lg ? (
         <div className="grid w-full max-w-md gap-2 rounded-2xl border border-white/10 bg-zinc-900/75 p-2.5 backdrop-blur-md" role="group" aria-label="Subir apuesta">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex gap-1.5">
-              {([['½', 0.5], ['Bote', 1]] as const).map(([lab, f]) => (
-                <button key={lab} type="button" className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold"
-                  onClick={() => setRaising(Math.min(lg.maxTo, Math.max(lg.minTo, Math.round((s.currentBet + total * f) / 10) * 10)))}>{lab}</button>
-              ))}
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              <button type="button" className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(lg.minTo)}>Limpiar ficha</button>
+              <button type="button" disabled={!lastRaise} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold disabled:opacity-40" onClick={() => setRaising(Math.min(lg.maxTo, Math.max(lg.minTo, lastRaise)))}>Repetir apuesta</button>
+              <button type="button" className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(Math.min(lg.maxTo, Math.max(lg.minTo, raising * 2)))}>Doblar apuesta (2x)</button>
               <button type="button" className="rounded-full border border-red-300/40 bg-red-950 px-3 py-1 text-[12px] font-bold" onClick={() => setRaising(lg.maxTo)}>All-in</button>
             </div>
-            <b className="font-mono text-lg text-amber-300 tabular-nums">{raising}</b>
+            <div className="grid justify-items-center"><BetStack chips={chipBreakdown(raising).slice(0, 14)} size={30} /><b className="font-mono text-lg text-amber-300 tabular-nums">{raising}</b></div>
+          </div>
+          <div className="flex items-center justify-between" role="group" aria-label="Rack de fichas">
+            {CHIP_VALUES.map((v) => <Chip key={v} value={v} size={42} onClick={() => setRaising(Math.min(lg.maxTo, Math.max(lg.minTo, raising + v)))} disabled={raising >= lg.maxTo} label={`Ficha de ${v}`} />)}
           </div>
           <input type="range" min={lg.minTo} max={lg.maxTo} step={Math.max(1, Math.min(10, lg.maxTo - lg.minTo))} value={raising} aria-label="Cantidad"
             onChange={(e) => setRaising(Number(e.target.value))} className="w-full accent-amber-400" />
@@ -195,6 +198,7 @@ export default function Poker() {
   return (
     <GameFrame
       gameId="poker"
+      timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
       header={<ScoreStrip items={s.seats.map((x, i) => ({ name: NAMES[i]!, value: x.stack, us: i === 0 }))} />}
       felt={felt}
       bottom={bottom}

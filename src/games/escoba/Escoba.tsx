@@ -51,7 +51,7 @@ export default function Escoba() {
       if (lp.taken.length) show(`${lp.by === 0 ? 'Te llevas' : `${nameOf(next.n, lp.by)} se lleva`} ${lp.taken.length + 1} cartas`);
     }
     if (lp?.escoba && lp !== prev?.lastPlay) { feedback('win'); showCine('¡ESCOBA!', '+1 punto'); }
-    if (next.phase === 'matchOver' && prev?.phase !== 'matchOver' && next.scores[0]! === Math.max(...next.scores)) wallet.add(WIN_BONUS);
+    if (next.phase === 'matchOver' && prev?.phase !== 'matchOver' && next.scores[0]! === Math.max(...next.scores)) wallet.add(WIN_BONUS); wallet.recordWin('escoba');
   }, [show, showCine]);
 
   const start = (n: 2 | 3 | 4) => { const g = newMatch(n); prevRef.current = g; setCount(n); setS(g); setSelCard(null); setSelTable([]); };
@@ -196,6 +196,7 @@ export default function Escoba() {
   return (
     <GameFrame
       gameId="escoba"
+      timer={{ active: myTurn, id: `${s.turn}:${s.hands[0]!.length}:${s.deck.length}`, onTimeout: () => { const m = botMove(s); const nx = play(s, m.cardId, m.take); clear(); if (nx) commit(nx); } }}
       header={n === 2
         ? <ScorePair labels={['Tú', 'Bot']} values={[s.scores[0]!, s.scores[1]!]} target={TARGET_SCORE} />
         : <ScoreStrip items={s.scores.map((v, i) => ({ name: nameOf(n, i), value: v, us: i === 0 }))} target={TARGET_SCORE} />}

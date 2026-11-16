@@ -65,7 +65,7 @@ export default function Chinchon() {
   useEffect(() => {
     if (s?.phase !== 'gameOver' || paid.current) return;
     paid.current = true;
-    if (s.winner === 0) { wallet.add(WIN_BONUS); feedback('win'); }
+    if (s.winner === 0) { wallet.add(WIN_BONUS); wallet.recordWin('chinchon'); feedback('win'); }
   }, [s]);
 
   const hand = s?.hands[0] ?? [];
@@ -188,6 +188,7 @@ export default function Chinchon() {
   return (
     <GameFrame
       gameId="chinchon"
+      timer={{ active: myTurn, id: `${s.turn}:${s.phase}:${s.stock.length}`, onTimeout: () => { const nx = s.phase === 'draw' ? drawFrom(s, 'stock') : discardCard(s, s.drawn ?? hand[0]!.id); if (nx) { setSel(null); setS(nx); } } }}
       header={<ScoreStrip items={s.scores.map((v, i) => ({ name: nameOf(n, i), value: v, us: i === 0 }))} target={OUT_AT} />}
       felt={felt}
       bottom={bottom}
