@@ -67,7 +67,7 @@ export function ScorePair({ labels = ['Nosotros', 'Ellos'], values, target, subs
         return (
           <div key={i} className={`min-w-0 rounded-[13px] border border-white/10 px-[min(2.4vw,10px)] py-[min(1.1dvh,6px)] ${us ? 'bg-gradient-to-br from-teal-400/10 to-black/30' : 'bg-gradient-to-br from-orange-400/10 to-black/30'}`}>
             <div className="flex items-baseline justify-between gap-1">
-              <span className={`shrink-0 whitespace-nowrap text-[9px] font-extrabold uppercase tracking-[.08em] ${us ? 'text-teal-300' : 'text-orange-300'}`}>{labels[i]}</span>
+              <span className={`min-w-0 truncate text-[9px] font-extrabold uppercase tracking-[.03em] ${us ? 'text-teal-300' : 'text-orange-300'}`}>{labels[i]}</span>
               <b className="font-[var(--font-display)] text-[clamp(17px,5.4vw,22px)] leading-none tabular-nums">
                 <AnimatedNumber value={values[i]!} duration={0.7} />
                 {target !== undefined && <small className="font-sans text-[9px] font-bold text-stone-400">/{target}</small>}
@@ -116,16 +116,16 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
         width: `calc(var(--card-w) * ${scale})`,
         aspectRatio: card.deck === 'fr' ? '167 / 243' : '12 / 19',
         // Una sola sombra sencilla por carta: las sombras múltiples hunden los FPS en iOS Safari.
-        boxShadow: selected || glow ? '0 0 0 2px #f0c35f' : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9)' : '0 3px 6px rgba(0,0,0,.5)',
+        boxShadow: selected || glow ? '0 0 0 2px #f0c35f, 0 8px 16px rgba(0,0,0,.5)' : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9), 0 6px 12px rgba(0,0,0,.45)' : '0 1px 2px rgba(0,0,0,.55), 0 6px 14px rgba(0,0,0,.45)',
         ...style,
       }}
-      animate={{ y: selected ? -12 : 0, rotate }}
+      animate={{ y: selected ? -12 : glow && interactive ? -6 : 0, rotate }}
       whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
       transition={CARD_EASE}
     >
       {content}
-      {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/45" />}
+      {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/35" />}
       {badge && !faceDown && (
         <span aria-hidden="true" className="pointer-events-none absolute right-[5%] top-[3%] rounded-full bg-black/70 px-[.35em] py-[.05em] font-mono font-bold leading-none text-amber-200 shadow"
           style={{ fontSize: `max(8px, calc(var(--card-w) * ${scale} * 0.13))` }}>{badge}</span>
@@ -156,14 +156,14 @@ export function useBanner(ms = 1700): { banner: string | null; show: (text: stri
 }
 
 export function Banner({ text }: { text: string | null }) {
+  // Avisos del sistema: toast compacto arriba a la derecha (el centro se reserva a las celebraciones).
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
+    <div className="pointer-events-none absolute right-2 top-2 z-20 flex max-w-[70%] justify-end" aria-live="polite">
       <AnimatePresence mode="wait">
         {text && (
           <motion.div key={text}
-            className="px-2 text-center font-[var(--font-display)] text-[clamp(22px,7vw,34px)] font-bold leading-tight text-amber-300 [text-shadow:0_0_18px_rgba(240,195,95,.45)]"
-            initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05, transition: { duration: 0.3 } }}
-            transition={FAST_EASE}>
+            className="rounded-full border border-amber-300/40 bg-zinc-900/95 px-3 py-1 text-right text-[12px] font-extrabold leading-tight text-amber-200"
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={FAST_EASE}>
             {text}
           </motion.div>
         )}

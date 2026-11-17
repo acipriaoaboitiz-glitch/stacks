@@ -71,7 +71,7 @@ export const useSettings = (): Settings =>
 export const aiDelay = (ms: number): number => ms / SPEED_FACTOR[state.speed];
 
 /** Pausa natural antes de que un bot mueva: 400–650 ms (mínimo 250 ms en «Rápida» para que se lea la jugada). */
-export const botDelay = (): number => Math.max(250, aiDelay(400 + Math.random() * 250));
+export const botDelay = (): number => Math.max(350, aiDelay(750 + Math.random() * 150));
 
 /** Transición estándar de las mesas: rápida y suave. */
 export const FAST_EASE = { duration: 0.22, ease: 'easeOut' } as const;

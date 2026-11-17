@@ -1,26 +1,29 @@
-/** Logo de STACKS: moneda de oro con relieve, canto estriado y monograma S en pan de oro. */
+/** Isotipo de STACKS: «S» angular en oro con un corte de rombo en el espacio negativo, dentro de un squircle esmeralda. */
 export function Logo({ size = 56 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 512 512" width={size} height={size} role="img" aria-label="STACKS" style={{ filter: 'drop-shadow(0 6px 12px rgba(0,0,0,.55))' }}>
-<defs>
-  <radialGradient id="lg-coin" cx="35%" cy="28%" r="85%"><stop offset="0" stopColor="#fff6c4"/><stop offset=".28" stopColor="#f3c64a"/><stop offset=".62" stopColor="#b8780f"/><stop offset="1" stopColor="#6b3f06"/></radialGradient>
-  <linearGradient id="lg-rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff3b0"/><stop offset=".5" stopColor="#c58a14"/><stop offset="1" stopColor="#5a3406"/></linearGradient>
-  <radialGradient id="lg-face" cx="50%" cy="35%" r="80%"><stop offset="0" stopColor="#14573f"/><stop offset=".65" stopColor="#082d21"/><stop offset="1" stopColor="#03130d"/></radialGradient>
-  <linearGradient id="lg-letter" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fffbe0"/><stop offset=".35" stopColor="#f6cf55"/><stop offset=".7" stopColor="#c98a12"/><stop offset="1" stopColor="#7a4a06"/></linearGradient>
-  <linearGradient id="lg-gloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".55"/><stop offset="1" stopColor="#fff" stopOpacity="0"/></linearGradient>
-</defs>
-<circle cx="256" cy="268" r="236" fill="#000" opacity=".35"/>
-<circle cx="256" cy="256" r="240" fill="url(#lg-coin)"/>
-<circle cx="256" cy="256" r="240" fill="none" stroke="url(#lg-rim)" strokeWidth="10"/>
-<circle cx="256" cy="256" r="222" fill="none" stroke="#5a3406" strokeWidth="6" strokeDasharray="3 9" opacity=".7"/>
-<circle cx="256" cy="256" r="200" fill="url(#lg-rim)"/>
-<circle cx="256" cy="256" r="190" fill="url(#lg-face)"/>
-<circle cx="256" cy="256" r="190" fill="none" stroke="#000" strokeOpacity=".5" strokeWidth="4"/>
-<text x="258" y="272" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="300" fill="#000" opacity=".55">S</text>
-<text x="256" y="266" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="300" fill="url(#lg-letter)" stroke="#5a3406" strokeWidth="2">S</text>
-<text x="254" y="263" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="300" fill="none" stroke="#fff" strokeOpacity=".5" strokeWidth="1.2">S</text>
-<path d="M92 190 A190 190 0 0 1 420 150 A230 150 0 0 0 92 190Z" fill="url(#lg-gloss)" opacity=".55"/>
-<path d="M120 440 Q256 480 392 440" fill="none" stroke="#fff3b0" strokeOpacity=".35" strokeWidth="5" strokeLinecap="round"/>
+    <svg viewBox="0 0 512 512" width={size} height={size} role="img" aria-label="STACKS">
+      <defs>
+        <linearGradient id="lg-gold" x1="0.15" y1="0" x2="0.85" y2="1"><stop offset="0" stopColor="#F6D87A" /><stop offset="1" stopColor="#D4AF37" /></linearGradient>
+        <clipPath id="lg-sq"><path d="M0 256C0 38 38 0 256 0S512 38 512 256 474 512 256 512 0 474 0 256Z" /></clipPath>
+      </defs>
+      <g clipPath="url(#lg-sq)">
+        <rect width="512" height="512" fill="#061810" />
+        <g transform="translate(256 256) skewX(-10) translate(-256 -256)">
+          <path d="M342 160H200V256H316V352H170" fill="none" stroke="url(#lg-gold)" strokeWidth="60" strokeLinejoin="miter" strokeMiterlimit="10" />
+        </g>
+        <path d="M256 222L290 256 256 290 222 256Z" fill="#061810" />
+      </g>
+      <path d="M0 256C0 38 38 0 256 0S512 38 512 256 474 512 256 512 0 474 0 256Z" fill="none" stroke="#D4AF37" strokeOpacity=".55" strokeWidth="2" transform="translate(1 1) scale(.9961)" />
     </svg>
+  );
+}
+
+/** Palabra STACKS: Plus Jakarta Sans ExtraBold en marfil, tracking amplio y punto dorado final. */
+export function Wordmark({ className = '', size = 28 }: { className?: string; size?: number }) {
+  return (
+    <span className={`inline-flex items-baseline font-[800] uppercase leading-none tracking-[0.14em] text-[#FAF8F0] ${className}`}
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif", fontSize: size }}>
+      STACKS<span aria-hidden className="ml-[0.12em] inline-block rounded-full bg-[#D4AF37]" style={{ width: size * 0.2, height: size * 0.2 }} />
+    </span>
   );
 }

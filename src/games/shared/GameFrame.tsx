@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { feedback } from '../../store/settings.ts';
 import { getActiveRoom, useRoom } from '../../services/multiplayer.ts';
 import { useWallet } from '../../store/wallet.ts';
@@ -93,8 +93,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
     <div className="musapp">
       <div className="app">
         <main
-          className={`relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden ${shaking ? 'animate-shake' : ''} pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100`}
-          style={{ '--card-w': 'min(19vw,10.2dvh,118px)' } as CSSProperties}
+          className={`relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden ${shaking ? 'animate-shake' : ''} pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100 [--card-w:min(21.8vw,11.7dvh,136px)] lg:[--card-w:min(19vw,13dvh,151px)]`}
         >
           <div className="mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
             <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
@@ -110,6 +109,8 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
               aria-label="Mesa de juego"
             >
               {felt}
+              {/* foco cenital suave y viñeta cinematográfica */}
+              <div aria-hidden className="pointer-events-none absolute inset-0 z-[15]" style={{ background: 'radial-gradient(ellipse at 50% 42%, rgba(255,236,190,.09) 0%, rgba(255,236,190,0) 55%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.5) 100%)' }} />
               <div className="pointer-events-none absolute inset-x-0 bottom-14 z-20 flex flex-col items-center gap-1" aria-live="polite">
                 {others.map((r) => (
                   <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>

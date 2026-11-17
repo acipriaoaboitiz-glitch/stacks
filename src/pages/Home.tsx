@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Globe, Play, Users, X } from 'lucide-react';
-import { Logo } from '../components/ui/Logo.tsx';
+import { Logo, Wordmark } from '../components/ui/Logo.tsx';
 import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
 import { QuickButtons } from '../components/ui/QuickButtons.tsx';
@@ -152,7 +152,7 @@ export default function Home() {
 
         <div className="relative z-10 flex items-center gap-2.5">
           <Logo size={46} />
-          <h1 className="gold-text font-[var(--font-display)] text-3xl font-bold leading-none tracking-wide">{APP_NAME}</h1>
+          <h1 aria-label={APP_NAME}><Wordmark size={26} /></h1>
         </div>
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}

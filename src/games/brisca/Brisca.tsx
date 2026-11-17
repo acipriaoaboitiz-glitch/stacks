@@ -90,7 +90,7 @@ export default function Brisca() {
         }
       }
       if (!hostLike) return;
-      const t = window.setTimeout(() => setS((cur) => (cur ? resolveTrick(cur) : cur)), aiDelay(900));
+      const t = window.setTimeout(() => setS((cur) => (cur ? resolveTrick(cur) : cur)), aiDelay(1100));
       return () => window.clearTimeout(t);
     }
     if (s.phase !== 'playing' || !hostLike) return;

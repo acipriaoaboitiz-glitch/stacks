@@ -64,7 +64,7 @@ export default function Tute() {
   useEffect(() => {
     if (!s || !hostLike) return;
     if (s.phase === 'trickDone') {
-      const timer = window.setTimeout(() => { feedback('trick'); setS((cur) => (cur ? resolveTute(cur) : cur)); }, aiDelay(900));
+      const timer = window.setTimeout(() => { feedback('trick'); setS((cur) => (cur ? resolveTute(cur) : cur)); }, aiDelay(1100));
       return () => window.clearTimeout(timer);
     }
     if (s.phase !== 'playing') return;

@@ -1,21 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#06241b"/><g transform="translate(76 76) scale(.703)">
-<defs>
-  <radialGradient id="coin" cx="35%" cy="28%" r="85%"><stop offset="0" stop-color="#fff6c4"/><stop offset=".28" stop-color="#f3c64a"/><stop offset=".62" stop-color="#b8780f"/><stop offset="1" stop-color="#6b3f06"/></radialGradient>
-  <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#c58a14"/><stop offset="1" stop-color="#5a3406"/></linearGradient>
-  <radialGradient id="face" cx="50%" cy="35%" r="80%"><stop offset="0" stop-color="#14573f"/><stop offset=".65" stop-color="#082d21"/><stop offset="1" stop-color="#03130d"/></radialGradient>
-  <linearGradient id="letter" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbe0"/><stop offset=".35" stop-color="#f6cf55"/><stop offset=".7" stop-color="#c98a12"/><stop offset="1" stop-color="#7a4a06"/></linearGradient>
-  <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-</defs>
-<circle cx="256" cy="268" r="236" fill="#000" opacity=".35"/>
-<circle cx="256" cy="256" r="240" fill="url(#coin)"/>
-<circle cx="256" cy="256" r="240" fill="none" stroke="url(#rim)" stroke-width="10"/>
-<circle cx="256" cy="256" r="222" fill="none" stroke="#5a3406" stroke-width="6" stroke-dasharray="3 9" opacity=".7"/>
-<circle cx="256" cy="256" r="200" fill="url(#rim)"/>
-<circle cx="256" cy="256" r="190" fill="url(#face)"/>
-<circle cx="256" cy="256" r="190" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="4"/>
-<text x="258" y="272" text-anchor="middle" dominant-baseline="central" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="300" fill="#000" opacity=".55">S</text>
-<text x="256" y="266" text-anchor="middle" dominant-baseline="central" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="300" fill="url(#letter)" stroke="#5a3406" stroke-width="2">S</text>
-<text x="254" y="263" text-anchor="middle" dominant-baseline="central" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="300" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.2">S</text>
-<path d="M92 190 A190 190 0 0 1 420 150 A230 150 0 0 0 92 190Z" fill="url(#gloss)" opacity=".55"/>
-<path d="M120 440 Q256 480 392 440" fill="none" stroke="#fff3b0" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0.15" y1="0" x2="0.85" y2="1"><stop offset="0" stop-color="#F6D87A"/><stop offset="1" stop-color="#D4AF37"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#061810"/>
+  <g transform="translate(256 256) scale(.78) translate(-256 -256)">
+    <g transform="translate(256 256) skewX(-10) translate(-256 -256)">
+      <path d="M342 160H200V256H316V352H170" fill="none" stroke="url(#g)" stroke-width="58" stroke-linejoin="miter" stroke-miterlimit="10"/>
+    </g>
+    <path d="M256 222L290 256 256 290 222 256Z" fill="#061810"/>
+  </g>
+</svg>

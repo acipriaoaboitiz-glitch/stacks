@@ -70,6 +70,13 @@ export function SeatBadge({ info, tone, mano, turn, bubble, deadline, cards, sig
         )}
       </motion.div>
       <span className={`max-w-full truncate text-[min(3.1vw,1.6dvh,13px)] font-bold ${turn ? 'text-amber-200 [text-shadow:0_0_12px_rgba(226,180,85,.4)]' : 'text-stone-200'}`}>{name}</span>
+      {turn && info.isBot && (
+        <span className="flex items-center gap-[3px]" role="status" aria-label="Pensando">
+          {[0, 1, 2].map((d) => (
+            <motion.span key={d} className="block size-[4px] rounded-full bg-amber-200" animate={{ opacity: [0.25, 1, 0.25] }} transition={{ duration: 0.9, repeat: Infinity, delay: d * 0.15 }} />
+          ))}
+        </span>
+      )}
       <span className="flex gap-[2px]" aria-label={`${cards} cartas`}>
         {Array.from({ length: cards }, (_, i) => (
           <span key={i} className="relative block aspect-[12/19] h-[min(3.3dvh,22px)]"><CardBack /></span>
