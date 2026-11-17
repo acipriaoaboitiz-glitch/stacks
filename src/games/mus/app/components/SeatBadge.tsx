@@ -13,6 +13,10 @@ interface SeatBadgeProps {
   deadline: number | null;
   cards: number;
   signalPulseAt?: number | null;
+  /** Aviso corto pegado al avatar (p. ej. «+2» o «Ø»). */
+  badge?: string;
+  /** Hace parpadear el aro del avatar en rojo/ámbar. */
+  alert?: boolean;
   /** Hacia dónde se abre el globo de diálogo, para que nunca se salga del tapete. */
   bubbleSide?: 'below' | 'left' | 'right' | 'above';
 }
@@ -33,7 +37,7 @@ const BUBBLE_POS: Record<NonNullable<SeatBadgeProps['bubbleSide']>, string> = {
 };
 
 /** Jugador en la mesa: avatar con anillo de turno, mano, conexión, cartas boca abajo y su último «grito». */
-export function SeatBadge({ info, tone, mano, turn, bubble, deadline, cards, signalPulseAt, bubbleSide = 'below' }: SeatBadgeProps) {
+export function SeatBadge({ info, tone, mano, turn, bubble, deadline, cards, signalPulseAt, bubbleSide = 'below', badge, alert }: SeatBadgeProps) {
   const name = info.name ?? 'Libre';
   const remaining = deadline ? Math.max(0, deadline - Date.now()) : 0;
   return (
@@ -51,6 +55,14 @@ export function SeatBadge({ info, tone, mano, turn, bubble, deadline, cards, sig
             animate={{ opacity: [0.7, 1, 0.7], scale: [0.98, 1.04, 0.98] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           />
+        )}
+        {alert && (
+          <motion.span aria-hidden="true" className="pointer-events-none absolute inset-[-3px] rounded-full border-[3px] border-red-500"
+            animate={{ opacity: [0, 1, 0.2, 1, 0] }} transition={{ duration: 1.2, ease: 'easeInOut' }} />
+        )}
+        {badge && (
+          <motion.span initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.18 }}
+            className="absolute -bottom-1 -right-2 z-10 rounded-full border border-white/70 bg-red-600 px-1.5 py-[1px] text-[10px] font-extrabold leading-none text-white shadow">{badge}</motion.span>
         )}
         {turn && deadline !== null && (
           <svg className="pointer-events-none absolute inset-[-2px] size-[calc(100%+4px)] -rotate-90" viewBox="0 0 56 56" key={deadline} aria-hidden="true">

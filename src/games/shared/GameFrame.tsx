@@ -16,6 +16,8 @@ import { RulesModal } from '../../components/ui/RulesModal.tsx';
 import { SettingsModal } from '../../components/ui/SettingsModal.tsx';
 import { findGame } from '../registry.ts';
 
+const EMERALD_FELT =
+  'repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px), radial-gradient(ellipse at center, #0F3A2A 0%, #0A2A1E 55%, #061810 100%)';
 const FELT_BG =
   'radial-gradient(ellipse at 50% 52%, var(--tapete-glow), transparent 52%), radial-gradient(ellipse at center, var(--tapete-a), var(--tapete-b) 72%, var(--tapete-c) 100%)';
 
@@ -34,6 +36,8 @@ interface Props {
   onExit?: () => void;
   /** Temporizador de turno de 15 s (si hay turno humano). */
   timer?: TurnTimerSpec;
+  /** Tapete esmeralda oscuro de ClubStacks (en lugar del color de Ajustes). */
+  feltTone?: 'emerald';
 }
 
 /**
@@ -48,7 +52,7 @@ export function GameFrame(props: Props) {
   );
 }
 
-function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }: Props) {
+function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, feltTone }: Props) {
   const nav = useNavigate();
   const game = findGame(gameId)!;
   const [settings, setSettings] = useState(false);
@@ -104,8 +108,8 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer }:
             {timer && <TurnTimer spec={timer} />}
             {strip && <section aria-label="Estado">{strip}</section>}
             <section
-              className="relative min-h-0 flex-1 overflow-hidden rounded-[clamp(22px,5vw,38px)] border border-amber-200/10 shadow-[inset_0_0_60px_rgba(0,0,0,.4),0_10px_30px_rgba(0,0,0,.3)]"
-              style={{ background: FELT_BG }}
+              className="relative min-h-0 flex-1 overflow-hidden rounded-[clamp(22px,5vw,38px)] border border-[#D4AF37]/20 shadow-[inset_0_0_60px_rgba(0,0,0,.4),0_10px_30px_rgba(0,0,0,.3)]"
+              style={{ background: feltTone === 'emerald' ? EMERALD_FELT : FELT_BG }}
               aria-label="Mesa de juego"
             >
               {felt}

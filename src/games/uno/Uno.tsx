@@ -8,7 +8,6 @@ import { RotateCcw, RotateCw } from 'lucide-react';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
-import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import { CARD_EASE, botDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
@@ -45,7 +44,9 @@ export default function Uno() {
   const [count, setCount] = useState<2 | 3 | 4 | null>(null);
   const [s, setS] = useState<UnoState | null>(null);
   const [pickFor, setPickFor] = useState<UnoCard | null>(null);
-  const [bubbles, setBubbles] = useState<Record<string, Bubble | undefined>>({});
+  const [marks, setMarks] = useState<Record<string, { text: string; at: number } | undefined>>({});
+  const [flights, setFlights] = useState<{ id: number; slot: Slot }[]>([]);
+  const flightId = useRef(0);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
   const paid = useRef(false);
@@ -53,7 +54,7 @@ export default function Uno() {
   // Quién soy: en una sala, el jugador con mi peerId; en local, siempre p0.
   const me = online ? s?.players.find((p) => p.peerId === seating.myPeerId)?.id ?? 'p0' : 'p0';
 
-  const start = (n: 2 | 3 | 4) => { setCount(n); setS(newGame(makePlayers(n))); setBubbles({}); setPickFor(null); paid.current = false; lastSeq.current = ''; };
+  const start = (n: 2 | 3 | 4) => { setCount(n); setS(newGame(makePlayers(n))); setMarks({}); setPickFor(null); paid.current = false; lastSeq.current = ''; };
 
   // Online: el anfitrión reparte con los humanos de la sala y, si está activado, rellena con bots.
   const hostStart = () => {
@@ -62,7 +63,7 @@ export default function Uno() {
     const players: UnoPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
       : { id: `p${i}`, name: BOT_NAMES[i - humans.length] ?? `Bot ${i}`, human: false });
-    setS(newGame(players)); setBubbles({}); setPickFor(null); paid.current = false; lastSeq.current = '';
+    setS(newGame(players)); setMarks({}); setPickFor(null); paid.current = false; lastSeq.current = '';
   };
   const noS = s === null;
   useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
@@ -116,13 +117,30 @@ export default function Uno() {
     if (e.kind === 'draw') juice.impact();
     else if (e.text === 'Roba una carta') feedback('draw');
     else feedback(e.kind === 'uno' ? 'trick' : 'deal');
-    if (who.id === me) show(e.text);
-    else {
+    // Sin carteles en el centro: el aviso va pegado al avatar afectado y una carta vuela desde el mazo.
+    const n = s.players.length;
+    const myI = Math.max(0, s.players.findIndex((p) => p.id === me));
+    const slotOfId = (id: string): Slot => SLOT[n as 2 | 3 | 4][(s.players.findIndex((p) => p.id === id) - myI + n) % n]!;
+    const fly = (slot: Slot): void => {
+      const id = ++flightId.current;
+      setFlights((f) => [...f, { id, slot }]);
+      window.setTimeout(() => setFlights((f) => f.filter((x) => x.id !== id)), 650);
+    };
+    const markPlayer = (id: string, text: string): void => {
       const at = Date.now();
-      const tone: Bubble['tone'] = e.kind === 'uno' ? 'ordago' : e.kind === 'draw' ? 'bad' : 'bet';
-      setBubbles((b) => ({ ...b, [who.id]: { text: e.text, tone, at } }));
-      window.setTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 2000);
+      setMarks((m) => ({ ...m, [id]: { text, at } }));
+      window.setTimeout(() => setMarks((m) => (m[id]?.at === at ? { ...m, [id]: undefined } : m)), 1700);
+    };
+    if (e.text === 'Roba una carta') fly(slotOfId(e.by));
+    else if (e.kind === 'draw') {
+      const victim = s.players.find((p) => e.text.endsWith(p.name));
+      if (victim) { markPlayer(victim.id, e.text.includes('+4') ? '+4' : '+2'); fly(slotOfId(victim.id)); }
+    } else if (e.text === 'Salta turno') {
+      const idx = s.players.findIndex((p) => p.id === e.by);
+      const skipped = s.players[(idx + s.dir + n) % n];
+      if (skipped) markPlayer(skipped.id, 'Ø');
     }
+    if (who.id === me) show(e.text);
   }, [s, show, me]);
 
   useEffect(() => {
@@ -182,7 +200,7 @@ export default function Uno() {
     const n = s.hands[p.id]!.length;
     return (
       <SeatBadge info={info(i, `${p.name} · ${n}`)} tone="them" mano={false} turn={s.turn === i && !s.winner} deadline={null}
-        cards={Math.min(n, 4)} bubble={bubbles[p.id]} bubbleSide={slot === 'top' ? 'below' : slot === 'left' ? 'left' : 'right'} />
+        cards={Math.min(n, 4)} badge={marks[p.id]?.text} alert={Boolean(marks[p.id])} />
     );
   };
 
@@ -225,7 +243,7 @@ export default function Uno() {
                   onClick={canDraw ? () => { feedback('draw'); act({ k: 'draw' }); } : undefined}
                   onKeyDown={canDraw ? (e) => { if (e.key === 'Enter' || e.key === ' ') { feedback('draw'); act({ k: 'draw' }); } } : undefined}
                   className={`relative touch-manipulation rounded-xl ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
-                  style={{ width: 'calc(var(--card-w) * 0.66)', aspectRatio: '2 / 3', marginRight: 6, marginTop: 6 }}>
+                  style={{ width: 'calc(var(--card-w) * 0.86)', aspectRatio: '2 / 3', marginRight: 8, marginTop: 8 }}>
                   {[4, 3, 2, 1, 0].map((k) => (
                     <span key={k} className="pointer-events-none absolute inset-0 block overflow-hidden rounded-xl" style={{ transform: `translate(${k * 1.6}px, ${-k * 1.6}px)`, boxShadow: k === 0 ? '0 3px 8px rgba(0,0,0,.5)' : undefined }}>
                       <UnoBack />
@@ -235,25 +253,37 @@ export default function Uno() {
                 </div>
                 <span className="font-mono text-[10px] text-amber-200/80">{s.drawPile.length}</span>
               </div>
-              <div className="relative" style={{ width: 'calc(var(--card-w) * 0.9)', height: 'calc(var(--card-w) * 0.9 * 1.5)' }}>
+              <div className="relative" style={{ width: 'calc(var(--card-w) * 1.05)', height: 'calc(var(--card-w) * 0.9 * 1.5)' }}>
                 {s.discard.length > 1 && (
-                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} scale={0.9} dim /></div>
+                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} scale={1.05} dim /></div>
                 )}
                 <AnimatePresence mode="popLayout">
                   <motion.div key={topCard.id} className="absolute inset-0" initial={{ scale: 1.25, opacity: 0, rotate: 14, y: -20 }} animate={{ scale: 1, opacity: 1, rotate: 4, y: 0 }} transition={CARD_EASE}>
-                    <UnoCardView card={topCard} scale={0.9} glow />
+                    <UnoCardView card={topCard} scale={1.05} glow />
                   </motion.div>
                 </AnimatePresence>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] font-bold text-stone-200" aria-label={`Color actual: ${COLOR_NAME[s.color]}`}>
-              <span className="size-3 rounded-full" style={{ background: UNO_HEX[s.color] }} /> {cap(COLOR_NAME[s.color])}
-              {s.dir === 1 ? <RotateCw size={13} aria-label="Sentido horario" /> : <RotateCcw size={13} aria-label="Sentido antihorario" />}
+            <div className="flex items-center gap-1.5" role="img" aria-label={`Color actual: ${COLOR_NAME[s.color]}. ${s.dir === 1 ? 'Sentido horario' : 'Sentido antihorario'}`}>
+              <span className="size-3.5 rounded-full border border-white/60" style={{ background: UNO_HEX[s.color], boxShadow: `0 0 10px ${UNO_HEX[s.color]}` }} />
+              {s.dir === 1 ? <RotateCw size={14} className="text-stone-300" /> : <RotateCcw size={14} className="text-stone-300" />}
             </div>
           </div>
         </div>
         <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center">{seat('right')}</div>
       </div>
+      <AnimatePresence>
+        {flights.map((f) => {
+          const d = f.slot === 'top' ? { x: 0, y: -150 } : f.slot === 'left' ? { x: -150, y: 0 } : f.slot === 'right' ? { x: 150, y: 0 } : { x: 0, y: 260 };
+          return (
+            <motion.div key={f.id} aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
+              initial={{ x: 0, y: 0, scale: 1, opacity: 1, rotate: 0 }} animate={{ x: d.x, y: d.y, scale: 0.55, opacity: 0, rotate: 25 }} transition={{ duration: 0.5, ease: 'easeIn' }}
+              style={{ width: 'calc(var(--card-w) * 0.6)', aspectRatio: '2 / 3' }}>
+              <UnoBack />
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
       <Banner text={banner} />
     </>
   );
@@ -297,7 +327,7 @@ export default function Uno() {
   const winner = s.winner ? s.players.find((p) => p.id === s.winner)! : null;
   return (
     <GameFrame
-      gameId="uno"
+      gameId="uno" feltTone="emerald"
       timer={{ active: myTurn, id: `${s.turn}:${myHand.length}:${s.drawn?.id ?? ''}:${s.drawPile.length}`, onTimeout: () => { setPickFor(null); const m = botMove(s); act(m.type === 'play' ? { k: 'play', cardId: m.cardId, color: m.color } : { k: m.type }); } }}
       onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
       header={

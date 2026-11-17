@@ -6,7 +6,7 @@ import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
 import { QuickButtons } from '../components/ui/QuickButtons.tsx';
 import { ChipBalance } from '../components/ui/Hud.tsx';
-import { WordmarkPicker } from '../components/ui/WordmarkPicker.tsx';
+import { Wordmark } from '../components/ui/Logo.tsx';
 import { EconomyModal } from '../components/ui/EconomyModal.tsx';
 import { RulesModal } from '../components/ui/RulesModal.tsx';
 import { ProfileCard } from '../components/ui/ProfileModal.tsx';
@@ -141,7 +141,7 @@ export default function Home() {
     <div className="screen obsidian">
       <header className="glass-panel relative z-20 flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 sm:flex-nowrap" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
         <div className="min-w-0 flex-1 sm:flex-none"><ProfileCard /></div>
-        <div className="order-last flex basis-full justify-center sm:order-none sm:basis-auto sm:flex-1"><WordmarkPicker /></div>
+        <div className="order-last flex basis-full justify-center sm:order-none sm:basis-auto sm:flex-1"><h1 aria-label="STACKS"><Wordmark size={20} /></h1></div>
         <div className="flex shrink-0 items-center gap-2">
           <ChipBalance onPlus={() => setShowRefill(true)} />
           <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />

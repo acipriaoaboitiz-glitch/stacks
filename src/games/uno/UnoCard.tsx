@@ -33,7 +33,7 @@ function useVectorSet(): boolean {
 export const unoFile = (c: UnoCardData): string => (c.color === 'wild' ? `wild_${c.kind}.svg` : `${c.color}_${c.kind === 'num' ? c.n : c.kind}.svg`);
 
 // ─── Respaldo vectorial ──────────────────────────────────────────────────────────────────────────
-const FONT = 'Manrope, system-ui, sans-serif';
+const FONT = 'Outfit, system-ui, sans-serif';
 
 /** Número/símbolo grueso con sombra suave. */
 function Outlined({ children, fill, size, y = 0, x = 0 }: { children: string | number; fill: string; size: number; y?: number; x?: number }) {
@@ -125,12 +125,12 @@ export function UnoFace({ card }: { card: UnoCardData }) {
   const wild = card.color === 'wild';
   return (
     <svg viewBox="0 0 200 300" width="100%" height="100%" aria-hidden="true" style={{ display: 'block' }}>
-      <rect width="200" height="300" fill="#fff" />
       <defs><linearGradient id={`sat-${card.color}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={c1} /><stop offset="1" stopColor={c2} /></linearGradient></defs>
-      <rect x="11" y="11" width="178" height="278" rx="14" fill={`url(#sat-${card.color})`} />
-      <rect x="11" y="11" width="178" height="120" rx="14" fill="#fff" opacity=".08" />
-      <ellipse cx="100" cy="150" rx="70" ry="112" fill="#F8FAFC" transform="rotate(28 100 150)" />
-      {wild && <ellipse cx="100" cy="150" rx="64" ry="104" fill="#111827" transform="rotate(28 100 150)" />}
+      <rect width="200" height="300" fill={`url(#sat-${card.color})`} />
+      <rect width="200" height="130" fill="#fff" opacity=".07" />
+      <rect x="7" y="7" width="186" height="286" rx="16" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
+      <ellipse cx="100" cy="150" rx="60" ry="96" fill="#F8FAFC" fillOpacity=".94" transform="rotate(26 100 150)" />
+      {wild && <ellipse cx="100" cy="150" rx="55" ry="90" fill="#111827" transform="rotate(26 100 150)" />}
       <g transform="translate(100 150)"><Glyph card={card} color={wild ? '#fff' : bg} /></g>
       <g transform="translate(36 42)"><Corner card={card} /></g>
       <g transform="translate(164 258) rotate(180)"><Corner card={card} /></g>
@@ -177,7 +177,7 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
       onClick={onClick}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`relative block aspect-[2/3] shrink-0 touch-manipulation overflow-hidden rounded-xl bg-white will-change-transform ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`relative block aspect-[2/3] shrink-0 touch-manipulation overflow-hidden rounded-xl bg-[#0b1220] will-change-transform ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         boxShadow: lit ? '0 0 0 2px #f0c35f' : '0 3px 6px rgba(0,0,0,.5)',

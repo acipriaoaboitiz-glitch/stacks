@@ -192,10 +192,10 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   // La posición k (1 = derecha, 2 = arriba, 3 = izquierda…) es el jugador que va k asientos después de mí.
   // Posiciones (en % de la mesa) de cada asiento según cuántos jugadores hay. La posición k es el jugador que va k asientos después de mí.
   const POS: Record<number, Record<number, [number, number]>> = {
-    2: { 1: [50, 12] },
+    2: { 1: [50, 19] },
     3: { 1: [84, 34], 2: [16, 34] },
-    4: { 1: [90, 50], 2: [50, 12], 3: [10, 50] },
-    6: { 1: [89, 68], 2: [89, 32], 3: [50, 11], 4: [11, 32], 5: [11, 68] },
+    4: { 1: [90, 50], 2: [50, 19], 3: [10, 50] },
+    6: { 1: [89, 68], 2: [89, 32], 3: [50, 18], 4: [11, 32], 5: [11, 68] },
   };
   const slotOf = (x: number): Slot => (x > 70 ? 'right' : x < 30 ? 'left' : 'top');
   const flip = (c: PokerState['community'][number], k: number) => (
@@ -213,7 +213,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   }).filter((v): v is { k: number; i: number; pos: [number, number] } => v !== null);
   const felt = (
     <>
-      <div className="h-full w-full p-[clamp(2px,1vw,10px)]">
+      <div className="h-full w-full">
         <OvalTable>
           {seatsOnTable.map(({ k, i, pos }) => (
             <div key={`s${k}`} className="absolute z-10" style={at(pos[0], pos[1])}><SeatView s={s} i={i} slot={slotOf(pos[0])} /></div>
@@ -288,7 +288,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   const over = s.phase === 'gameOver';
   return (
     <GameFrame
-      gameId="poker"
+      gameId="poker" feltTone="emerald"
       onExit={online ? exit : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
       header={<ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} />}

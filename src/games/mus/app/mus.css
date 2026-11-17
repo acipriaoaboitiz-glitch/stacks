@@ -22,7 +22,7 @@
   --ordago: #ff4d5e;
   --felt: #0f2d26;
   --felt-2: #0a1f1a;
-  --font-ui: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-ui: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
