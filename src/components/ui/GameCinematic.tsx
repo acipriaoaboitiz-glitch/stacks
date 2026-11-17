@@ -1,71 +1,75 @@
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { CinematicTone } from '../../services/juice.ts';
 
-/** Paletas por tipo de evento: gradiente del título, color de rayos y de chispas. */
-const TONES: Record<CinematicTone, { fill: string; glow: string; ray: string; spark: string[] }> = {
-  gold: { fill: 'linear-gradient(180deg,#FFF3B0 0%,#F5D061 45%,#B8860B 100%)', glow: '#F5D061', ray: 'rgba(245,208,97,.55)', spark: ['#FFF3B0', '#F5D061', '#D4AF37'] },
-  ruby: { fill: 'linear-gradient(180deg,#FFD1D1 0%,#F87171 40%,#B91C1C 100%)', glow: '#EF4444', ray: 'rgba(239,68,68,.5)', spark: ['#FECACA', '#EF4444', '#F5D061'] },
-  emerald: { fill: 'linear-gradient(180deg,#D1FAE5 0%,#34D399 45%,#047857 100%)', glow: '#10B981', ray: 'rgba(16,185,129,.5)', spark: ['#A7F3D0', '#10B981', '#F5D061'] },
-  electric: { fill: 'linear-gradient(180deg,#E0F2FE 0%,#60A5FA 45%,#1D4ED8 100%)', glow: '#3B82F6', ray: 'rgba(59,130,246,.55)', spark: ['#BAE6FD', '#60A5FA', '#F5D061'] },
+/** Paletas por tipo de evento (3 tonos de metal para el degradado del título y del anillo). */
+const TONES: Record<CinematicTone, { hi: string; mid: string; lo: string; glow: string; spark: string[] }> = {
+  gold: { hi: '#FFF3B0', mid: '#F5D061', lo: '#B8860B', glow: '#F5D061', spark: ['#FFF3B0', '#F5D061', '#D4AF37'] },
+  ruby: { hi: '#FFD1D1', mid: '#F87171', lo: '#B91C1C', glow: '#EF4444', spark: ['#FECACA', '#EF4444', '#F5D061'] },
+  emerald: { hi: '#D1FAE5', mid: '#34D399', lo: '#047857', glow: '#10B981', spark: ['#A7F3D0', '#10B981', '#F5D061'] },
+  electric: { hi: '#E0F2FE', mid: '#60A5FA', lo: '#1D4ED8', glow: '#3B82F6', spark: ['#BAE6FD', '#60A5FA', '#F5D061'] },
 };
 
-const SPARKS = 28;
-const SPARKS_MOBILE = 10;
-/** Teléfono: modo ligero (menos chispas, sin rayos giratorios ni filtros). */
 const isMobile = (): boolean => typeof window !== 'undefined' && window.innerWidth < 768;
 
 /**
- * Cinemática rápida de jugada (≈1,5 s): destello oscuro, rayos giratorios, barrido de luz,
- * título cinético con muelle, píldora con el detalle y 28 chispas. No bloquea: `pointer-events-none`.
+ * Cinemática de jugada (~1,5 s). Capa de enfoque a pantalla completa (oscurece y difumina el tapete ~1,1 s:
+ * entrada 140 ms, salida 220 ms) + emblema metálico con barrido de luz + título en SVG vectorial (nítido a cualquier
+ * tamaño) + 12–20 chispas en forma de rombo. `pointer-events-none`: nunca bloquea la partida.
  */
 export function GameCinematic({ title, sub, tone = 'gold' }: { title: string; sub?: string; tone?: CinematicTone }) {
   const t = TONES[tone];
+  const uid = useId().replace(/:/g, '');
   const light = useMemo(isMobile, []);
-  const count = light ? SPARKS_MOBILE : SPARKS;
+  const count = light ? 12 : 20;
   const sparks = useMemo(() => Array.from({ length: count }, (_, i) => {
-    const a = (i / count) * Math.PI * 2 + (i % 3) * 0.2;
-    const d = 110 + ((i * 37) % 120);
-    return { x: Math.cos(a) * d, y: Math.sin(a) * d, fall: 90 + ((i * 29) % 70), rot: ((i * 83) % 540) - 270, size: 5 + (i % 4) * 2, color: t.spark[i % t.spark.length]!, delay: (i % 5) * 0.02 };
+    const a = (i / count) * Math.PI * 2 + (i % 3) * 0.25;
+    const d = 120 + ((i * 41) % 110);
+    return { x: Math.cos(a) * d, y: Math.sin(a) * d, fall: 60 + ((i * 29) % 60), rot: ((i * 83) % 400) - 200, size: 7 + (i % 3) * 3, color: t.spark[i % t.spark.length]!, delay: (i % 4) * 0.025 };
   }), [t, count]);
+  // Tamaño de fuente nativo (sin escalar HTML): el SVG se vuelve a rasterizar en cada fotograma → siempre nítido.
+  const chars = Math.max(title.length, 6);
+  const W = Math.max(360, Math.min(900, chars * 46 + 80));
+  const fontSize = chars > 14 ? 40 : 52;
   return (
-    <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center overflow-hidden" aria-live="assertive">
-      {/* atmósfera: destello oscuro radial */}
-      <motion.div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(0,0,0,.72) 0%, rgba(0,0,0,.25) 55%, rgba(0,0,0,0) 80%)' }}
-        initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: 1.6, times: [0, 0.12, 0.75, 1] }} />
-      {/* rayos: en escritorio giran; en móvil, destello radial estático (solo opacity + scale) */}
-      {light ? (
-        <motion.div className="absolute left-1/2 top-1/2 size-[120vmax] -translate-x-1/2 -translate-y-1/2 will-change-transform"
-          style={{ background: `radial-gradient(circle, ${t.ray} 0%, transparent 30%)` }}
-          initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: [0, 0.9, 0], scale: 1.1 }} transition={{ duration: 1.4, ease: 'easeOut' }} />
-      ) : (
-        <motion.div className="absolute left-1/2 top-1/2 size-[150vmax] -translate-x-1/2 -translate-y-1/2 will-change-transform"
-          style={{ background: `repeating-conic-gradient(from 0deg, ${t.ray} 0deg 7deg, transparent 7deg 26deg)`, maskImage: 'radial-gradient(circle, #000 0%, transparent 22%)', WebkitMaskImage: 'radial-gradient(circle, #000 0%, transparent 22%)' }}
-          initial={{ opacity: 0, rotate: 0, scale: 0.6 }} animate={{ opacity: [0, 0.9, 0.9, 0], rotate: 50, scale: 1 }} transition={{ duration: 1.6, ease: 'easeOut' }} />
-      )}
-      <div className="relative grid justify-items-center gap-3 px-4 text-center">
-        {/* chispas */}
+    <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center overflow-hidden" aria-live="assertive">
+      {/* enfoque: oscurece y difumina el fondo (entrada 140 ms, salida 220 ms) */}
+      <motion.div className="absolute inset-0 bg-[#030D09]/82 backdrop-blur-sm md:bg-[#030D09]/75 md:backdrop-blur-md"
+        initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: 1.15, times: [0, 0.122, 0.808, 1], ease: 'linear' }} />
+      <div className="relative grid place-items-center">
+        {/* chispas vectoriales (rombos) */}
         {sparks.map((p, i) => (
-          <motion.span key={i} className="absolute left-1/2 top-1/2 block rounded-[2px] will-change-transform" style={{ width: p.size, height: p.size * 1.6, background: p.color }}
+          <motion.span key={i} className="absolute left-1/2 top-1/2 block" style={{ width: p.size, height: p.size, marginLeft: -p.size / 2, marginTop: -p.size / 2, background: p.color, clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' }}
             initial={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 1 }}
-            animate={{ x: p.x, y: [0, p.y, p.y + p.fall], opacity: [1, 1, 0], rotate: p.rot, scale: [1, 1, 0.5] }}
-            transition={{ duration: 1.25, delay: 0.12 + p.delay, ease: 'easeOut' }} />
+            animate={{ x: p.x, y: [0, p.y, p.y + p.fall], opacity: [1, 1, 0], rotate: p.rot, scale: [1, 1, 0.4] }}
+            transition={{ duration: 1.1, delay: 0.1 + p.delay, ease: 'easeOut' }} />
         ))}
-        {/* título cinético */}
-        <motion.h2 className="relative font-black uppercase leading-none will-change-transform"
-          style={{
-            fontFamily: "'Unbounded','Outfit',sans-serif", fontSize: 'clamp(26px,9vw,56px)', backgroundImage: t.fill, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            WebkitTextStroke: '3px rgba(6,24,16,.9)', paintOrder: 'stroke fill', ...(light ? { textShadow: '0 3px 0 rgba(0,0,0,.6)' } : { filter: `drop-shadow(0 0 16px ${t.glow}) drop-shadow(0 4px 0 rgba(0,0,0,.55))` }),
-          }}
-          initial={{ scale: 2.4, rotate: -6, opacity: 0 }} animate={{ scale: [2.4, 0.92, 1, 1, 1.06], rotate: [-6, 2, 0, 0, 0], opacity: [0, 1, 1, 1, 0] }}
-          transition={{ duration: 1.5, times: [0, 0.2, 0.32, 0.8, 1], ease: 'easeOut' }}>
-          {title}
-          {/* barrido de luz metálico */}
-          <motion.span aria-hidden className="absolute inset-y-[-10%] left-0 w-[40%]" style={{ background: 'linear-gradient(100deg, transparent 0%, rgba(255,255,255,.9) 50%, transparent 100%)', mixBlendMode: 'overlay', transform: 'skewX(-18deg)' }}
-            initial={{ x: '-120%' }} animate={{ x: '320%' }} transition={{ duration: 0.6, delay: 0.3, ease: 'easeInOut' }} />
-        </motion.h2>
+        <motion.svg width={W} height={W * 0.46} viewBox={`0 0 ${W} ${W * 0.46}`} shapeRendering="geometricPrecision" textRendering="geometricPrecision" aria-hidden
+          style={{ maxWidth: '96vw', height: 'auto', overflow: 'visible' }}
+          initial={{ opacity: 0, y: -14, scale: 1.18 }} animate={{ opacity: [0, 1, 1, 1, 0], y: [-14, 0, 0, 0, -6], scale: [1.18, 0.98, 1, 1, 1.04] }}
+          transition={{ duration: 1.5, times: [0, 0.18, 0.3, 0.82, 1], ease: 'easeOut' }}>
+          <defs>
+            <linearGradient id={`${uid}-metal`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={t.hi} /><stop offset=".5" stopColor={t.mid} /><stop offset="1" stopColor={t.lo} /></linearGradient>
+            <linearGradient id={`${uid}-ring`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={t.hi} /><stop offset=".5" stopColor={t.mid} /><stop offset="1" stopColor={t.lo} /></linearGradient>
+            <linearGradient id={`${uid}-sweep`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".85" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+            <clipPath id={`${uid}-clip`}><rect x="0" y="0" width={W} height={W * 0.46} /></clipPath>
+          </defs>
+          {/* emblema: anillo metálico con filo interior luminoso */}
+          <ellipse cx={W / 2} cy={W * 0.23} rx={W * 0.46} ry={W * 0.2} fill="rgba(3,13,9,.55)" stroke={`url(#${uid}-ring)`} strokeWidth="4" />
+          <ellipse cx={W / 2} cy={W * 0.23} rx={W * 0.46 - 8} ry={W * 0.2 - 8} fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="1" />
+          {/* barrido diagonal de luz (0,6 s) */}
+          <g clipPath={`url(#${uid}-clip)`}>
+            <motion.rect y={W * 0.03} width={W * 0.18} height={W * 0.4} fill={`url(#${uid}-sweep)`} style={{ transform: 'skewX(-20deg)', transformBox: 'fill-box' }}
+              initial={{ x: -W * 0.2 }} animate={{ x: W * 1.05 }} transition={{ duration: 0.6, delay: 0.28, ease: 'easeInOut' }} />
+          </g>
+          {/* título: contorno oscuro, sombra y relleno metálico */}
+          <text x={W / 2} y={W * 0.23 + fontSize * 0.36} textAnchor="middle" fontFamily="'Unbounded','Outfit',sans-serif" fontWeight="800" fontSize={fontSize}
+            fill="#000" opacity=".55" transform="translate(0 5)" letterSpacing="2">{title}</text>
+          <text x={W / 2} y={W * 0.23 + fontSize * 0.36} textAnchor="middle" fontFamily="'Unbounded','Outfit',sans-serif" fontWeight="800" fontSize={fontSize}
+            fill={`url(#${uid}-metal)`} stroke="rgba(6,24,16,.95)" strokeWidth="6" paintOrder="stroke fill" strokeLinejoin="round" letterSpacing="2">{title}</text>
+        </motion.svg>
         {sub && (
-          <motion.div className="rounded-full border border-white/20 bg-zinc-950/90 px-4 py-1.5 text-[13px] font-bold text-stone-100"
+          <motion.div className="-mt-4 rounded-full border border-white/20 bg-zinc-950/95 px-4 py-1.5 text-[13px] font-bold text-stone-100 shadow-[0_6px_16px_rgba(0,0,0,.5)] ring-1 ring-inset ring-white/10"
             style={{ fontFamily: "'Outfit',sans-serif" }}
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: [0, 1, 1, 0], y: [12, 0, 0, -4] }} transition={{ duration: 1.5, times: [0, 0.25, 0.8, 1], delay: 0.1 }}>
             {sub}

@@ -14,7 +14,7 @@ export const TableAvatar = memo(function TableAvatar({ name, tone = 'neutral', c
   return (
     <span
       aria-hidden="true"
-      className={`grid aspect-square select-none place-items-center rounded-full border-2 font-[var(--font-display)] text-[1.1em] font-bold ${TONE[tone]} ${active ? 'ring-2 ring-amber-300 shadow-[0_0_16px_rgba(242,202,112,.7)]' : ''} ${className}`}
+      className={`grid aspect-square select-none place-items-center rounded-full border-2 shadow-[0_3px_8px_rgba(0,0,0,.5),inset_0_2px_3px_rgba(255,255,255,.22),inset_0_-4px_8px_rgba(0,0,0,.4)] font-[var(--font-display)] text-[1.1em] font-bold ${TONE[tone]} ${active ? 'ring-2 ring-amber-300' : ''} ${className}`}
     >
       {initial}
     </span>

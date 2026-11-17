@@ -112,7 +112,7 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
       aria-pressed={interactive ? selected : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : undefined}
       title={faceDown ? undefined : title}
-      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation select-none overflow-hidden rounded-none border border-black/40 shadow-md will-change-transform md:shadow-xl ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation select-none overflow-hidden rounded-none border border-black/40 shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         aspectRatio: card.deck === 'fr' ? '167 / 243' : '12 / 19',
@@ -126,6 +126,8 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
       transition={CARD_EASE}
     >
       {content}
+      {!faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,.14)_0%,rgba(255,255,255,0)_45%,rgba(0,0,0,.08)_100%)]" />}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-[3px] border border-black/15" />
       {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/35" />}
       {badge && !faceDown && (
         <span aria-hidden="true" className="pointer-events-none absolute right-[5%] top-[3%] rounded-full bg-black/70 px-[.35em] py-[.05em] font-mono font-bold leading-none text-amber-200 shadow"
