@@ -5,6 +5,7 @@ import { useReplica, useSeating } from '../../services/onlineGame.ts';
 import { juice } from '../../services/juice.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CASINO_VALUES, CasinoChip, ChipPile } from '../../components/cards/CasinoChip.tsx';
+import { OvalTable } from './TableArt.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { useT } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
@@ -40,7 +41,6 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
           ))}
         </div>
       )}
-      {x.bet > 0 && !x.out && <ChipPile amount={x.bet} size={15} maxCols={3} />}
       <AnimatePresence>
         {(x.last || x.bet > 0) && !x.out && (
           <motion.span key={`${x.last}-${x.bet}`} initial={{ opacity: 0, y: -4, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
@@ -191,47 +191,53 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     : myTurn ? (lg!.canCheck ? 'Te toca: pasa o apuesta' : `Te toca: ${lg!.callAmount} para igualar`) : s.phase === 'betting' ? `Juega ${nm(s.turn)}…` : '';
 
   // La posición k (1 = derecha, 2 = arriba, 3 = izquierda…) es el jugador que va k asientos después de mí.
-  const seat = (k: number, slot: Slot) => (k < n ? <SeatView s={s} i={(myIdx + k) % n} slot={slot} /> : null);
-  const six = n === 6;
+  // Posiciones (en % de la mesa) de cada asiento según cuántos jugadores hay. La posición k es el jugador que va k asientos después de mí.
+  const POS: Record<number, Record<number, [number, number]>> = {
+    2: { 1: [50, 12] },
+    3: { 1: [84, 34], 2: [16, 34] },
+    4: { 1: [90, 50], 2: [50, 12], 3: [10, 50] },
+    6: { 1: [89, 68], 2: [89, 32], 3: [50, 11], 4: [11, 32], 5: [11, 68] },
+  };
+  const slotOf = (x: number): Slot => (x > 70 ? 'right' : x < 30 ? 'left' : 'top');
   const flip = (c: PokerState['community'][number], k: number) => (
     <motion.div key={c.id} style={{ perspective: 600 }} initial={{ rotateY: 90, y: -24, opacity: 0 }} animate={{ rotateY: 0, y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 160, damping: 18, delay: k >= 3 ? 0 : k * 0.12 }}>
       <FaceCard card={c} scale={0.5} />
     </motion.div>
   );
+  const at = (x: number, y: number): React.CSSProperties => ({ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' });
+  /** Punto a mitad de camino entre el asiento y el centro del bote, donde se apila su apuesta. */
+  const toward = (x: number, y: number): [number, number] => [x + (50 - x) * 0.4, y + (52 - y) * 0.4];
+  const seatsOnTable = Array.from({ length: n - 1 }, (_, i) => i + 1).map((k) => {
+    const pos = POS[n]?.[k];
+    return pos ? { k, i: (myIdx + k) % n, pos } : null;
+  }).filter((v): v is { k: number; i: number; pos: [number, number] } => v !== null);
   const felt = (
     <>
-      <div className="grid h-full grid-cols-[minmax(0,.8fr)_minmax(0,2.5fr)_minmax(0,.8fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
-        {six ? (
-          <>
-            <div className="col-start-1 row-start-1 justify-self-center">{seat(4, 'left')}</div>
-            <div className="col-start-2 row-start-1 justify-self-center">{seat(3, 'top')}</div>
-            <div className="col-start-3 row-start-1 justify-self-center">{seat(2, 'right')}</div>
-            <div className="col-start-1 row-start-2 self-center justify-self-center">{seat(5, 'left')}</div>
-            <div className="col-start-3 row-start-2 self-center justify-self-center">{seat(1, 'right')}</div>
-          </>
-        ) : (
-          <>
-            <div className="col-start-2 row-start-1 justify-self-center">{seat(2, 'top')}</div>
-            <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat(3, 'left')}</div>
-            <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center">{seat(1, 'right')}</div>
-          </>
-        )}
-        <div className="col-start-2 row-start-2 grid min-h-0 place-items-center">
-          <div className="grid justify-items-center gap-2">
+      <div className="h-full w-full p-[clamp(2px,1vw,10px)]">
+        <OvalTable>
+          {seatsOnTable.map(({ k, i, pos }) => (
+            <div key={`s${k}`} className="absolute z-10" style={at(pos[0], pos[1])}><SeatView s={s} i={i} slot={slotOf(pos[0])} /></div>
+          ))}
+          {seatsOnTable.map(({ k, i, pos }) => s.seats[i]!.bet > 0 && !s.seats[i]!.out ? (
+            <div key={`b${k}`} className="absolute z-[5]" style={at(...toward(pos[0], pos[1]))}><ChipPile amount={s.seats[i]!.bet} size={15} maxCols={3} /></div>
+          ) : null)}
+          {me.bet > 0 && <div className="absolute z-[5]" style={at(50, 76)}><ChipPile amount={me.bet} size={15} maxCols={3} /></div>}
+          {/* bote y cartas comunitarias */}
+          <div className="absolute z-[6] grid justify-items-center gap-1.5" style={at(50, 50)}>
             <div className="grid justify-items-center gap-1" aria-label={`Bote ${total}`}>
-              <ChipPile amount={s.seats.reduce((a2, x) => a2 + x.committed, 0)} size={22} />
-              <span className="font-mono rounded-full border border-white/10 bg-black/35 px-3 py-0.5 text-sm font-bold text-amber-200 tabular-nums">Bote {total}</span>
+              <ChipPile amount={s.seats.reduce((a2, x) => a2 + x.committed, 0)} size={20} />
+              <span className="font-mono rounded-full border border-white/10 bg-black/45 px-3 py-0.5 text-[13px] font-bold text-amber-200 tabular-nums">Bote {total}</span>
             </div>
             <div className="flex items-center justify-center gap-[min(1vw,5px)]" aria-label="Cartas comunitarias">
               {Array.from({ length: 5 }, (_, k) => {
                 const c = s.community[k];
-                return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] border border-dashed border-white/15" style={{ width: 'calc(var(--card-w) * 0.5)' }} />;
+                return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] rounded-[3px] border border-dashed border-white/15" style={{ width: 'calc(var(--card-w) * 0.5)' }} />;
               })}
             </div>
-            <span className="rounded-full bg-black/35 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-200/80">{STREET[s.street]} · mano {s.handNo}</span>
+            <span className="rounded-full bg-black/45 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-200/80">{STREET[s.street]} · mano {s.handNo}</span>
           </div>
-        </div>
+        </OvalTable>
       </div>
       <Banner text={banner} />
     </>

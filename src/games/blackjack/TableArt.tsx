@@ -1,0 +1,53 @@
+import type { ReactNode } from 'react';
+
+const TEXT = 'BLACKJACK PAGA 3 A 2 · LA BANCA SE PLANTA EN 17';
+
+/**
+ * Mesa semicircular de casino: canto recto arriba (crupier) y curva abajo (puestos de apuesta).
+ * Rail de cuero oscuro con brillo, ribete dorado, fieltro esmeralda con tejido sutil y rótulo curvo en el tapete.
+ * CSS/SVG estáticos, sin filtros: ligero en móvil.
+ */
+export function SemiTable({ children }: { children: ReactNode }) {
+  const RADIUS = '4% 4% 50% 50% / 3% 3% 46% 46%';
+  return (
+    <div className="relative h-full w-full">
+      <div aria-hidden className="absolute inset-[1%_1.2%]" style={{ borderRadius: RADIUS, background: 'linear-gradient(180deg,#1b1f1d 0%,#121514 45%,#0b0d0c 100%)', boxShadow: 'inset 0 5px 12px rgba(255,255,255,.09), inset 0 -12px 24px rgba(0,0,0,.85), 0 14px 28px rgba(0,0,0,.55)' }} />
+      <div aria-hidden className="absolute inset-[6%_5.6%_5%]" style={{ borderRadius: RADIUS, border: '2.5px solid #D4AF37', boxShadow: '0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(251,224,138,.35)' }} />
+      <div aria-hidden className="absolute inset-[6.8%_6.3%_5.8%] overflow-hidden" style={{ borderRadius: RADIUS, background: 'radial-gradient(ellipse at 50% 30%, #0B2E20 0%, #0A2819 55%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55)' }}>
+        <div className="absolute inset-0 opacity-70" style={{ background: 'repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,.05) 0 2px, transparent 2px 4px)' }} />
+      </div>
+      {/* rótulo curvo */}
+      <svg aria-hidden viewBox="0 0 400 200" className="pointer-events-none absolute left-1/2 top-[29%] w-[94%] -translate-x-1/2" preserveAspectRatio="xMidYMid meet">
+        <defs><path id="bj-arc" d="M 6 36 Q 200 112 394 36" /></defs>
+        <text fontFamily="var(--font-display), serif" fontWeight="700" fontSize="11.5" letterSpacing="1.2" fill="rgba(240,195,95,.34)">
+          <textPath href="#bj-arc" startOffset="50%" textAnchor="middle">{TEXT}</textPath>
+        </text>
+      </svg>
+      {children}
+    </div>
+  );
+}
+
+/** Zapato (dispensador) de cartas: caja acrílica oscura con las cartas asomando. */
+export function Shoe({ count }: { count: number }) {
+  return (
+    <div className="flex items-center gap-1.5" aria-label={`${count} cartas en el zapato`}>
+      <div className="relative h-[calc(var(--card-w)*.62)] w-[calc(var(--card-w)*.8)] rounded-md"
+        style={{ background: 'linear-gradient(135deg,#2a2f2d,#0a0c0b)', border: '1px solid rgba(255,255,255,.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.3), 0 4px 8px rgba(0,0,0,.5)' }}>
+        <span className="absolute inset-x-[10%] top-[16%] h-[34%] rounded-sm bg-[#e9e4d2]" style={{ transform: 'skewX(-14deg)' }} />
+        <span className="absolute inset-x-[10%] top-[30%] h-[34%] rounded-sm bg-[#1f6b52]" style={{ transform: 'skewX(-14deg)', border: '1px solid #d4af37' }} />
+      </div>
+      <span className="font-mono text-[10px] text-amber-200/80">{count}</span>
+    </div>
+  );
+}
+
+/** Ranura de descarte. */
+export function DiscardSlot() {
+  return (
+    <div className="grid justify-items-center gap-0.5" aria-hidden>
+      <span className="block h-[calc(var(--card-w)*.14)] w-[calc(var(--card-w)*.72)] rounded-full" style={{ background: '#050807', border: '1px solid rgba(255,255,255,.2)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,.9)' }} />
+      <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-200/50">Descarte</span>
+    </div>
+  );
+}

@@ -152,7 +152,7 @@ export default function Home() {
 
         <div className="relative z-10 flex items-center gap-2.5">
           <Logo size={46} />
-          <h1 className="gold-text font-[Unbounded,var(--font-display)] text-[26px] font-extrabold leading-none tracking-wide">{APP_NAME}</h1>
+          <h1 className="gold-text font-[var(--font-display)] text-3xl font-bold leading-none tracking-wide">{APP_NAME}</h1>
         </div>
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}

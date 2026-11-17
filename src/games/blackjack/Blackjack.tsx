@@ -3,13 +3,14 @@ import { motion } from 'framer-motion';
 import { BetStack, Chip, CHIP_VALUES, chipBreakdown, type ChipValue } from '../../components/cards/Chip.tsx';
 import { DealIn } from '../../components/cards/DealIn.tsx';
 import { AnimatedNumber } from '../mus/app/components/AnimatedNumber.tsx';
-import { CardBackArt } from '../../components/cards/FrenchFace.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { canClaimDaily, dailyAmount, useWallet, wallet } from '../../store/wallet.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { juice } from '../../services/juice.ts';
+import { ChipPile } from '../../components/cards/CasinoChip.tsx';
+import { DiscardSlot, SemiTable, Shoe } from './TableArt.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
   canDouble, canHit, canSplit, deal, dealerStep, double, handValue, hit, newShoe, split, stand,
@@ -146,7 +147,8 @@ export default function Blackjack() {
 
   const felt = (
     <>
-      <div className="flex h-full flex-col items-center justify-between p-[clamp(6px,2vw,16px)]">
+      <SemiTable>
+      <div className="absolute inset-0 flex flex-col items-center justify-between px-[clamp(14px,6%,40px)] pb-[7%] pt-[clamp(10px,3.5%,22px)]">
         {/* Crupier */}
         <section className="grid justify-items-center gap-1" aria-label="Crupier">
           <div className="flex items-center gap-2">
@@ -159,16 +161,16 @@ export default function Blackjack() {
           </div>
         </section>
 
-        {/* Apuesta (antes de repartir) */}
+        {/* Círculo dorado de apuesta: aquí se apilan las fichas */}
         <div className="grid place-items-center">
-          {inBetting && (
-            <div className="grid justify-items-center gap-1">
-              <div className="grid size-[min(24vw,12dvh)] place-items-center rounded-full border-2 border-dashed border-amber-300/50 bg-black/25">
-                {bet > 0 ? <BetStack chips={stack} size={44} /> : <span className="text-[11px] font-bold text-white/40">Tu apuesta</span>}
-              </div>
-              <b className="font-[var(--font-display)] text-2xl text-amber-300 tabular-nums">{bet}</b>
+          <div className="grid justify-items-center gap-1">
+            <div className="grid size-[min(22vw,11dvh,86px)] place-items-center rounded-full" style={{ border: '2.5px solid #D4AF37', background: 'radial-gradient(circle, rgba(212,175,55,.14), rgba(0,0,0,.25))', boxShadow: '0 0 0 1px rgba(0,0,0,.55), inset 0 0 12px rgba(0,0,0,.5)' }}>
+              {inBetting
+                ? (bet > 0 ? <BetStack chips={stack} size={40} /> : <span className="text-[10px] font-bold uppercase tracking-wider text-amber-200/50">Apuesta</span>)
+                : <ChipPile amount={game ? totalBet(game) : 0} size={18} maxCols={3} />}
             </div>
-          )}
+            {inBetting && <b className="font-[var(--font-display)] text-xl text-amber-300 tabular-nums">{bet}</b>}
+          </div>
         </div>
 
         {/* Tus manos */}
@@ -189,14 +191,9 @@ export default function Blackjack() {
           })}
         </section>
       </div>
-      <div className="absolute left-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10 flex items-center gap-1.5" aria-label={`${shoe.length} cartas en el zapato`}>
-        <div className="relative aspect-[12/19] w-[calc(var(--card-w)*.4)]">
-          {[2, 1, 0].map((k) => (
-            <span key={k} className="absolute inset-0 overflow-hidden rounded-[6px] shadow-[0_4px_8px_rgba(0,0,0,.4)]" style={{ transform: `translate(${k * 2}px, ${-k * 2}px)` }}><CardBackArt variant="midnight" seal="STACKS" /></span>
-          ))}
-        </div>
-        <span className="font-mono text-[10px] text-amber-200/80">{shoe.length}</span>
-      </div>
+      </SemiTable>
+      <div className="absolute left-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10"><DiscardSlot /></div>
+      <div className="absolute right-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10"><Shoe count={shoe.length} /></div>
       <Banner text={banner} />
     </>
   );
