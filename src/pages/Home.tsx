@@ -6,6 +6,7 @@ import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
 import { QuickButtons } from '../components/ui/QuickButtons.tsx';
 import { ChipBalance } from '../components/ui/Hud.tsx';
+import { WordmarkPicker } from '../components/ui/WordmarkPicker.tsx';
 import { EconomyModal } from '../components/ui/EconomyModal.tsx';
 import { RulesModal } from '../components/ui/RulesModal.tsx';
 import { ProfileCard } from '../components/ui/ProfileModal.tsx';
@@ -138,10 +139,13 @@ export default function Home() {
   }, [N]);
   return (
     <div className="screen obsidian">
-      <header className="glass-panel relative z-20 flex items-center gap-2 px-3 py-2" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
-        <div className="min-w-0 flex-1"><ProfileCard /></div>
-        <ChipBalance onPlus={() => setShowRefill(true)} />
-        <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />
+      <header className="glass-panel relative z-20 flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 sm:flex-nowrap" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
+        <div className="min-w-0 flex-1 sm:flex-none"><ProfileCard /></div>
+        <div className="order-last flex basis-full justify-center sm:order-none sm:basis-auto sm:flex-1"><WordmarkPicker /></div>
+        <div className="flex shrink-0 items-center gap-2">
+          <ChipBalance onPlus={() => setShowRefill(true)} />
+          <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />
+        </div>
       </header>
       <EconomyModal open={showRefill} onClose={() => setShowRefill(false)} />
 
@@ -196,7 +200,6 @@ export default function Home() {
         </nav>
       </div>
 
-      <button type="button" onClick={() => nav('/branding')} className="fixed right-3 top-[68px] z-20 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-[10px] font-semibold text-stone-400 hover:text-stone-300">Elegir fuente e icono</button>
       <OnlineLobbyModal game={online} initialCode={inviteCode} onClose={closeOnline} onStart={startOnline} />
       <RulesPicker open={picker} onClose={() => setPicker(false)} onPick={(g) => { setPicker(false); setRules(g); }} />
       <RulesModal game={rules} onClose={() => setRules(null)} />

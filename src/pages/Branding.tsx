@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { WORDMARK_FONTS, WordmarkText } from '../components/ui/WordmarkPicker.tsx';
 
 /** Pantalla temporal para elegir tipografía e icono «S». Ruta: /#/branding */
 
@@ -124,6 +125,15 @@ export default function Branding() {
         <p className="mb-5 text-[12px] text-stone-400">Dime la fuente (F1–F8) y el icono (S01–S12) que prefieres.</p>
         <h2 className="mb-2 text-[13px] font-extrabold uppercase tracking-widest text-amber-200/80">A · Tipografías</h2>
         <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{FONTS.map((f) => <FontCard key={f.id} f={f} />)}</div>
+        <h2 className="mb-2 text-[13px] font-extrabold uppercase tracking-widest text-amber-200/80">A2 · Palabra STACKS (12 fuentes)</h2>
+        <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {WORDMARK_FONTS.map((f, i) => (
+            <div key={f.name} className="rounded-2xl border border-white/10 bg-[#0B2218] p-3">
+              <b className="text-[12px] text-amber-300">{String(i + 1).padStart(2, '0')} · {f.name}</b>
+              <div className="mt-2 grid gap-2"><WordmarkText i={i} gold={false} size={26} /><WordmarkText i={i} gold size={26} /></div>
+            </div>
+          ))}
+        </div>
         <h2 className="mb-2 text-[13px] font-extrabold uppercase tracking-widest text-amber-200/80">B · Iconos «S»</h2>
         <div className="grid gap-3 pb-10 sm:grid-cols-2 lg:grid-cols-3">{ICONS.map((ic) => <IconCard key={ic.id} ic={ic} />)}</div>
       </div>
