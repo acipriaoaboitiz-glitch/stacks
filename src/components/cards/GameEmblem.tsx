@@ -69,11 +69,8 @@ function Body({ id }: { id: string }) {
     case 'presidente':
       return (
         <g>
-          {[['2_of_spades', 34, -12], ['ace_of_hearts', 66, 12]].map(([f, x, r]) => (
-            <g key={f as string} transform={`translate(${x} 58) rotate(${r})`} style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.5))' }}>
-              <image href={`${BASE}cards/french/${f}.svg`} x="-20" y="-29" width="40" height="58" preserveAspectRatio="xMidYMid meet" />
-            </g>
-          ))}
+          <Real x={34} y={58} r={-12} w={34} file="02-oros" />
+          <Real x={66} y={58} r={12} w={34} file="01-espadas" />
           <path d="M30 18 L40 28 L50 12 L60 28 L70 18 L66 32 H34Z" fill="url(#st-gold)" stroke="#6b4306" strokeWidth="2" />
         </g>
       );

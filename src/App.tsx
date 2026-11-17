@@ -37,6 +37,7 @@ export default function App() {
         <Route path="/play/chinchon" element={<Chinchon />} />
         <Route path="/play/tute" element={<Tute />} />
         <Route path="/play/poker" element={<Poker />} />
+        <Route path="/play/comemierda" element={<Presidente />} />
         <Route path="/play/presidente" element={<Presidente />} />
         <Route path="/play/seises" element={<Seises />} />
         <Route path="*" element={<Navigate to="/" replace />} />

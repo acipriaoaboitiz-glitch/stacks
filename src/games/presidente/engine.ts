@@ -1,15 +1,15 @@
 import { frenchDeck, shuffle, spanishDeck, type AnyCard } from '../../engine/deck.ts';
 
 /**
- * El Presidente («De mendigo a rey de la mesa»): 3–6 jugadores, baraja española (40) o inglesa (52).
+ * COME💩 (id interno «presidente»: «De mendigo a rey de la mesa»): 3–6 jugadores, baraja española (40) o inglesa (52).
  * Jerarquía de menor a mayor: 3, 4, 5, 6, 7, (8, 9, 10 en la inglesa,) Sota/J, Caballo/Q, Rey/K, As y 2.
  * Se juega la misma cantidad de cartas del mismo valor, superando lo que hay en la mesa, o se pasa.
- * Un 2 suelto corta cualquier jugada y limpia el centro. Quien se queda sin cartas se sienta: primero Presidente, último Mendigo.
+ * Un 2 suelto corta cualquier jugada y limpia el centro. Quien se queda sin cartas se sienta: primero Rey 👑, último COME💩.
  */
 export type DeckKind = 'es' | 'fr';
 export type Role = 'presidente' | 'vicepresidente' | 'pueblo' | 'subalterno' | 'mendigo';
 export const ROLE_NAME: Record<Role, string> = {
-  presidente: 'Presidente', vicepresidente: 'Vicepresidente', pueblo: 'Pueblo', subalterno: 'Subalterno', mendigo: 'Mendigo',
+  presidente: 'Rey', vicepresidente: '2º', pueblo: 'Pueblo', subalterno: '3º', mendigo: 'COME💩',
 };
 
 export interface PresPlayer { id: string; name: string; human: boolean; /** Jugador de la sala (partida online). */ peerId?: string }
@@ -93,7 +93,7 @@ export function newRound(players: PresPlayer[], deck: DeckKind, prev?: PresState
   hands[pres.id] = sortHand([...hands[pres.id]!, ...best]);
   s.exchange = { president: pres.id, beggar: beg.id, received: best };
   s.turn = players.indexOf(beg); // abre el Mendigo
-  if (pres.human) { s.phase = 'exchange'; say(s, beg.id, `${beg.name} te entrega sus 2 mejores cartas: devuelve 2`); }
+  if (pres.human) { s.phase = 'exchange'; say(s, beg.id, `${beg.name} (COME💩) te entrega sus 2 mejores cartas: devuelve tus 2 peores`); }
   else {
     const worst = sortHand(hands[pres.id]!).filter((c) => !best.includes(c)).slice(0, 2);
     hands[pres.id] = hands[pres.id]!.filter((c) => !worst.includes(c));

@@ -10,7 +10,7 @@ const TONE: Record<AvatarTone, string> = {
 
 /** Avatar de mesa: se dimensiona con `className` (p. ej. `size-[min(12vw,7dvh)]`) para escalar con la pantalla. */
 export const TableAvatar = memo(function TableAvatar({ name, tone = 'neutral', className = '', active = false }: { name: string; tone?: AvatarTone; className?: string; active?: boolean }) {
-  const initial = (name.trim()[0] ?? '?').toUpperCase();
+  const initial = (/\p{L}/u.exec(name)?.[0] ?? '?').toUpperCase(); // primera letra (ignora emojis de rol delante del nombre)
   return (
     <span
       aria-hidden="true"

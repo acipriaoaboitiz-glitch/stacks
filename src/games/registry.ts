@@ -104,14 +104,14 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'presidente', name: 'El Presidente', tagline: 'De mendigo a rey de la mesa', category: 'familiar', deck: 'fr', players: '3–6 jugadores',
-    icon: Landmark, route: '/play/presidente', playable: true, accent: '#d4af37', tint: ['#2e2608', '#0d1a12'],
+    id: 'presidente', name: 'COME💩', tagline: 'De mendigo a rey de la mesa', category: 'familiar', deck: 'es', players: '4 jugadores',
+    icon: Landmark, route: '/play/comemierda', playable: true, accent: '#d4af37', tint: ['#2e2608', '#0d1a12'],
     rules: [
-      'Se reparten todas las cartas (baraja española de 40 o inglesa de 52). De menor a mayor: 3, 4, 5, 6, 7, Sota, Caballo, Rey, As y 2.',
-      'Empieza quien tiene el 3 de oros (o de tréboles). Se juega una carta, una pareja, un trío o un póker del mismo valor.',
-      'El siguiente jugador debe superar el valor con la misma cantidad de cartas, o pasar. Un 2 suelto corta cualquier jugada.',
+      'Baraja española de 40 cartas repartida entre 4 jugadores. De mayor a menor: 2 > As > Rey > Caballo > Sota > 7 > 6 > 5 > 4 > 3.',
+      'Empieza quien tiene el 3 de oros. Se juega una carta, una pareja, un trío o un póker del mismo valor.',
+      'El siguiente jugador debe superar el valor con la misma cantidad de cartas, o pasar. Un 2 corta la mesa al instante: se limpia el centro y vuelve a salir quien lo tiró.',
       'Si todos pasan o alguien corta con un 2, se limpia la mesa y vuelve a salir quien ganó la baza.',
-      'Quien se queda sin cartas el primero es Presidente; el último, Mendigo. En la ronda siguiente el Mendigo entrega sus 2 mejores cartas al Presidente, que le devuelve 2 a su elección.',
+      'Según el orden en que te quedas sin cartas: 1º Rey 👑, 2º, 3º y 4º COME💩 💩. En la ronda siguiente COME💩 entrega sus 2 mejores cartas al Rey, y el Rey le da sus 2 peores.',
     ],
   },
   {

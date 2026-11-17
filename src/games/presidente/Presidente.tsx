@@ -15,7 +15,7 @@ import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
-  ROLE_NAME, ROLE_PRIZE, applyPresAction, botMove, canPlay, newRound, power, roleOf,
+  ROLE_NAME, ROLE_PRIZE, TOP, applyPresAction, botMove, canPlay, newRound, power, roleOf,
   type DeckKind, type PresAction, type PresPlayer, type PresState, type Role,
 } from './engine.ts';
 
@@ -23,14 +23,14 @@ const BOT_NAMES = ['Jon', 'Nerea', 'Aitor', 'Maite', 'Unai'];
 const makePlayers = (n: number): PresPlayer[] =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: i === 0 ? 'Tú' : BOT_NAMES[i - 1]!, human: i === 0 }));
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
-const MARK: Record<Role, string> = { presidente: '👑', vicepresidente: '🎩', pueblo: '', subalterno: '🥔', mendigo: '🪙' };
+const MARK: Record<Role, string> = { presidente: '👑', vicepresidente: '🥈', pueblo: '', subalterno: '🥉', mendigo: '💩' };
 
 export default function Presidente() {
   const nav = useNavigate();
   const t = useT();
   const seating = useSeating('presidente');
   const online = seating.online;
-  const [setup, setSetup] = useState<{ n: number; deck: DeckKind }>({ n: 4, deck: 'es' });
+  const setup: { n: number; deck: DeckKind } = { n: 4, deck: 'es' };
   const [started, setStarted] = useState(false);
   const [s, setS] = useState<PresState | null>(null);
   const [sel, setSel] = useState<string[]>([]);
@@ -44,10 +44,10 @@ export default function Presidente() {
 
   const start = () => { setStarted(true); setS(newRound(makePlayers(setup.n), setup.deck)); setSel([]); setBubbles({}); lastSeq.current = ''; paidRound.current = 0; };
 
-  // Online: el anfitrión reparte con los humanos de la sala (3–6 jugadores) y rellena con bots si está activado.
+  // Online: el anfitrión reparte con los humanos de la sala (hasta 4 jugadores) y rellena con bots si está activado.
   const hostStart = () => {
     const humans = seating.humans;
-    const n = Math.min(6, Math.max(3, seating.fillBots ? Math.max(4, humans.length) : humans.length));
+    const n = seating.fillBots ? 4 : Math.min(4, Math.max(2, humans.length));
     const players: PresPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
       : { id: `p${i}`, name: BOT_NAMES[i - humans.length] ?? `Bot ${i}`, human: false });
@@ -97,14 +97,14 @@ export default function Presidente() {
     const r = roleOf(s, me);
     if (!r) return;
     if (ROLE_PRIZE[r] > 0) wallet.add(ROLE_PRIZE[r]);
-    if (r === 'mendigo') juice.cinematic({ title: '¡MENDIGO!', sub: 'Entregas tus 2 mejores cartas', tone: 'ruby', good: false });
-    if (r === 'presidente') { wallet.recordWin('presidente'); juice.chips('me'); showCine('¡NUEVO REY!', `+${ROLE_PRIZE[r]} fichas`); }
+    if (r === 'mendigo') juice.cinematic({ title: '¡COME💩!', sub: 'Entregas tus 2 mejores cartas al Rey', tone: 'ruby', good: false });
+    if (r === 'presidente') { wallet.recordWin('presidente'); juice.chips('me'); showCine('¡NUEVO REY! 👑', `+${ROLE_PRIZE[r]} fichas`); }
   }, [s, showCine, me]);
 
   if (!s && online) {
     return (
       <GameFrame gameId="presidente" onExit={() => { setActiveRoom(null); nav('/'); }}
-        header={<p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300">El Presidente</p>}
+        header={<p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300">COME💩</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
     );
@@ -113,24 +113,14 @@ export default function Presidente() {
     return (
       <GameFrame
         gameId="presidente"
-        header={<p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300">El Presidente</p>}
+        header={<p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300">COME💩</p>}
         felt={
           <div className="grid h-full place-items-center p-5">
             <div className="grid w-full max-w-xs gap-3 text-center">
-              <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">De mendigo a rey de la mesa</h2>
-              <p className="text-[12px] font-bold uppercase tracking-widest text-stone-400">Jugadores</p>
-              <div className="grid grid-cols-4 gap-2">
-                {[3, 4, 5, 6].map((n) => (
-                  <Button key={n} variant={setup.n === n ? 'primary' : 'secondary'} onClick={() => setSetup({ ...setup, n })}>{n}</Button>
-                ))}
-              </div>
-              <p className="text-[12px] font-bold uppercase tracking-widest text-stone-400">Baraja</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant={setup.deck === 'es' ? 'primary' : 'secondary'} onClick={() => setSetup({ ...setup, deck: 'es' })}>Española</Button>
-                <Button variant={setup.deck === 'fr' ? 'primary' : 'secondary'} onClick={() => setSetup({ ...setup, deck: 'fr' })}>Inglesa</Button>
-              </div>
+              <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">COME💩</h2>
+              <p className="-mt-2 text-[13px] font-semibold text-amber-200/80">De mendigo a rey de la mesa</p>
               <Button variant="primary" block onClick={start}>Repartir</Button>
-              <p className="text-xs text-stone-400">Española: 40 cartas · Inglesa: 52. Quedarte sin cartas el primero te hace Presidente. El 2 es la carta más alta y limpia la mesa.</p>
+              <p className="text-xs text-stone-400">Baraja española de 40 cartas · tú y 3 jugadores. Quedarte sin cartas el primero te hace Rey 👑; el último es COME💩. El 2 es la carta más alta y corta la mesa.</p>
             </div>
           </div>
         }
@@ -146,6 +136,13 @@ export default function Presidente() {
   const myTurn = s.phase === 'play' && s.players[s.turn]!.id === me;
   const opponents = s.players.map((_, k) => (myIdx + 1 + k) % s.players.length).filter((i) => i !== myIdx);
   const playOk = myTurn && canPlay(s, me, sel);
+  // En tu turno, se atenúan las cartas que no pueden formar una jugada válida sobre la mesa.
+  const usable = (c: (typeof hand)[number]): boolean => {
+    if (!myTurn) return true;
+    const grp = hand.filter((x) => power(x) === power(c));
+    if (!s.table) return !s.mustInclude || power(c) === power(hand.find((x) => x.id === s.mustInclude)!);
+    return (power(c) > s.table.power && grp.length >= s.table.cards.length) || (power(c) === TOP(s.deck) && s.table.cards.length === 1);
+  };
 
   const toggle = (id: string) => {
     if (!myTurn && !exchange) return;
@@ -170,7 +167,7 @@ export default function Presidente() {
           { id: 'play', tone: 'gold' as const, label: sel.length ? `Tirar selección (${sel.length})` : 'Toca tus cartas', disabled: !playOk, onPress: doPlay },
         ]
       : [];
-  const status = s.phase === 'done' ? '' : waitingExchange ? 'El Presidente elige 2 cartas para devolver…' : exchange ? 'Elige 2 cartas para devolver al Mendigo'
+  const status = s.phase === 'done' ? '' : waitingExchange ? 'El Rey elige 2 cartas para devolver…' : exchange ? 'Elige tus 2 peores cartas para el COME💩'
     : myTurn ? (s.table ? `Te toca: ${s.table.cards.length === 1 ? 'una carta' : `${s.table.cards.length} cartas`} más altas, o pasa` : 'Te toca: abres la mesa') : `Juega ${s.players[s.turn]!.name}…`;
 
   const seatOf = (i: number) => {
@@ -220,7 +217,7 @@ export default function Presidente() {
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <TableAvatar name="Tú" tone="me" active={myTurn || exchange} className="size-9 text-[15px]" />
-          <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{myRole ? `${MARK[myRole]} ${ROLE_NAME[myRole]}` : 'Tú'}</b>
+          <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{myRole ? `${myRole === 'mendigo' ? '' : `${MARK[myRole]} `}${ROLE_NAME[myRole]}` : 'Tú'}</b>
           <span className="whitespace-nowrap rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{hand.length} {hand.length === 1 ? 'carta' : 'cartas'}</span>
         </div>
         <span className="min-w-0 truncate text-right text-[11px] text-stone-400">{status}</span>
@@ -230,7 +227,7 @@ export default function Presidente() {
         <div className="mx-auto flex w-max items-end px-2">
           {hand.map((c, i) => (
             <div key={c.id} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${gap})`, zIndex: i }}>
-              <FaceCard card={c} scale={0.8} selected={sel.includes(c.id)}
+              <FaceCard card={c} scale={0.8} selected={sel.includes(c.id)} dim={myTurn && !usable(c)}
                 onClick={myTurn || exchange ? () => toggle(c.id) : undefined} />
             </div>
           ))}
@@ -269,8 +266,8 @@ export default function Presidente() {
               <ResultOverlay
                 outcome={myRole === 'presidente' ? 'win' : myRole === 'mendigo' ? 'lose' : undefined}
                 prize={myRole ? ROLE_PRIZE[myRole] : 0}
-                taunt="Te han dejado de Mendigo"
-                title={myRole === 'presidente' ? '¡Eres el Presidente!' : myRole === 'mendigo' ? 'Te toca ser el Mendigo' : `Has quedado ${ROLE_NAME[myRole ?? 'pueblo']}`}
+                taunt="Te ha tocado COME💩"
+                title={myRole === 'presidente' ? '¡Eres el Rey! 👑' : myRole === 'mendigo' ? '¡Eres COME💩!' : `Has quedado ${ROLE_NAME[myRole ?? 'pueblo']}`}
                 actions={[
                   ...(hostLike ? [{ label: 'Siguiente ronda', primary: true, onClick: nextRound }] : []),
                   ...(online ? [] : [{ label: 'Cambiar mesa', onClick: () => { setStarted(false); setS(null); } }]),
@@ -290,7 +287,7 @@ export default function Presidente() {
                   })}
                 </ul>
                 {myRole && ROLE_PRIZE[myRole] > 0 && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{ROLE_PRIZE[myRole]} fichas</p>}
-                <p className="mt-2 text-center text-[11px] text-stone-400">En la siguiente ronda el Mendigo entrega sus 2 mejores cartas al Presidente.</p>
+                <p className="mt-2 text-center text-[11px] text-stone-400">En la siguiente ronda COME💩 entrega sus 2 mejores cartas al Rey, que le devuelve sus 2 peores.</p>
               </ResultOverlay>
             )}
           </AnimatePresence>
