@@ -101,6 +101,16 @@ export default function Presidente() {
     if (r === 'presidente') { wallet.recordWin('presidente'); juice.chips('me'); showCine('¡NUEVO REY! 👑', `+${ROLE_PRIZE[r]} fichas`); }
   }, [s, showCine, me]);
 
+  // Primera ronda: quien tiene el 3 de oros abre obligado; se preseleccionan el 3 de oros y todos sus demás treses.
+  const openerTurn = Boolean(s && s.phase === 'play' && !s.table && s.mustInclude && s.players[s.turn]!.id === me);
+  const openerKey = openerTurn ? `${s!.round}:${s!.mustInclude}` : '';
+  useEffect(() => {
+    if (!openerKey || !s) return;
+    const mine = s.hands[me] ?? [];
+    const ref = mine.find((c) => c.id === s.mustInclude);
+    if (ref) setSel(mine.filter((c) => power(c) === power(ref)).map((c) => c.id));
+  }, [openerKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!s && online) {
     return (
       <GameFrame gameId="presidente" onExit={() => { setActiveRoom(null); nav('/'); }}
@@ -168,7 +178,7 @@ export default function Presidente() {
         ]
       : [];
   const status = s.phase === 'done' ? '' : waitingExchange ? 'El Rey elige 2 cartas para devolver…' : exchange ? 'Elige tus 2 peores cartas para el COME💩'
-    : myTurn ? (s.table ? `Te toca: ${s.table.cards.length === 1 ? 'una carta' : `${s.table.cards.length} cartas`} más altas, o pasa` : 'Te toca: abres la mesa') : `Juega ${s.players[s.turn]!.name}…`;
+    : myTurn ? (s.table ? `Te toca: ${s.table.cards.length === 1 ? 'una carta' : `${s.table.cards.length} cartas`} más altas, o pasa` : s.mustInclude ? 'Tienes el 3 de oros: abres con tus treses' : 'Te toca: abres la mesa, sin límite') : `Juega ${s.players[s.turn]!.name}…`;
 
   const seatOf = (i: number) => {
     const p = s.players[i]!;
