@@ -4,7 +4,9 @@ import { CARD_EASE } from '../../store/settings.ts';
 import { cardLabel, type Color, type UnoCard as UnoCardData } from './engine.ts';
 
 /** Colores oficiales del set. */
-const HEX: Record<Color | 'wild', string> = { red: '#D72600', yellow: '#ECD407', green: '#379711', blue: '#0956BF', wild: '#15151a' };
+const HEX: Record<Color | 'wild', string> = { red: '#DC2626', yellow: '#D97706', green: '#059669', blue: '#2563EB', wild: '#111827' };
+/** Acabado satinado: luz arriba a la izquierda y tono más profundo abajo a la derecha. */
+const SATIN: Record<Color | 'wild', [string, string]> = { red: ['#EF4444', '#991B1B'], yellow: ['#F59E0B', '#A16207'], green: ['#10B981', '#047857'], blue: ['#3B82F6', '#1D4ED8'], wild: ['#1F2937', '#05080F'] };
 
 /** El «hover» se queda pegado en pantallas táctiles: solo se usa con ratón. */
 const CAN_HOVER = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
@@ -33,13 +35,13 @@ export const unoFile = (c: UnoCardData): string => (c.color === 'wild' ? `wild_$
 // ─── Respaldo vectorial ──────────────────────────────────────────────────────────────────────────
 const FONT = 'Manrope, system-ui, sans-serif';
 
-/** Texto con doble contorno: sombra negra desplazada + contorno blanco + relleno de color. */
+/** Número/símbolo grueso con sombra suave. */
 function Outlined({ children, fill, size, y = 0, x = 0 }: { children: string | number; fill: string; size: number; y?: number; x?: number }) {
   const common = { textAnchor: 'middle', dominantBaseline: 'central', fontFamily: FONT, fontWeight: 900, fontStyle: 'italic', fontSize: size } as const;
   return (
     <g>
-      <text {...common} x={x + 5} y={y + 6} fill="#000" stroke="#000" strokeWidth="10" strokeLinejoin="round" opacity=".85">{children}</text>
-      <text {...common} x={x} y={y} fill={fill} stroke="#fff" strokeWidth="6" strokeLinejoin="round" paintOrder="stroke">{children}</text>
+      <text {...common} x={x + 3} y={y + 6} fill="#000" opacity=".25">{children}</text>
+      <text {...common} x={x} y={y} fill={fill}>{children}</text>
     </g>
   );
 }
@@ -109,13 +111,16 @@ function Corner({ card }: { card: UnoCardData }) {
 /** Cara vectorial: borde blanco grueso, óvalo inclinado, número grande con doble contorno. */
 export function UnoFace({ card }: { card: UnoCardData }) {
   const bg = HEX[card.color];
+  const [c1, c2] = SATIN[card.color];
   const wild = card.color === 'wild';
   return (
     <svg viewBox="0 0 200 300" width="100%" height="100%" aria-hidden="true" style={{ display: 'block' }}>
       <rect width="200" height="300" fill="#fff" />
-      <rect x="11" y="11" width="178" height="278" rx="12" fill={bg} />
-      <ellipse cx="100" cy="150" rx="72" ry="114" fill="#fff" transform="rotate(30 100 150)" />
-      {wild && <ellipse cx="100" cy="150" rx="66" ry="106" fill="#15151a" transform="rotate(30 100 150)" />}
+      <defs><linearGradient id={`sat-${card.color}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={c1} /><stop offset="1" stopColor={c2} /></linearGradient></defs>
+      <rect x="11" y="11" width="178" height="278" rx="14" fill={`url(#sat-${card.color})`} />
+      <rect x="11" y="11" width="178" height="120" rx="14" fill="#fff" opacity=".08" />
+      <ellipse cx="100" cy="150" rx="70" ry="112" fill="#F8FAFC" transform="rotate(28 100 150)" />
+      {wild && <ellipse cx="100" cy="150" rx="64" ry="104" fill="#111827" transform="rotate(28 100 150)" />}
       <g transform="translate(100 150)"><Glyph card={card} color={wild ? '#fff' : bg} /></g>
       <g transform="translate(36 42)"><Corner card={card} /></g>
       <g transform="translate(164 258) rotate(180)"><Corner card={card} /></g>

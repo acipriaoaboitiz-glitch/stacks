@@ -192,8 +192,8 @@ export default function Blackjack() {
         </section>
       </div>
       </SemiTable>
-      <div className="absolute left-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10"><DiscardSlot /></div>
-      <div className="absolute right-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10"><Shoe count={shoe.length} /></div>
+      <div className="absolute left-[clamp(16px,6%,40px)] top-[clamp(18px,4.5%,34px)] z-10"><DiscardSlot /></div>
+      <div className="absolute right-[clamp(16px,6%,40px)] top-[clamp(18px,4.5%,34px)] z-10"><Shoe count={shoe.length} /></div>
       <Banner text={banner} />
     </>
   );

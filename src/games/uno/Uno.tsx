@@ -10,7 +10,7 @@ import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
-import { FAST_EASE, botDelay, feedback } from '../../store/settings.ts';
+import { CARD_EASE, FAST_EASE, botDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
@@ -182,7 +182,7 @@ export default function Uno() {
     const n = s.hands[p.id]!.length;
     return (
       <SeatBadge info={info(i, `${p.name} · ${n}`)} tone="them" mano={false} turn={s.turn === i && !s.winner} deadline={null}
-        cards={Math.min(n, 7)} bubble={bubbles[p.id]} bubbleSide={slot === 'top' ? 'below' : slot === 'left' ? 'left' : 'right'} />
+        cards={Math.min(n, 4)} bubble={bubbles[p.id]} bubbleSide={slot === 'top' ? 'below' : slot === 'left' ? 'left' : 'right'} />
     );
   };
 
@@ -216,17 +216,24 @@ export default function Uno() {
         <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat('left')}</div>
         <div className="col-start-2 row-start-2 grid min-h-0 place-items-center">
           <div className="grid justify-items-center gap-3">
-            <div className="flex items-center gap-[min(3vw,14px)]">
-              <div className="grid justify-items-center gap-1">
-                <UnoCardView card={topCard} faceDown scale={0.62} onClick={canDraw ? () => act({ k: 'draw' }) : undefined} glow={canDraw} />
+            <div className="relative flex items-center gap-[min(4vw,18px)]">
+              {/* halo del color activo */}
+              <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 size-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background] duration-300"
+                style={{ background: `radial-gradient(circle, ${UNO_HEX[s.color]}55 0%, ${UNO_HEX[s.color]}00 68%)` }} />
+              <div className="relative grid justify-items-center gap-1">
+                <UnoCardView card={topCard} faceDown scale={0.66} onClick={canDraw ? () => act({ k: 'draw' }) : undefined} glow={canDraw} />
                 <span className="font-mono text-[10px] text-amber-200/80">{s.drawPile.length}</span>
               </div>
-              <AnimatePresence mode="popLayout">
-                <motion.div key={topCard.id} initial={{ scale: 1.3, opacity: 0, rotate: 18 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-                  className="rounded-[14px]" style={{ boxShadow: `0 0 0 3px ${UNO_HEX[s.color]}, 0 0 22px ${UNO_HEX[s.color]}99` }}>
-                  <UnoCardView card={topCard} scale={0.8} />
-                </motion.div>
-              </AnimatePresence>
+              <div className="relative" style={{ width: 'calc(var(--card-w) * 0.9)', height: 'calc(var(--card-w) * 0.9 * 1.5)' }}>
+                {s.discard.length > 1 && (
+                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} scale={0.9} dim /></div>
+                )}
+                <AnimatePresence mode="popLayout">
+                  <motion.div key={topCard.id} className="absolute inset-0" initial={{ scale: 1.25, opacity: 0, rotate: 14, y: -20 }} animate={{ scale: 1, opacity: 1, rotate: 4, y: 0 }} transition={CARD_EASE}>
+                    <UnoCardView card={topCard} scale={0.9} glow />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
             <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] font-bold text-stone-200" aria-label={`Color actual: ${COLOR_NAME[s.color]}`}>
               <span className="size-3 rounded-full" style={{ background: UNO_HEX[s.color] }} /> {cap(COLOR_NAME[s.color])}
@@ -255,7 +262,7 @@ export default function Uno() {
         <div className="mx-auto flex w-max items-end px-2">
           {sorted.map((c, i) => (
             <div key={c.id} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${sorted.length > 9 ? -0.46 : sorted.length > 6 ? -0.34 : -0.12})`, zIndex: i }}>
-              <UnoCardView card={c} scale={0.82} playable={playable.has(c.id)} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
+              <UnoCardView card={c} scale={0.86} rotate={(i - (sorted.length - 1) / 2) * Math.min(3, 28 / sorted.length)} playable={playable.has(c.id)} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
             </div>
           ))}
         </div>
