@@ -83,7 +83,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'poker', name: 'Texas Hold’em', tagline: 'Ciegas, flop, turn y river', category: 'francesa', deck: 'fr', players: 'Mesa de 4',
+    id: 'poker', name: 'Póker', tagline: 'Ciegas, flop, turn y river', category: 'francesa', deck: 'fr', players: 'Mesa de 4',
     icon: Diamond, route: '/play/poker', playable: true, accent: '#e0605c', tint: ['#3d1212', '#0d1a12'],
     rules: [
       'Cada jugador recibe 2 cartas privadas y se juegan 5 comunitarias (flop, turn y river), con ciegas de 10 y 20.',

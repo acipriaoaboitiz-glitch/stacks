@@ -148,7 +148,7 @@ export default function Blackjack() {
   const felt = (
     <>
       <SemiTable>
-      <div className="absolute inset-0 flex flex-col items-center justify-between px-[clamp(14px,6%,40px)] pb-[7%] pt-[clamp(10px,3.5%,22px)]">
+      <div className="absolute inset-0 flex flex-col items-center justify-between px-[clamp(14px,6%,40px)] pb-[7%] pt-[7%]">
         {/* Crupier */}
         <section className="grid justify-items-center gap-1" aria-label="Crupier">
           <div className="flex items-center gap-2">
@@ -191,9 +191,9 @@ export default function Blackjack() {
           })}
         </section>
       </div>
-      </SemiTable>
       <div className="absolute left-[clamp(16px,6%,40px)] top-[clamp(18px,4.5%,34px)] z-10"><DiscardSlot /></div>
       <div className="absolute right-[clamp(16px,6%,40px)] top-[clamp(18px,4.5%,34px)] z-10"><Shoe count={shoe.length} /></div>
+      </SemiTable>
       <Banner text={banner} />
     </>
   );

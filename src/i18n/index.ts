@@ -16,7 +16,7 @@ const es: Dict = {
   'g.chinchon.name': 'Chinchón', 'g.chinchon.tag': 'Escaleras, tríos y −10', 'g.chinchon.pl': '2–4 jugadores',
   'g.tute.name': 'Tute', 'g.tute.tag': 'Cantes de las 20 y las 40', 'g.tute.pl': '2 o 4 jugadores',
   'g.blackjack.name': 'Blackjack 21', 'g.blackjack.tag': 'Pide, plántate, dobla', 'g.blackjack.pl': 'vs Crupier',
-  'g.poker.name': 'Texas Hold’em', 'g.poker.tag': 'Ciegas, flop, turn y river', 'g.poker.pl': 'Mesa de 4',
+  'g.poker.name': 'Póker', 'g.poker.tag': 'Ciegas, flop, turn y river', 'g.poker.pl': 'Mesa de 4',
   'g.seises.name': 'Los Seises', 'g.seises.tag': 'Escaleras al corte por palos', 'g.seises.pl': '2–4 jugadores',
   'g.presidente.name': 'El Presidente', 'g.presidente.tag': 'De mendigo a rey de la mesa', 'g.presidente.pl': '3–6 jugadores',
   'g.uno.name': 'Uno', 'g.uno.tag': 'Vacía tu mano el primero', 'g.uno.pl': '2–4 jugadores',

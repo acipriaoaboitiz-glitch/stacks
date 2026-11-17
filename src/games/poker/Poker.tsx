@@ -94,7 +94,7 @@ export default function Poker() {
   if (online && !s) {
     return (
       <GameFrame gameId="poker" onExit={exit}
-        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Texas Hold’em</p>}
+        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Póker</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
     );
@@ -103,14 +103,14 @@ export default function Poker() {
     return (
       <GameFrame
         gameId="poker"
-        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Texas Hold’em</p>}
+        header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Póker</p>}
         felt={
           <div className="grid h-full place-items-center p-6">
             <div className="grid w-full max-w-xs gap-3 text-center">
               <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">Elige la mesa</h2>
               <button type="button" className="btn btn--gold" onClick={() => { setN(4); setS(local(4)); }}>Mesa de 4 · tú + 3 IA</button>
               <button type="button" className="btn" onClick={() => { setN(6); setS(local(6)); }}>Mesa de 6 · tú + 5 IA</button>
-              <p className="text-xs text-stone-400">No-Limit Hold’em. Ciegas 10/20, 1000 fichas cada uno. 15 s por turno.</p>
+              <p className="text-xs text-stone-400">Sin límite. Ciegas 10/20, 1000 fichas cada uno. 15 s por turno.</p>
             </div>
           </div>
         }

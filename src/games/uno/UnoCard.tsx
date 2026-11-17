@@ -83,14 +83,24 @@ function Glyph({ card, color }: { card: UnoCardData; color: string }) {
         </g>
       );
     case 'wild':
+      return (
+        <g>
+          <circle r="62" fill="#0B1220" />
+          {[[0, HEX.red], [90, HEX.blue], [180, HEX.green], [270, HEX.yellow]].map(([rot, col]) => (
+            <path key={String(rot)} d="M0 -50A50 50 0 0 1 50 0" fill="none" stroke={String(col)} strokeWidth="24" transform={`rotate(${rot})`} />
+          ))}
+          <circle r="34" fill="#111827" />
+          <circle r="62" fill="none" stroke="#C9CED6" strokeWidth="2" opacity=".6" />
+        </g>
+      );
     case 'wild4':
       return (
         <g>
-          <g transform="rotate(-20)" stroke="#fff" strokeWidth="3">
-            <path d="M0 0 L0 -50 A50 50 0 0 1 50 0Z" fill={HEX.red} /><path d="M0 0 L50 0 A50 50 0 0 1 0 50Z" fill={HEX.blue} />
-            <path d="M0 0 L0 50 A50 50 0 0 1 -50 0Z" fill={HEX.green} /><path d="M0 0 L-50 0 A50 50 0 0 1 0 -50Z" fill={HEX.yellow} />
-          </g>
-          {card.kind === 'wild4' && <Outlined fill="#fff" size={46} y={4}>+4</Outlined>}
+          {[[-30, HEX.red], [-10, HEX.blue], [10, HEX.green], [30, HEX.yellow]].map(([rot, col]) => (
+            <g key={String(rot)} transform={`translate(0 28) rotate(${rot})`}>
+              <rect x="-17" y="-86" width="34" height="56" rx="6" fill={String(col)} stroke="#F8FAFC" strokeWidth="3" />
+            </g>
+          ))}
         </g>
       );
   }

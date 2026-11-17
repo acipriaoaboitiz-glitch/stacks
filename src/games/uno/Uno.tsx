@@ -10,7 +10,7 @@ import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
-import { CARD_EASE, FAST_EASE, botDelay, feedback } from '../../store/settings.ts';
+import { CARD_EASE, botDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
@@ -19,7 +19,7 @@ import {
   COLORS, COLOR_NAME, UNO_WINDOW, applyUnoAction, botMove, callUno, catchUno, expireUno, handPoints, isPlayable, newGame, playableCards,
   type Color, type UnoAction, type UnoCard, type UnoPlayer, type UnoState,
 } from './engine.ts';
-import { UNO_HEX, UnoCard as UnoCardView } from './UnoCard.tsx';
+import { UNO_HEX, UnoBack, UnoCard as UnoCardView } from './UnoCard.tsx';
 
 const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -113,6 +113,7 @@ export default function Uno() {
     lastSeq.current = key;
     const who = s.players.find((p) => p.id === e.by)!;
     if (e.kind === 'uno') juice.callout('¡UNO!', 'neon');
+    if (e.kind === 'draw' && who.id !== me && e.text.includes('+4') && e.text.endsWith(s.players.find((p) => p.id === me)?.name ?? '#')) show(`${who.name} te echa un +4 · Color ${cap(COLOR_NAME[s.color])}`);
     if (e.kind === 'draw') juice.impact(e.text.includes('+4') ? '+4' : e.text.includes('+2') ? '+2' : undefined, 'red');
     else if (e.text === 'Roba una carta') feedback('draw');
     else feedback(e.kind === 'uno' ? 'trick' : 'deal');
@@ -205,9 +206,9 @@ export default function Uno() {
 
   const pills: PillSpec[] = pickFor ? [] : myTurn && s.drawn
     ? [{ id: 'pass', tone: 'soft', label: t('a.pass'), onPress: () => act({ k: 'pass' }) }]
-    : canDraw ? [{ id: 'draw', tone: 'gold', label: t('a.draw'), onPress: () => act({ k: 'draw' }) }] : [];
+    : [];
   if (!pickFor && s.uno && !s.winner) pills.unshift({ id: 'uno', tone: 'danger', label: '¡UNO!', onPress: pressUno });
-  const status = s.winner ? '' : myTurn ? (s.drawn ? 'Puedes jugar la carta robada o pasar' : canDraw ? 'No tienes jugada: roba carta' : 'Te toca: elige una carta') : `Juega ${s.players[s.turn]!.name}…`;
+  const status = s.winner ? '' : myTurn ? (s.drawn ? 'Puedes jugar la carta robada o pasar' : canDraw ? 'No tienes jugada: toca el mazo' : 'Te toca: elige una carta') : `Juega ${s.players[s.turn]!.name}…`;
 
   const felt = (
     <>
@@ -221,7 +222,18 @@ export default function Uno() {
               <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 size-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background] duration-300"
                 style={{ background: `radial-gradient(circle, ${UNO_HEX[s.color]}55 0%, ${UNO_HEX[s.color]}00 68%)` }} />
               <div className="relative grid justify-items-center gap-1">
-                <UnoCardView card={topCard} faceDown scale={0.66} onClick={canDraw ? () => act({ k: 'draw' }) : undefined} glow={canDraw} />
+                <div role="button" tabIndex={canDraw ? 0 : -1} aria-label="Mazo: robar carta" aria-disabled={!canDraw}
+                  onClick={canDraw ? () => { feedback('draw'); act({ k: 'draw' }); } : undefined}
+                  onKeyDown={canDraw ? (e) => { if (e.key === 'Enter' || e.key === ' ') { feedback('draw'); act({ k: 'draw' }); } } : undefined}
+                  className={`relative touch-manipulation rounded-xl ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
+                  style={{ width: 'calc(var(--card-w) * 0.66)', aspectRatio: '2 / 3', marginRight: 6, marginTop: 6 }}>
+                  {[4, 3, 2, 1, 0].map((k) => (
+                    <span key={k} className="pointer-events-none absolute inset-0 block overflow-hidden rounded-xl" style={{ transform: `translate(${k * 1.6}px, ${-k * 1.6}px)`, boxShadow: k === 0 ? '0 3px 8px rgba(0,0,0,.5)' : undefined }}>
+                      <UnoBack />
+                    </span>
+                  ))}
+                  {canDraw && <span aria-hidden className="pointer-events-none absolute -inset-1 animate-pulse rounded-2xl" style={{ boxShadow: '0 0 0 2px #F5D061, 0 0 16px 2px rgba(245,208,97,.55)' }} />}
+                </div>
                 <span className="font-mono text-[10px] text-amber-200/80">{s.drawPile.length}</span>
               </div>
               <div className="relative" style={{ width: 'calc(var(--card-w) * 0.9)', height: 'calc(var(--card-w) * 0.9 * 1.5)' }}>
@@ -257,6 +269,19 @@ export default function Uno() {
         </div>
         <span className="min-w-0 truncate text-right text-[11px] text-stone-400">{status}</span>
       </div>
+      <AnimatePresence>
+        {pickFor && (
+          <motion.div role="group" aria-label="Elige un color" className="flex items-center gap-3 rounded-full border border-white/10 bg-zinc-900/95 px-3 py-2"
+            initial={{ opacity: 0, y: 12, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }} transition={CARD_EASE}>
+            {COLORS.map((c) => (
+              <button key={c} type="button" aria-label={cap(COLOR_NAME[c])} onClick={() => choose(c)}
+                className="size-12 touch-manipulation rounded-full border-2 border-white/80 transition active:scale-90"
+                style={{ background: UNO_HEX[c], boxShadow: `0 0 14px 1px ${UNO_HEX[c]}aa` }} />
+            ))}
+            <button type="button" className="px-1 text-[12px] font-bold text-stone-400" onClick={() => setPickFor(null)}>Cancelar</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <PillBar pills={pills} />
       <div className="w-full overflow-x-auto pb-1 pt-[min(2.4dvh,18px)]" role="group" aria-label="Tu mano">
         <div className="mx-auto flex w-max items-end px-2">
@@ -293,25 +318,6 @@ export default function Uno() {
       overlays={
         <>
           <PhaseCinematic cine={cine} />
-          <AnimatePresence>
-            {pickFor && (
-              <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE}>
-                <motion.div role="dialog" aria-modal="true" aria-label="Elige un color"
-                  className="w-full max-w-xs rounded-3xl border border-amber-200/20 bg-zinc-900/95 p-5 text-center shadow-[0_20px_60px_rgba(0,0,0,.6)]"
-                  initial={{ scale: 0.92, y: 12 }} animate={{ scale: 1, y: 0 }} transition={FAST_EASE}>
-                  <h2 className="mb-4 font-[var(--font-display)] text-xl font-bold text-amber-300">Elige un color</h2>
-                  <div className="grid grid-cols-2 gap-3">
-                    {COLORS.map((c) => (
-                      <button key={c} type="button" onClick={() => choose(c)} aria-label={cap(COLOR_NAME[c])}
-                        className="h-20 rounded-2xl border-4 border-white text-[15px] font-extrabold text-white shadow-lg transition active:scale-95 [text-shadow:0_1px_3px_rgba(0,0,0,.7)]"
-                        style={{ background: UNO_HEX[c] }}>{cap(COLOR_NAME[c])}</button>
-                    ))}
-                  </div>
-                  <button type="button" className="mt-4 px-3 py-1 text-[13px] font-bold text-stone-400" onClick={() => setPickFor(null)}>Cancelar</button>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
           <AnimatePresence>
             {winner && (
               <ResultOverlay

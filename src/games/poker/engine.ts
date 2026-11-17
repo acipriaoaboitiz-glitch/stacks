@@ -2,7 +2,7 @@ import type { FrenchCard } from '../../engine/deck.ts';
 import { frenchDeck, shuffle } from '../../engine/deck.ts';
 
 /**
- * Texas Hold'em sin límite para 2–4 jugadores (torneo: todos empiezan con 1000 fichas, ciegas 10/20).
+ * Póker (Texas Hold'em) sin límite para 2–4 jugadores (torneo: todos empiezan con 1000 fichas, ciegas 10/20).
  * Rondas: preflop, flop, turn y river con pasar / igualar / subir / retirarse, all-in, botes laterales
  * y evaluador completo de manos (carta alta … escalera de color).
  */

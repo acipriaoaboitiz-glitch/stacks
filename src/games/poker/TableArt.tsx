@@ -12,7 +12,8 @@ const TRAY = [
  */
 export function OvalTable({ children }: { children: ReactNode }) {
   return (
-    <div className="relative h-full w-full" aria-hidden={false}>
+    <div className="grid h-full w-full place-items-center">
+    <div className="relative h-full w-full lg:h-auto lg:w-[min(100%,calc((100dvh-330px)*1.7778))] lg:aspect-[16/9]">
       {/* rail acolchado */}
       <div aria-hidden className="absolute inset-[1.5%_1%] rounded-[50%]"
         style={{ background: 'linear-gradient(180deg,#1b1f1d 0%,#121514 45%,#0b0d0c 100%)', boxShadow: 'inset 0 5px 12px rgba(255,255,255,.09), inset 0 -12px 24px rgba(0,0,0,.85), 0 16px 30px rgba(0,0,0,.55)' }} />
@@ -39,6 +40,7 @@ export function OvalTable({ children }: { children: ReactNode }) {
         ))}
       </div>
       {children}
+    </div>
     </div>
   );
 }
