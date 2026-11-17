@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Bubble, Tone } from '../game/describe.ts';
 import type { SeatInfo } from '../game/types.ts';
@@ -37,7 +38,7 @@ const BUBBLE_POS: Record<NonNullable<SeatBadgeProps['bubbleSide']>, string> = {
 };
 
 /** Jugador en la mesa: avatar con anillo de turno, mano, conexión, cartas boca abajo y su último «grito». */
-export function SeatBadge({ info, tone, mano, turn, bubble, deadline, cards, signalPulseAt, bubbleSide = 'below', badge, alert }: SeatBadgeProps) {
+function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signalPulseAt, bubbleSide = 'below', badge, alert }: SeatBadgeProps) {
   const name = info.name ?? 'Libre';
   const remaining = deadline ? Math.max(0, deadline - Date.now()) : 0;
   return (
@@ -45,7 +46,7 @@ export function SeatBadge({ info, tone, mano, turn, bubble, deadline, cards, sig
       <motion.div
         className="relative grid place-items-center rounded-full p-[3px]"
         key={signalPulseAt ?? 'idle'}
-        animate={signalPulseAt ? { boxShadow: ['0 0 0 rgba(234,179,8,0)', '0 0 18px rgba(234,179,8,.8)', '0 0 0 rgba(234,179,8,0)'] } : undefined}
+        animate={signalPulseAt ? { scale: [1, 1.1, 1] } : undefined}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
         {turn && (
@@ -111,3 +112,9 @@ export function SeatBadge({ info, tone, mano, turn, bubble, deadline, cards, sig
     </div>
   );
 }
+
+/** Se repinta solo si cambia algo visible (las props de objeto como `info` se recrean en cada render del padre). */
+export const SeatBadge = memo(SeatBadgeView, (a, b) =>
+  a.info.name === b.info.name && a.info.isBot === b.info.isBot && a.info.online === b.info.online && a.tone === b.tone && a.mano === b.mano && a.turn === b.turn
+  && a.cards === b.cards && a.deadline === b.deadline && a.signalPulseAt === b.signalPulseAt && a.bubbleSide === b.bubbleSide && a.badge === b.badge && a.alert === b.alert
+  && a.bubble?.at === b.bubble?.at && a.bubble?.text === b.bubble?.text);

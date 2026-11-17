@@ -11,6 +11,9 @@ const TONES: Record<CinematicTone, { fill: string; glow: string; ray: string; sp
 };
 
 const SPARKS = 28;
+const SPARKS_MOBILE = 10;
+/** Teléfono: modo ligero (menos chispas, sin rayos giratorios ni filtros). */
+const isMobile = (): boolean => typeof window !== 'undefined' && window.innerWidth < 768;
 
 /**
  * Cinemática rápida de jugada (≈1,5 s): destello oscuro, rayos giratorios, barrido de luz,
@@ -18,20 +21,28 @@ const SPARKS = 28;
  */
 export function GameCinematic({ title, sub, tone = 'gold' }: { title: string; sub?: string; tone?: CinematicTone }) {
   const t = TONES[tone];
-  const sparks = useMemo(() => Array.from({ length: SPARKS }, (_, i) => {
-    const a = (i / SPARKS) * Math.PI * 2 + (i % 3) * 0.2;
+  const light = useMemo(isMobile, []);
+  const count = light ? SPARKS_MOBILE : SPARKS;
+  const sparks = useMemo(() => Array.from({ length: count }, (_, i) => {
+    const a = (i / count) * Math.PI * 2 + (i % 3) * 0.2;
     const d = 110 + ((i * 37) % 120);
     return { x: Math.cos(a) * d, y: Math.sin(a) * d, fall: 90 + ((i * 29) % 70), rot: ((i * 83) % 540) - 270, size: 5 + (i % 4) * 2, color: t.spark[i % t.spark.length]!, delay: (i % 5) * 0.02 };
-  }), [t]);
+  }), [t, count]);
   return (
     <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center overflow-hidden" aria-live="assertive">
       {/* atmósfera: destello oscuro radial */}
       <motion.div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(0,0,0,.72) 0%, rgba(0,0,0,.25) 55%, rgba(0,0,0,0) 80%)' }}
         initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: 1.6, times: [0, 0.12, 0.75, 1] }} />
-      {/* rayos giratorios */}
-      <motion.div className="absolute left-1/2 top-1/2 size-[150vmax] -translate-x-1/2 -translate-y-1/2 will-change-transform"
-        style={{ background: `repeating-conic-gradient(from 0deg, ${t.ray} 0deg 7deg, transparent 7deg 26deg)`, maskImage: 'radial-gradient(circle, #000 0%, transparent 22%)', WebkitMaskImage: 'radial-gradient(circle, #000 0%, transparent 22%)' }}
-        initial={{ opacity: 0, rotate: 0, scale: 0.6 }} animate={{ opacity: [0, 0.9, 0.9, 0], rotate: 50, scale: 1 }} transition={{ duration: 1.6, ease: 'easeOut' }} />
+      {/* rayos: en escritorio giran; en móvil, destello radial estático (solo opacity + scale) */}
+      {light ? (
+        <motion.div className="absolute left-1/2 top-1/2 size-[120vmax] -translate-x-1/2 -translate-y-1/2 will-change-transform"
+          style={{ background: `radial-gradient(circle, ${t.ray} 0%, transparent 30%)` }}
+          initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: [0, 0.9, 0], scale: 1.1 }} transition={{ duration: 1.4, ease: 'easeOut' }} />
+      ) : (
+        <motion.div className="absolute left-1/2 top-1/2 size-[150vmax] -translate-x-1/2 -translate-y-1/2 will-change-transform"
+          style={{ background: `repeating-conic-gradient(from 0deg, ${t.ray} 0deg 7deg, transparent 7deg 26deg)`, maskImage: 'radial-gradient(circle, #000 0%, transparent 22%)', WebkitMaskImage: 'radial-gradient(circle, #000 0%, transparent 22%)' }}
+          initial={{ opacity: 0, rotate: 0, scale: 0.6 }} animate={{ opacity: [0, 0.9, 0.9, 0], rotate: 50, scale: 1 }} transition={{ duration: 1.6, ease: 'easeOut' }} />
+      )}
       <div className="relative grid justify-items-center gap-3 px-4 text-center">
         {/* chispas */}
         {sparks.map((p, i) => (
@@ -44,7 +55,7 @@ export function GameCinematic({ title, sub, tone = 'gold' }: { title: string; su
         <motion.h2 className="relative font-black uppercase leading-none will-change-transform"
           style={{
             fontFamily: "'Unbounded','Outfit',sans-serif", fontSize: 'clamp(26px,9vw,56px)', backgroundImage: t.fill, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            WebkitTextStroke: '3px rgba(6,24,16,.9)', paintOrder: 'stroke fill', filter: `drop-shadow(0 0 16px ${t.glow}) drop-shadow(0 4px 0 rgba(0,0,0,.55))`,
+            WebkitTextStroke: '3px rgba(6,24,16,.9)', paintOrder: 'stroke fill', ...(light ? { textShadow: '0 3px 0 rgba(0,0,0,.6)' } : { filter: `drop-shadow(0 0 16px ${t.glow}) drop-shadow(0 4px 0 rgba(0,0,0,.55))` }),
           }}
           initial={{ scale: 2.4, rotate: -6, opacity: 0 }} animate={{ scale: [2.4, 0.92, 1, 1, 1.06], rotate: [-6, 2, 0, 0, 0], opacity: [0, 1, 1, 1, 0] }}
           transition={{ duration: 1.5, times: [0, 0.2, 0.32, 0.8, 1], ease: 'easeOut' }}>

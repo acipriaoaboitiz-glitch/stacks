@@ -29,7 +29,7 @@ export function CasinoChip({ value, size = 40, onClick, disabled, label }: { val
   if (!onClick) return svg;
   return (
     <motion.button type="button" onClick={onClick} disabled={disabled} aria-label={label ?? `Ficha de ${value}`} whileTap={{ scale: 0.88, y: 2 }} whileHover={{ y: -3 }}
-      className="rounded-full disabled:opacity-35" style={{ background: 'none', border: 0, padding: 0, filter: 'drop-shadow(0 4px 5px rgba(0,0,0,.55))' }}>
+      className="rounded-full disabled:opacity-35" style={{ background: 'none', border: 0, padding: 0, borderRadius: '50%', boxShadow: '0 3px 5px rgba(0,0,0,.45)' }}>
       {svg}
     </motion.button>
   );

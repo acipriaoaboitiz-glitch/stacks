@@ -10,8 +10,8 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
       onClick={() => { onChange(!on); feedback('tap'); }}
       className="relative h-8 w-14 shrink-0 rounded-full border border-white/15"
       style={{ background: on ? 'linear-gradient(135deg,#fcd34d,#f59e0b)' : 'rgba(255,255,255,.12)' }}>
-      <motion.span className="absolute top-[3px] h-6 w-6 rounded-full shadow" style={{ background: on ? '#451a03' : '#9fb3a8' }}
-        animate={{ left: on ? 28 : 3 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
+      <motion.span className="absolute left-[3px] top-[3px] h-6 w-6 rounded-full shadow" style={{ background: on ? '#451a03' : '#9fb3a8' }}
+        animate={{ x: on ? 25 : 0 }} transition={{ type: 'spring', stiffness: 380, damping: 28 }} />
     </motion.button>
   );
 }

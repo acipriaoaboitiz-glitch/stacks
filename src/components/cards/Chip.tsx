@@ -43,7 +43,7 @@ export function Chip({
       type="button" whileTap={{ scale: 0.88, y: 2 }} onClick={() => { feedback('chip'); onClick(); }} disabled={disabled}
       aria-label={label ?? `Ficha de ${value}`}
       className="rounded-full disabled:opacity-35"
-      style={{ background: 'none', border: 0, padding: 0, filter: 'drop-shadow(0 4px 6px rgba(0,0,0,.5))' }}
+      style={{ background: 'none', border: 0, padding: 0, borderRadius: '50%', boxShadow: '0 3px 5px rgba(0,0,0,.45)' }}
     >
       {svg}
     </motion.button>
@@ -73,7 +73,7 @@ export function BetStack({ chips, size = 44 }: { chips: ChipValue[]; size?: numb
   return (
     <div className="relative" style={{ width: size, height: size + shown.length * 4 }} aria-hidden>
       {shown.map((v, i) => (
-        <motion.div key={chips.length - shown.length + i} className="absolute left-0" style={{ bottom: i * 4, filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.55))' }}
+        <motion.div key={chips.length - shown.length + i} className="absolute left-0" style={{ bottom: i * 4, borderRadius: '50%', boxShadow: '0 3px 5px rgba(0,0,0,.45)' }}
           initial={{ y: 150, x: (i % 2 ? 14 : -14), opacity: 0, scale: 1.15, rotate: 18 }} animate={{ y: 0, x: 0, opacity: 1, scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 260, damping: 20, delay: Math.min(i, 8) * 0.02 }}>
           <Chip value={v} size={size} />

@@ -73,7 +73,7 @@ export function SignTrigger({ name, disabled, pulseAt, onOpen }: {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 rounded-full"
           initial={{ boxShadow: '0 0 0 rgba(234,179,8,0)' }}
-          animate={{ boxShadow: ['0 0 0 rgba(234,179,8,0)', '0 0 18px rgba(234,179,8,.8)', '0 0 0 rgba(234,179,8,0)'] }}
+          animate={{ scale: [1, 1.1, 1] }}
           transition={{ duration: 0.5 }}
         />
       )}

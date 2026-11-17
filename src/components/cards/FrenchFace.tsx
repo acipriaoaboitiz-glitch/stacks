@@ -31,7 +31,7 @@ function SuitPath({ suit }: { suit: FrenchSuit }) {
 function Suit({ suit, x, y, size, flip }: { suit: FrenchSuit; x: number; y: number; size: number; flip?: boolean }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${size / 100}) ${flip ? 'rotate(180)' : ''}`}
-      style={{ filter: 'drop-shadow(0 2px 1.5px rgba(0,0,0,.3))' }}>
+     >
       <g fill={SUIT_FILL[suit]}><SuitPath suit={suit} /></g>
       <ellipse cx="-16" cy="-20" rx="16" ry="8" fill="url(#st-gloss)" transform="rotate(-35 -16 -20)" />
     </g>

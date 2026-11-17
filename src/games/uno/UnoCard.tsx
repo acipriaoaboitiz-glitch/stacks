@@ -177,10 +177,10 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
       onClick={onClick}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`relative block aspect-[2/3] shrink-0 touch-manipulation overflow-hidden rounded-xl bg-[#0b1220] will-change-transform ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl bg-[#0b1220] shadow-md will-change-transform md:shadow-xl ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
-        boxShadow: lit ? '0 0 0 2px #f0c35f' : '0 3px 6px rgba(0,0,0,.5)',
+        boxShadow: lit ? '0 0 0 2px #f0c35f' : undefined,
         ...style,
       }}
       animate={{ y: selected ? -12 : 0, rotate }}

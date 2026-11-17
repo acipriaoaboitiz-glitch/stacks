@@ -168,7 +168,7 @@ export default function Chinchon() {
         <div className="col-start-2 row-start-2 grid min-h-0 place-items-center">
           <div className="flex items-center gap-[min(4vw,16px)]">
             <div className="grid justify-items-center gap-1">
-              <motion.button type="button" whileHover={myTurn && s.phase === 'draw' ? { y: -4 } : undefined} whileTap={{ scale: 0.95 }} onClick={() => draw('stock')}
+              <motion.button type="button" whileTap={{ scale: 0.95 }} onClick={() => draw('stock')}
                 disabled={!(myTurn && s.phase === 'draw')} aria-label={t('a.deck')}
                 className="relative aspect-[12/19] overflow-hidden rounded-[8px] shadow-[0_8px_16px_rgba(0,0,0,.45)]"
                 style={{ width: pileW, outline: myTurn && s.phase === 'draw' ? '2px solid #f0c35f' : undefined }}><CardBack /></motion.button>

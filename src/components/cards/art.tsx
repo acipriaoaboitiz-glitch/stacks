@@ -116,7 +116,7 @@ function SuitBody({ suit }: { suit: SpanishSuit }) {
 export function SuitMark({ suit, x, y, size, flip = false }: { suit: SpanishSuit; x: number; y: number; size: number; flip?: boolean }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${size / 100}) ${flip ? 'rotate(180)' : ''}`}
-      style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.35))' }}>
+     >
       <SuitBody suit={suit} />
     </g>
   );

@@ -20,7 +20,7 @@ const CAN_HOVER = typeof window !== 'undefined' && window.matchMedia?.('(hover: 
 
 // ─── Píldoras de acción (mismas clases que la ActionBar de Mus Online) ────────────────────────────
 const PILL =
-  'relative inline-flex h-10 items-center justify-center gap-1 overflow-hidden rounded-full border px-[min(4vw,18px)] text-[13px] font-bold tracking-wide transition-transform duration-100 enabled:active:scale-95 disabled:opacity-40 touch-manipulation';
+  'relative inline-flex h-10 items-center justify-center gap-1 overflow-hidden rounded-full border px-[min(4vw,18px)] text-[13px] font-bold tracking-wide select-none transition-transform duration-100 enabled:active:scale-95 disabled:opacity-40 touch-manipulation';
 const TONE = {
   gold: 'border-amber-200 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950',
   ok: 'border-emerald-400/60 bg-emerald-800 text-emerald-50',
@@ -112,12 +112,12 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
       aria-pressed={interactive ? selected : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : undefined}
       title={faceDown ? undefined : title}
-      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation overflow-hidden rounded-none border border-black/40 will-change-transform ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation select-none overflow-hidden rounded-none border border-black/40 shadow-md will-change-transform md:shadow-xl ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         aspectRatio: card.deck === 'fr' ? '167 / 243' : '12 / 19',
         // Una sola sombra sencilla por carta: las sombras múltiples hunden los FPS en iOS Safari.
-        boxShadow: selected || glow ? '0 0 0 2px #f0c35f, 0 8px 16px rgba(0,0,0,.5)' : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9), 0 6px 12px rgba(0,0,0,.45)' : '0 1px 2px rgba(0,0,0,.55), 0 6px 14px rgba(0,0,0,.45)',
+        boxShadow: selected || glow ? '0 0 0 2px #f0c35f' : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9)' : undefined,
         ...style,
       }}
       animate={{ y: selected ? -12 : glow && interactive ? -6 : 0, rotate }}
