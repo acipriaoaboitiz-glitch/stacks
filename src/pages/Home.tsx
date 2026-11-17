@@ -16,6 +16,11 @@ import { useT } from '../i18n/index.ts';
 import type { Room } from '../services/multiplayer.ts';
 import { feedback } from '../store/settings.ts';
 
+/** Polvo dorado del fondo: posiciones fijas, animación CSS (transform/opacity), sin JS por fotograma. */
+const DUST = Array.from({ length: 16 }, (_, i) => ({
+  left: (i * 37 + 11) % 96 + 2, size: 3 + (i % 4), dur: 16 + (i * 7) % 12, delay: -((i * 5) % 18), dx: ((i * 23) % 40) - 20, o: 0.35 + (i % 4) * 0.12,
+}));
+
 /** Tarjeta del carrusel: foco de luz, medallón dorado y emblema. Estática (sin animaciones infinitas) para mantener 60 FPS en móvil. */
 const Slide = memo(function Slide({ game, active }: { game: GameInfo; active: boolean }) {
   const t = useT();
@@ -108,6 +113,18 @@ export default function Home() {
   };
   // El scroll nativo con snap lo gestiona el navegador (GPU); aquí solo se averigua qué tarjeta queda centrada.
   const cards = useRef<(HTMLDivElement | null)[]>([]);
+  const inner = useRef<(HTMLDivElement | null)[]>([]);
+  /** Inclinación 3D suave de la tarjeta activa con el ratón (en el contenedor interior: el exterior ya lo usa el efecto de anillo). */
+  const tilt = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const el = inner.current[curRef.current];
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2)));
+    const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2)));
+    el.style.transform = `perspective(700px) rotateY(${nx * 9}deg) rotateX(${-ny * 9}deg)`;
+  }, []);
+  const untilt = useCallback(() => { inner.current.forEach((el) => { if (el) el.style.transform = ''; }); }, []);
   /** Efecto de profundidad tipo anillo: giro, escala y brillo según la distancia al centro. Solo transform/opacity, sin re-render. */
   const applyFx = useCallback(() => {
     const el = scroller.current;
@@ -152,17 +169,22 @@ export default function Home() {
       <div className="relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between overflow-hidden px-4 pt-3" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
+        {/* polvo dorado flotando muy despacio */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          {DUST.map((d, i) => <span key={i} className="dust" style={{ left: `${d.left}%`, width: d.size, height: d.size, ['--dur' as string]: `${d.dur}s`, ['--delay' as string]: `${d.delay}s`, ['--dx' as string]: `${d.dx}px`, ['--o' as string]: d.o }} />)}
+        </div>
+
         <div aria-hidden />
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
         <div className="relative z-10 w-full" style={{ height: 'min(44dvh, 370px)' }}>
-          <div ref={scroller} onScroll={onScroll} role="group" aria-label="Juegos"
+          <div ref={scroller} onScroll={onScroll} onPointerMove={tilt} onPointerLeave={untilt} role="group" aria-label="Juegos"
             className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain]">
             {GAMES.map((g, i) => (
               <div key={g.id} ref={(n) => { cards.current[i] = n; }}
                 className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform"
                 role="group" aria-label={t(`g.${g.id}.name`)} aria-current={i === cur} onClick={() => { if (i !== cur) { feedback('tap'); goTo(i); } }}>
-                <div className="h-full w-full rounded-[28px] transition-shadow duration-200"
+                <div ref={(n) => { inner.current[i] = n; }} className="h-full w-full rounded-[28px] transition-[box-shadow,transform] duration-200 ease-out"
                   style={{ boxShadow: i === cur ? `0 0 0 1px ${g.accent}aa, 0 14px 34px rgba(0,0,0,.55), 0 0 30px ${g.accent}44` : '0 8px 18px rgba(0,0,0,.5)' }}>
                   <Slide game={g} active={i === cur} />
                 </div>

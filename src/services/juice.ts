@@ -1,17 +1,25 @@
 import { useMemo } from 'react';
 import {
-  feedback, playCardDraw, playCinematicSound, playCardSnap, playChipClink, playDefeatTone, playImpact, playTurnPing, playVictoryFanfare,
+  feedback, playCardDraw, playCinematicSound, playCardSnap, playChipClink, playCoinCascade, playDefeatTone, playFeltThud, playImpact, playTurnPing, playVictoryFanfare, playWhoosh,
 } from '../store/settings.ts';
 
 /**
  * Game Feel centralizado. El sonido y la vibración respetan los interruptores globales (Ajustes / botón de sonido).
- * Los efectos visuales (temblor de mesa y textos de impacto) viajan por un pequeño bus que escucha `GameFrame`.
+ * Los efectos visuales (temblor de mesa, golpe de carta, vuelo de fichas y textos de impacto) viajan por un pequeño bus
+ * que escucha `GameFrame`.
  */
 export type CalloutTone = 'gold' | 'neon' | 'red';
 export type CinematicTone = 'gold' | 'ruby' | 'emerald' | 'electric';
+/** Hacia qué lado de la mesa vuelan las fichas (donde está el ganador). */
+export type ChipTarget = 'me' | 'top' | 'left' | 'right';
 export interface Cinematic { id: number; title: string; sub?: string; tone: CinematicTone }
 export interface Callout { id: number; text: string; tone: CalloutTone }
-type Listener = { onShake: () => void; onCallout: (c: Callout) => void; onCinematic?: (c: Cinematic) => void };
+export interface Slam { id: number }
+export interface ChipBurst { id: number; target: ChipTarget; n: number }
+type Listener = {
+  onShake: () => void; onCallout: (c: Callout) => void; onCinematic?: (c: Cinematic) => void;
+  onSlam?: (s: Slam) => void; onChips?: (c: ChipBurst) => void;
+};
 
 const listeners = new Set<Listener>();
 let nextId = 1;
@@ -28,9 +36,19 @@ const cinematic = (c: { title: string; sub?: string; tone?: CinematicTone; good?
   listeners.forEach((l) => l.onCinematic?.(full));
 };
 
+/** Golpe de carta clave: golpe grave en el fieltro + sacudida vertical de la mesa + chispas doradas en el centro. */
+const slam = (): void => { playFeltThud(); const s = { id: nextId++ }; listeners.forEach((l) => l.onSlam?.(s)); };
+
+/** Fichas doradas en cascada del centro de la mesa hacia el ganador (6–10) con sonido de monedas. */
+const chips = (target: ChipTarget = 'me', n = 8): void => {
+  playCoinCascade(n);
+  const c = { id: nextId++, target, n };
+  listeners.forEach((l) => l.onChips?.(c));
+};
+
 export const juice = {
-  cinematic,
-  playCardSnap, playCardDraw, playTurnPing, playImpact, playChipClink, playVictoryFanfare, playDefeatTone,
+  cinematic, slam, chips,
+  playCardSnap, playCardDraw, playTurnPing, playImpact, playChipClink, playVictoryFanfare, playDefeatTone, playWhoosh,
   /** Texto grande en el centro de la mesa. */
   callout,
   /** Micro-temblor de 250 ms de la mesa. */

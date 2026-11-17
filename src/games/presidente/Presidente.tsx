@@ -98,7 +98,7 @@ export default function Presidente() {
     if (!r) return;
     if (ROLE_PRIZE[r] > 0) wallet.add(ROLE_PRIZE[r]);
     if (r === 'mendigo') juice.cinematic({ title: '¡MENDIGO!', sub: 'Entregas tus 2 mejores cartas', tone: 'ruby', good: false });
-    if (r === 'presidente') { wallet.recordWin('presidente'); showCine('¡NUEVO REY!', `+${ROLE_PRIZE[r]} fichas`); }
+    if (r === 'presidente') { wallet.recordWin('presidente'); juice.chips('me'); showCine('¡NUEVO REY!', `+${ROLE_PRIZE[r]} fichas`); }
   }, [s, showCine, me]);
 
   if (!s && online) {

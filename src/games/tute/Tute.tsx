@@ -105,7 +105,7 @@ export default function Tute() {
     if (s?.phase === 'playing') paid.current = false;
     if (s?.phase !== 'finished' || paid.current) return;
     paid.current = true;
-    if (winnerTeam(s) === teamOf(s, s.players.findIndex((p) => p.id === me))) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); }
+    if (winnerTeam(s) === teamOf(s, s.players.findIndex((p) => p.id === me))) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); juice.chips('me'); }
   }, [s, me]);
 
   const played = s?.trick.length ?? 0;

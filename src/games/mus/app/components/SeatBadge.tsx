@@ -18,6 +18,8 @@ interface SeatBadgeProps {
   badge?: string;
   /** Hace parpadear el aro del avatar en rojo/ámbar. */
   alert?: boolean;
+  /** Aura de fuego dorado pulsante (p. ej. una sola carta en UNO). */
+  aura?: boolean;
   /** Hacia dónde se abre el globo de diálogo, para que nunca se salga del tapete. */
   bubbleSide?: 'below' | 'left' | 'right' | 'above';
 }
@@ -38,7 +40,7 @@ const BUBBLE_POS: Record<NonNullable<SeatBadgeProps['bubbleSide']>, string> = {
 };
 
 /** Jugador en la mesa: avatar con anillo de turno, mano, conexión, cartas boca abajo y su último «grito». */
-function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signalPulseAt, bubbleSide = 'below', badge, alert }: SeatBadgeProps) {
+function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signalPulseAt, bubbleSide = 'below', badge, alert, aura }: SeatBadgeProps) {
   const name = info.name ?? 'Libre';
   const remaining = deadline ? Math.max(0, deadline - Date.now()) : 0;
   return (
@@ -49,6 +51,12 @@ function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signal
         animate={signalPulseAt ? { scale: [1, 1.1, 1] } : undefined}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
+        {aura && (
+          <>
+            <span aria-hidden="true" className="aura-fire pointer-events-none absolute inset-[-9px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,214,90,0) 50%, rgba(255,196,60,.9) 63%, rgba(255,120,20,0) 76%)' }} />
+            <span aria-hidden="true" className="aura-fire pointer-events-none absolute inset-[-14px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,160,40,0) 55%, rgba(255,140,30,.65) 66%, rgba(255,80,10,0) 78%)', animationDelay: '.45s' }} />
+          </>
+        )}
         {turn && (
           <motion.span
             aria-hidden="true"
@@ -116,5 +124,5 @@ function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signal
 /** Se repinta solo si cambia algo visible (las props de objeto como `info` se recrean en cada render del padre). */
 export const SeatBadge = memo(SeatBadgeView, (a, b) =>
   a.info.name === b.info.name && a.info.isBot === b.info.isBot && a.info.online === b.info.online && a.tone === b.tone && a.mano === b.mano && a.turn === b.turn
-  && a.cards === b.cards && a.deadline === b.deadline && a.signalPulseAt === b.signalPulseAt && a.bubbleSide === b.bubbleSide && a.badge === b.badge && a.alert === b.alert
+  && a.cards === b.cards && a.deadline === b.deadline && a.signalPulseAt === b.signalPulseAt && a.bubbleSide === b.bubbleSide && a.badge === b.badge && a.alert === b.alert && a.aura === b.aura
   && a.bubble?.at === b.bubble?.at && a.bubble?.text === b.bubble?.text);

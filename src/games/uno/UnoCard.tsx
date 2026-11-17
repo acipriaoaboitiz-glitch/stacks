@@ -161,12 +161,14 @@ interface Props {
   selected?: boolean;
   dim?: boolean;
   glow?: boolean;
+  /** Bajo el dedo/cursor: sube 18 px y crece un 8 %. */
+  lifted?: boolean;
   rotate?: number;
   style?: CSSProperties;
 }
 
 /** Carta de UNO: usa el set SVG de /public/cards/uno si existe y, si no, el diseño vectorial propio. */
-export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, rotate = 0, style }: Props) {
+export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, lifted, rotate = 0, style }: Props) {
   const vectors = useVectorSet();
   const interactive = Boolean(onClick);
   const lit = glow || playable || selected;
@@ -183,7 +185,7 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
         boxShadow: lit ? '0 0 0 2px #f0c35f' : undefined,
         ...style,
       }}
-      animate={{ y: selected ? -12 : 0, rotate }}
+      animate={{ y: lifted ? -18 : selected ? -12 : 0, scale: lifted ? 1.08 : 1, rotate }}
       whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
       transition={CARD_EASE}
@@ -191,6 +193,7 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
       {vectors
         ? <img src={`${BASE}${faceDown ? 'back.svg' : unoFile(card)}`} alt="" draggable={false} className="size-full object-contain" />
         : faceDown ? <UnoBack /> : <UnoFace card={card} />}
+      {playable && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-x-[10%] top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white to-transparent opacity-90" />}
       {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/45" />}
     </motion.button>
   );

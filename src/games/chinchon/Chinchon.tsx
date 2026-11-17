@@ -89,7 +89,7 @@ export default function Chinchon() {
     if (s && s.phase !== 'gameOver') paid.current = false;
     if (s?.phase !== 'gameOver' || paid.current) return;
     paid.current = true;
-    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('chinchon'); }
+    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('chinchon'); juice.chips('me'); }
   }, [s, myIdx]);
 
   const hand = s?.hands[myIdx] ?? [];

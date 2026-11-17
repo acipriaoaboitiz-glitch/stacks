@@ -81,7 +81,7 @@ export const CARD_EASE = { duration: 0.18, ease: 'easeOut' } as const;
 let ctx: AudioContext | null = null;
 let noiseBuf: AudioBuffer | null = null;
 
-export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn' | 'draw' | 'impact' | 'defeat';
+export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn' | 'draw' | 'impact' | 'defeat' | 'tick' | 'whoosh';
 
 function audio(): AudioContext | null {
   try {
@@ -136,12 +136,63 @@ const withAudio = (fn: (c: AudioContext, t: number) => void): void => {
   if (c) fn(c, c.currentTime);
 };
 
-/** Chasquido seco de una carta contra el tapete (~40 ms). */
-export function playCardSnap(): void { buzz([12]); withAudio((c, t) => { noise(c, t, 0.04, 3400, 0.26); tone(c, t, 190, 0.035, 0.12, 'sine', 120); }); }
-/** Robar: barrido ascendente corto (~60 ms). */
-export function playCardDraw(): void { buzz(8); withAudio((c, t) => { tone(c, t, 420, 0.06, 0.06, 'sine', 780); noise(c, t, 0.05, 5200, 0.06); }); }
-/** Tu turno: campanilla doble con quinta limpia. */
-export function playTurnPing(): void { buzz([20, 40, 20]); withAudio((c, t) => { tone(c, t, 880, 0.28, 0.045, 'sine'); tone(c, t + 0.005, 1320, 0.28, 0.03, 'sine'); tone(c, t + 0.11, 1320, 0.3, 0.04, 'sine'); tone(c, t + 0.115, 1980, 0.3, 0.025, 'sine'); }); }
+/** Barrido de ruido filtrado (roce/deslizamiento de papel): el filtro viaja de `f0` a `f1`. */
+function sweep(c: AudioContext, at: number, dur: number, f0: number, f1: number, gain: number): void {
+  noiseBuf ??= (() => {
+    const b = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  })();
+  const src = c.createBufferSource();
+  src.buffer = noiseBuf;
+  const bp = c.createBiquadFilter();
+  bp.type = 'bandpass'; bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(f0, at);
+  bp.frequency.exponentialRampToValueAtTime(f1, at + dur);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(gain, at + dur * 0.35);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  src.connect(bp).connect(g).connect(c.destination);
+  src.start(at, Math.random() * 0.5);
+  src.stop(at + dur + 0.02);
+}
+
+/** Chasquido de una carta contra el tapete en capas: roce de entrada (whoosh) + golpe seco (~120 ms). */
+export function playCardSnap(): void {
+  buzz([12]);
+  withAudio((c, t) => { sweep(c, t, 0.09, 1200, 3600, 0.1); noise(c, t + 0.07, 0.04, 3400, 0.26); tone(c, t + 0.07, 190, 0.035, 0.12, 'sine', 120); });
+}
+/** Robar: deslizamiento de papel (barrido de ruido ascendente) con un soplo agudo (~110 ms). */
+export function playCardDraw(): void { buzz(8); withAudio((c, t) => { sweep(c, t, 0.11, 900, 4200, 0.11); tone(c, t, 420, 0.06, 0.035, 'sine', 780); }); }
+/** Roce suave de una carta que vuela (reparto, vuelo de cartas de un bot). */
+export function playWhoosh(): void { withAudio((c, t) => { sweep(c, t, 0.14, 700, 2600, 0.09); }); }
+/** Golpe seco sobre el fieltro: sub-grave corto + ruido amortiguado (carta clave). */
+export function playFeltThud(): void { buzz([35]); withAudio((c, t) => { tone(c, t, 95, 0.14, 0.45, 'sine', 48); noise(c, t, 0.07, 260, 0.34); sweep(c, t, 0.08, 1800, 600, 0.08); }); }
+/** Micro-clic al deslizar el dedo sobre las cartas de la mano. */
+export function playTick(): void { buzz(4); withAudio((c, t) => { tone(c, t, 1900, 0.018, 0.035, 'square', 1300); }); }
+/** Cascada metálica de fichas: `n` choques con tono y separación variables. */
+export function playCoinCascade(n = 8): void {
+  buzz([14, 30, 14, 30, 14]);
+  withAudio((c, t) => {
+    for (let i = 0; i < n; i++) {
+      const at = t + i * 0.06 + (i % 3) * 0.012;
+      const f = 2300 + ((i * 397) % 1700);
+      tone(c, at, f, 0.11, 0.05, 'triangle', f * 1.35);
+      tone(c, at + 0.004, f * 1.5, 0.08, 0.025, 'sine');
+      noise(c, at, 0.03, 7500, 0.05);
+    }
+  });
+}
+/** Tu turno: campanilla de cristal (parciales inarmónicos 1 : 2,76 : 5,4 con caída larga). */
+export function playTurnPing(): void {
+  buzz([20, 40, 20]);
+  withAudio((c, t) => {
+    [[1, 0.05, 0.5], [2.76, 0.028, 0.34], [5.4, 0.014, 0.2]].forEach(([r, g, d]) => tone(c, t, 880 * r!, d!, g!, 'sine'));
+    [[1.5, 0.035, 0.45], [4.14, 0.016, 0.28]].forEach(([r, g, d]) => tone(c, t + 0.11, 880 * r!, d!, g!, 'sine'));
+  });
+}
 /** Jugada fuerte (+4, corte, Órdago, cierre): golpe grave con sub-bass (~120 ms). */
 export function playImpact(): void { buzz([45]); withAudio((c, t) => { tone(c, t, 120, 0.12, 0.5, 'sine', 42); noise(c, t, 0.08, 320, 0.3); }); }
 /** Fichas / puntos: tintineo metálico 1200 → 1800 Hz. */
@@ -172,6 +223,8 @@ export function feedback(kind: Sfx = 'tap'): void {
   switch (kind) {
     case 'play': case 'card': playCardSnap(); return;
     case 'draw': playCardDraw(); return;
+    case 'tick': playTick(); return;
+    case 'whoosh': playWhoosh(); return;
     case 'turn': playTurnPing(); return;
     case 'thud': case 'impact': playImpact(); return;
     case 'chip': playChipClink(); return;

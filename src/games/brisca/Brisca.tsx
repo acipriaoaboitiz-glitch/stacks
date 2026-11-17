@@ -83,7 +83,7 @@ export default function Brisca() {
         feedback('trick');
         const winCard = s.currentTrick.find((c) => c.playerId === ev.winnerId)?.card;
         if (winCard?.rank === 1 && ev.points > 20) juice.cinematic({ title: '¡ARRASTRE DE AS!', sub: `${winner.name} · +${ev.points} puntos`, tone: 'gold', good: true });
-        else if (ev.points >= 10) juice.points(`+${ev.points}`, 'gold');
+        else if (ev.points >= 10) { juice.points(`+${ev.points}`, 'gold'); if (winner.id === me) juice.chips('me'); }
         if (ev.points > 0) {
           show(`+${ev.points} PUNTOS`);
           const at = Date.now();
@@ -110,7 +110,7 @@ export default function Brisca() {
     if (s?.phase !== 'finished' || paidRef.current) return;
     paidRef.current = true;
     const { mine, theirs } = sidesFor(s, me);
-    if (mine > theirs) { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+    if (mine > theirs) { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); juice.chips('me'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
   }, [s, showCine, me]);
 
   const played = s?.currentTrick.length ?? 0;

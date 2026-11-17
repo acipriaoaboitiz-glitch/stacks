@@ -127,7 +127,7 @@ export default function Seises() {
     if (s && s.phase === 'playing') paid.current = false;
     if (!s || s.phase !== 'gameOver' || paid.current) return;
     paid.current = true;
-    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('seises'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+    if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('seises'); juice.chips('me'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
   }, [s, myIdx, showCine]);
 
   // Un solo toque en una carta jugable la lanza a la mesa.

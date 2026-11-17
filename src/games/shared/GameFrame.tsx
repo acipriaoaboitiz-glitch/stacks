@@ -5,7 +5,8 @@ import { useWallet } from '../../store/wallet.ts';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { GameCinematic } from '../../components/ui/GameCinematic.tsx';
-import { subscribeJuice, type Callout, type Cinematic } from '../../services/juice.ts';
+import { subscribeJuice, type Callout, type ChipBurst, type Cinematic, type Slam } from '../../services/juice.ts';
+import { ChipFlight, SlamSparks } from '../../components/ui/TableFx.tsx';
 import '../mus/app/mus.css';
 import { Toaster } from '../mus/app/components/ui.tsx';
 import { GameSettingsProvider } from '../mus/app/lib/settings.tsx';
@@ -63,11 +64,18 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
   const [shaking, setShaking] = useState(false);
   const [callouts, setCallouts] = useState<Callout[]>([]);
   const [cinematic, setCinematic] = useState<Cinematic | null>(null);
+  const [slamFx, setSlamFx] = useState<Slam | null>(null);
+  const [chipFx, setChipFx] = useState<(ChipBurst & { w: number; h: number }) | null>(null);
+  const feltRef = useRef<HTMLElement>(null);
+  const slamTimer = useRef<number | null>(null);
+  const chipTimer = useRef<number | null>(null);
   const cineTimer = useRef<number | null>(null);
   const shakeTimer = useRef<number | null>(null);
   useEffect(() => subscribeJuice({
     onShake: () => { setShaking(false); window.requestAnimationFrame(() => setShaking(true)); if (shakeTimer.current) window.clearTimeout(shakeTimer.current); shakeTimer.current = window.setTimeout(() => setShaking(false), 280); },
     onCinematic: (c) => { setCinematic(c); if (cineTimer.current) window.clearTimeout(cineTimer.current); cineTimer.current = window.setTimeout(() => setCinematic(null), 1650); },
+    onSlam: (sl) => { setSlamFx(null); window.requestAnimationFrame(() => setSlamFx(sl)); if (slamTimer.current) window.clearTimeout(slamTimer.current); slamTimer.current = window.setTimeout(() => setSlamFx(null), 700); },
+    onChips: (c) => { const r = feltRef.current?.getBoundingClientRect(); setChipFx({ ...c, w: r?.width ?? 320, h: r?.height ?? 420 }); if (chipTimer.current) window.clearTimeout(chipTimer.current); chipTimer.current = window.setTimeout(() => setChipFx(null), 1500); },
     onCallout: (c) => { setCallouts((cur) => [...cur.slice(-1), c]); window.setTimeout(() => setCallouts((cur) => cur.filter((x) => x.id !== c.id)), 1100); },
   }), []);
   // Reacciones compartidas: en una sala de este juego se envían a todos y se ven las de los demás.
@@ -112,11 +120,14 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
             {timer && <TurnTimer spec={timer} />}
             {strip && <section aria-label="Estado">{strip}</section>}
             <section
-              className="relative min-h-0 flex-1 overflow-hidden rounded-[clamp(22px,5vw,38px)] border border-[#D4AF37]/20 ring-1 ring-inset ring-white/5 ring-1 ring-inset ring-white/5 shadow-[inset_0_0_60px_rgba(0,0,0,.4),0_10px_30px_rgba(0,0,0,.3)]"
+              ref={feltRef}
+              className={`relative min-h-0 flex-1 overflow-hidden rounded-[clamp(22px,5vw,38px)] border border-[#D4AF37]/20 ring-1 ring-inset ring-white/5 ${slamFx ? 'animate-slam' : ''} shadow-[inset_0_0_60px_rgba(0,0,0,.4),0_10px_30px_rgba(0,0,0,.3)]`}
               style={{ background: feltTone === 'emerald' ? EMERALD_FELT : FELT_BG }}
               aria-label="Mesa de juego"
             >
               {felt}
+              {slamFx && <SlamSparks key={slamFx.id} />}
+              {chipFx && <ChipFlight key={chipFx.id} target={chipFx.target} n={chipFx.n} w={chipFx.w} h={chipFx.h} />}
               {/* foco cenital suave y viñeta cinematográfica */}
               <div aria-hidden className="pointer-events-none absolute inset-0 z-[15]" style={{ background: 'radial-gradient(ellipse at 50% 42%, rgba(255,236,190,.09) 0%, rgba(255,236,190,0) 55%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.5) 100%)' }} />
               <div className="pointer-events-none absolute inset-x-0 bottom-14 z-20 flex flex-col items-center gap-1" aria-live="polite">

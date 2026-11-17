@@ -168,13 +168,14 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
       if (mine) {
         const big = ({ 'Escalera': '¡ESCALERA!', 'Color': '¡COLOR!', 'Full': '¡FULL HOUSE!', 'Póker': '¡PÓKER!', 'Escalera de color': '¡ESCALERA DE COLOR!' } as Record<string, string>)[mine.hand];
         if (big) showCine(big, `+${mine.amount} fichas`); else juice.points(`+${mine.amount}`, 'gold');
+        juice.chips('me');
         show(`+${mine.amount} ${mine.hand ? `· ${mine.hand}` : ''}`);
       }
     }
     if (s.phase === 'betting') paid.current = false;
     if (s.phase === 'gameOver' && !paid.current) {
       paid.current = true;
-      if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('poker'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
+      if (s.winner === myIdx) { wallet.add(WIN_BONUS); wallet.recordWin('poker'); juice.chips('me'); showCine('¡CAMPEÓN!', `+${WIN_BONUS} fichas`); }
     }
   }, [s.phase, s.result, s.winner, show, showCine, myIdx]);
 

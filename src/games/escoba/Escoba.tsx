@@ -12,6 +12,7 @@ import { useT } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
+import { juice } from '../../services/juice.ts';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, ScoreStrip, escobaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
   TARGET_SCORE, applyEscobaAction, botMove, escobaValue, findCaptures, isValidCapture, newMatch, play, type EscobaAction, type EscobaState,
@@ -86,7 +87,7 @@ export default function Escoba() {
     if (s.phase === 'playing') paid.current = false;
     if (s.phase === 'matchOver' && !paid.current) {
       paid.current = true;
-      if (s.scores[myIdx] === Math.max(...s.scores)) { wallet.add(WIN_BONUS); wallet.recordWin('escoba'); }
+      if (s.scores[myIdx] === Math.max(...s.scores)) { wallet.add(WIN_BONUS); wallet.recordWin('escoba'); juice.chips('me'); }
     }
     // eslint-disable-next-line
   }, [s]);
