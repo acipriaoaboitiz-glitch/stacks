@@ -1,7 +1,12 @@
+/** Tamaños de marca: sm 32, md 56, lg 96 (o un número en px). */
+export type LogoSize = 'sm' | 'md' | 'lg' | number;
+const LOGO_PX = { sm: 32, md: 56, lg: 96 } as const;
+
 /** Isotipo de STACKS: «S» monolítica de tres segmentos diagonales facetados, en oro metálico sobre un squircle esmeralda. */
-export function Logo({ size = 56 }: { size?: number }) {
+export function Logo({ size = 'md' }: { size?: LogoSize }) {
+  const px = typeof size === 'number' ? size : LOGO_PX[size];
   return (
-    <svg viewBox="0 0 512 512" width={size} height={size} role="img" aria-label="STACKS">
+    <svg viewBox="0 0 512 512" width={px} height={px} role="img" aria-label="STACKS">
       <defs>
         <linearGradient id="lg-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FCE38A" /><stop offset="1" stopColor="#E3BD4A" /></linearGradient>
         <linearGradient id="lg-mid" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#E3BD4A" /><stop offset="1" stopColor="#D4AF37" /></linearGradient>

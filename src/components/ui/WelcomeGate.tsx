@@ -15,7 +15,7 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
     <div className="grid min-h-full place-items-center px-4 py-6" style={{ paddingTop: 'max(24px, env(safe-area-inset-top))', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm rounded-3xl border border-amber-500/30 bg-slate-900/90 p-5 shadow-[0_24px_70px_rgba(0,0,0,.65)]">
         <div className="mb-4 grid justify-items-center text-center">
-          <Logo size={72} />
+          <Logo size="lg" />
           <h1 aria-label={APP_NAME}><Wordmark size={26} /></h1>
           <p className="mt-1 text-[12px] text-stone-400">Crea tu perfil para entrar a la mesa</p>
         </div>
