@@ -11,6 +11,7 @@ import Chinchon from './games/chinchon/Chinchon.tsx';
 import Poker from './games/poker/Poker.tsx';
 import Presidente from './games/presidente/Presidente.tsx';
 import Seises from './games/seises/Seises.tsx';
+import Branding from './pages/Branding.tsx';
 import Tute from './games/tute/Tute.tsx';
 import Home from './pages/Home.tsx';
 
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/play/poker" element={<Poker />} />
         <Route path="/play/presidente" element={<Presidente />} />
         <Route path="/play/seises" element={<Seises />} />
+        <Route path="/branding" element={<Branding />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

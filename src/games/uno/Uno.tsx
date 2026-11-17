@@ -112,9 +112,8 @@ export default function Uno() {
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
     const who = s.players.find((p) => p.id === e.by)!;
-    if (e.kind === 'uno') juice.callout('¡UNO!', 'neon');
     if (e.kind === 'draw' && who.id !== me && e.text.includes('+4') && e.text.endsWith(s.players.find((p) => p.id === me)?.name ?? '#')) show(`${who.name} te echa un +4 · Color ${cap(COLOR_NAME[s.color])}`);
-    if (e.kind === 'draw') juice.impact(e.text.includes('+4') ? '+4' : e.text.includes('+2') ? '+2' : undefined, 'red');
+    if (e.kind === 'draw') juice.impact();
     else if (e.text === 'Roba una carta') feedback('draw');
     else feedback(e.kind === 'uno' ? 'trick' : 'deal');
     if (who.id === me) show(e.text);
@@ -283,7 +282,7 @@ export default function Uno() {
         )}
       </AnimatePresence>
       <PillBar pills={pills} />
-      <div className="w-full overflow-x-auto pb-1 pt-[min(2.4dvh,18px)]" role="group" aria-label="Tu mano">
+      <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.4dvh,18px)]" role="group" aria-label="Tu mano">
         <div className="mx-auto flex w-max items-end px-2">
           {sorted.map((c, i) => (
             <div key={c.id} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${sorted.length > 9 ? -0.46 : sorted.length > 6 ? -0.34 : -0.12})`, zIndex: i }}>

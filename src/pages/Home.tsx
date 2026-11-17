@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Globe, Play, Users, X } from 'lucide-react';
-import { Logo, Wordmark } from '../components/ui/Logo.tsx';
 import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
 import { QuickButtons } from '../components/ui/QuickButtons.tsx';
@@ -11,7 +10,6 @@ import { EconomyModal } from '../components/ui/EconomyModal.tsx';
 import { RulesModal } from '../components/ui/RulesModal.tsx';
 import { ProfileCard } from '../components/ui/ProfileModal.tsx';
 import { SettingsModal } from '../components/ui/SettingsModal.tsx';
-import { APP_NAME } from '../config.ts';
 import { GAMES, findGame, type GameInfo } from '../games/registry.ts';
 import { useT } from '../i18n/index.ts';
 import type { Room } from '../services/multiplayer.ts';
@@ -150,10 +148,7 @@ export default function Home() {
       <div className="relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between overflow-hidden px-4 pt-3" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
-        <div className="relative z-10 flex items-center gap-2.5">
-          <Logo size={46} />
-          <h1 aria-label={APP_NAME}><Wordmark size={26} /></h1>
-        </div>
+        <div aria-hidden />
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
         <div className="relative z-10 w-full" style={{ height: 'min(44dvh, 370px)' }}>
@@ -201,6 +196,7 @@ export default function Home() {
         </nav>
       </div>
 
+      <button type="button" onClick={() => nav('/branding')} className="fixed right-3 top-[68px] z-20 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-[10px] font-semibold text-stone-400 hover:text-stone-300">Elegir fuente e icono</button>
       <OnlineLobbyModal game={online} initialCode={inviteCode} onClose={closeOnline} onStart={startOnline} />
       <RulesPicker open={picker} onClose={() => setPicker(false)} onPick={(g) => { setPicker(false); setRules(g); }} />
       <RulesModal game={rules} onClose={() => setRules(null)} />

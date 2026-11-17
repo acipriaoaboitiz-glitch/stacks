@@ -17,7 +17,6 @@ import { BB, START_STACK, act, applyPokerAction, bestScore, botAct, handName, le
 const WIN_BONUS = 200;
 const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor', 'Maite', 'Unai'];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
-const STREET: Record<string, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River', showdown: 'Showdown' };
 
 function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
   const x = s.seats[i]!;
@@ -235,7 +234,6 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
                 return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] rounded-[3px] border border-dashed border-white/15" style={{ width: 'calc(var(--card-w) * 0.5)' }} />;
               })}
             </div>
-            <span className="rounded-full bg-black/45 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-200/80">{STREET[s.street]} · mano {s.handNo}</span>
           </div>
         </OvalTable>
       </div>

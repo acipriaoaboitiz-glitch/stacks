@@ -203,7 +203,7 @@ export default function Chinchon() {
         <span className="text-[11px] text-stone-400">{status}</span>
       </div>
       <PillBar pills={pills} />
-      <div className="w-full overflow-x-auto pb-1 pt-[min(2.6dvh,20px)]" role="group" aria-label="Tu mano">
+      <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.6dvh,20px)]" role="group" aria-label="Tu mano">
         <div className="mx-auto flex w-max items-end px-2">
           {ordered.map(({ card, grouped, gap }, i) => (
             <div key={card.id} style={{ marginLeft: i === 0 ? 0 : gap ? 'calc(var(--card-w) * 0.12)' : 'calc(var(--card-w) * -0.3)', zIndex: i }} className="relative">

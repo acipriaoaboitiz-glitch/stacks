@@ -211,7 +211,7 @@ export default function Seises() {
         <span className="min-w-0 truncate text-right text-[11px] text-stone-400">{status}</span>
       </div>
       <PillBar pills={pills} />
-      <div className="w-full overflow-x-auto pb-1 pt-[min(2.2dvh,16px)]" role="group" aria-label="Tu mano">
+      <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.2dvh,16px)]" role="group" aria-label="Tu mano">
         <div className="mx-auto flex w-max items-end px-2">
           {hand.map((c, i) => {
             const ok = myTurn && isPlayable(s, c);

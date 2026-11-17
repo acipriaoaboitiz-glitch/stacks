@@ -225,7 +225,7 @@ export default function Presidente() {
         <span className="min-w-0 truncate text-right text-[11px] text-stone-400">{status}</span>
       </div>
       <PillBar pills={pills} />
-      <div className="w-full overflow-x-auto pb-1 pt-[min(2.4dvh,18px)]" role="group" aria-label="Tu mano">
+      <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.4dvh,18px)]" role="group" aria-label="Tu mano">
         <div className="mx-auto flex w-max items-end px-2">
           {hand.map((c, i) => (
             <div key={c.id} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${gap})`, zIndex: i }}>
