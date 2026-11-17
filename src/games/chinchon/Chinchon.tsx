@@ -79,9 +79,9 @@ export default function Chinchon() {
     const key = `${e?.seq}:${e?.text}`;
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
-    if (/CHINCH/.test(e.text)) { juice.impact(); showCine('¡CHINCHÓN!', '−25 puntos'); }
+    if (/CHINCH/.test(e.text)) { showCine('¡CHINCHÓN!', `${s.closer === myIdx ? 'Cierras' : `${nm(s.closer ?? 0)} cierra`} · −25 puntos`); }
     else if (/anulada/.test(e.text)) show(e.text);
-    else if (/Cierra/.test(e.text)) { juice.impact('¡CIERRE! −10', 'neon'); show(`${s.closer === myIdx ? 'Cierras' : `${nm(s.closer ?? 0)} cierra`} la ronda`); }
+    else if (/Cierra/.test(e.text)) { if ((s.rows?.[s.closer ?? 0]?.unmatched ?? 9) < 5) showCine('¡CERRAR RONDA!', `${nm(s.closer ?? 0)} · −10 puntos`); else juice.impact(); show(`${s.closer === myIdx ? 'Cierras' : `${nm(s.closer ?? 0)} cierra`} la ronda`); }
     else feedback('deal');
   }, [s, show, showCine, myIdx]);
 

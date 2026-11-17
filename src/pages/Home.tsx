@@ -139,10 +139,10 @@ export default function Home() {
   }, [N]);
   return (
     <div className="screen obsidian">
-      <header className="glass-panel relative z-20 flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 sm:flex-nowrap" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
-        <div className="min-w-0 flex-1 sm:flex-none"><ProfileCard /></div>
-        <div className="order-last flex basis-full justify-center sm:order-none sm:basis-auto sm:flex-1"><h1 aria-label="STACKS"><Wordmark size={20} /></h1></div>
-        <div className="flex shrink-0 items-center gap-2">
+      <header className="glass-panel relative z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_auto_1fr]" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
+        <div className="col-start-1 row-start-1 min-w-0 justify-self-start"><ProfileCard /></div>
+        <div className="col-span-2 row-start-2 flex justify-center sm:col-span-1 sm:col-start-2 sm:row-start-1"><h1 aria-label="STACKS"><Wordmark size={20} /></h1></div>
+        <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-2 justify-self-end sm:col-start-3">
           <ChipBalance onPlus={() => setShowRefill(true)} />
           <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />
         </div>

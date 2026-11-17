@@ -88,9 +88,10 @@ export default function Tute() {
     const key = `${e?.seq}:${e?.by}:${e?.text}`;
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
-    if (e.text === '¡TUTE!') { juice.impact(); showCine('¡TUTE!', 'Cuatro reyes o cuatro caballos'); return; }
+    if (e.text === '¡TUTE!') { showCine('¡TUTE!', 'Cuatro reyes o cuatro caballos'); return; }
     if (/Canta/.test(e.text)) {
-      juice.points(e.text.replace('Canta', '¡Canta'), 'gold');
+      const big = /40/.test(e.text);
+      juice.cinematic({ title: big ? '¡LAS 40!' : '¡LAS 20!', sub: e.text, tone: big ? 'gold' : 'emerald', good: true });
       const who = s.players.find((p) => p.id === e.by)!;
       if (who.id === me) show(e.text.replace('Canta', 'Cantas')); else {
         const at = Date.now();

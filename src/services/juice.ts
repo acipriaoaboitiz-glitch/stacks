@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  feedback, playCardDraw, playCardSnap, playChipClink, playDefeatTone, playImpact, playTurnPing, playVictoryFanfare,
+  feedback, playCardDraw, playCinematicSound, playCardSnap, playChipClink, playDefeatTone, playImpact, playTurnPing, playVictoryFanfare,
 } from '../store/settings.ts';
 
 /**
@@ -8,8 +8,10 @@ import {
  * Los efectos visuales (temblor de mesa y textos de impacto) viajan por un pequeño bus que escucha `GameFrame`.
  */
 export type CalloutTone = 'gold' | 'neon' | 'red';
+export type CinematicTone = 'gold' | 'ruby' | 'emerald' | 'electric';
+export interface Cinematic { id: number; title: string; sub?: string; tone: CinematicTone }
 export interface Callout { id: number; text: string; tone: CalloutTone }
-type Listener = { onShake: () => void; onCallout: (c: Callout) => void };
+type Listener = { onShake: () => void; onCallout: (c: Callout) => void; onCinematic?: (c: Cinematic) => void };
 
 const listeners = new Set<Listener>();
 let nextId = 1;
@@ -18,7 +20,16 @@ export const subscribeJuice = (l: Listener): (() => void) => { listeners.add(l);
 const shake = (): void => listeners.forEach((l) => l.onShake());
 const callout = (text: string, tone: CalloutTone = 'gold'): void => { const c = { id: nextId++, text, tone }; listeners.forEach((l) => l.onCallout(c)); };
 
+/** Cinemática épica de jugada (≈1,5 s, sin bloquear). `good` = jugada tuya (fanfarria) o castigo (grave). */
+const cinematic = (c: { title: string; sub?: string; tone?: CinematicTone; good?: boolean }): void => {
+  const full: Cinematic = { id: nextId++, title: c.title, sub: c.sub, tone: c.tone ?? 'gold' };
+  playCinematicSound(c.good ?? full.tone !== 'ruby');
+  shake();
+  listeners.forEach((l) => l.onCinematic?.(full));
+};
+
 export const juice = {
+  cinematic,
   playCardSnap, playCardDraw, playTurnPing, playImpact, playChipClink, playVictoryFanfare, playDefeatTone,
   /** Texto grande en el centro de la mesa. */
   callout,

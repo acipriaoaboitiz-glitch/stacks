@@ -4,7 +4,8 @@ import { getActiveRoom, useRoom } from '../../services/multiplayer.ts';
 import { useWallet } from '../../store/wallet.ts';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { subscribeJuice, type Callout } from '../../services/juice.ts';
+import { GameCinematic } from '../../components/ui/GameCinematic.tsx';
+import { subscribeJuice, type Callout, type Cinematic } from '../../services/juice.ts';
 import '../mus/app/mus.css';
 import { Toaster } from '../mus/app/components/ui.tsx';
 import { GameSettingsProvider } from '../mus/app/lib/settings.tsx';
@@ -61,9 +62,12 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
   // Game Feel: temblor de mesa (250 ms) y textos de impacto, disparados desde `juice` por cualquier juego.
   const [shaking, setShaking] = useState(false);
   const [callouts, setCallouts] = useState<Callout[]>([]);
+  const [cinematic, setCinematic] = useState<Cinematic | null>(null);
+  const cineTimer = useRef<number | null>(null);
   const shakeTimer = useRef<number | null>(null);
   useEffect(() => subscribeJuice({
     onShake: () => { setShaking(false); window.requestAnimationFrame(() => setShaking(true)); if (shakeTimer.current) window.clearTimeout(shakeTimer.current); shakeTimer.current = window.setTimeout(() => setShaking(false), 280); },
+    onCinematic: (c) => { setCinematic(c); if (cineTimer.current) window.clearTimeout(cineTimer.current); cineTimer.current = window.setTimeout(() => setCinematic(null), 1650); },
     onCallout: (c) => { setCallouts((cur) => [...cur.slice(-1), c]); window.setTimeout(() => setCallouts((cur) => cur.filter((x) => x.id !== c.id)), 1100); },
   }), []);
   // Reacciones compartidas: en una sala de este juego se envían a todos y se ven las de los demás.
@@ -136,6 +140,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
             <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<EmoteBubble text={emote} /></section>
           </div>
           {timer?.active && <div aria-hidden className="turn-glow pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20" style={{ background: 'linear-gradient(to top, rgba(240,195,95,.5), transparent)' }} />}
+          {cinematic && <GameCinematic key={cinematic.id} title={cinematic.title} sub={cinematic.sub} tone={cinematic.tone} />}
           {overlays}
         </main>
 

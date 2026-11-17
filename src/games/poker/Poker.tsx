@@ -149,6 +149,13 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   useEffect(() => {
     if (s.community.length !== prevCommunity.current) { if (s.community.length > prevCommunity.current) feedback('deal'); prevCommunity.current = s.community.length; }
   }, [s.community.length]);
+  // ¡ALL-IN!: cinemática cuando alguien se queda sin fichas por apostarlas todas.
+  const prevAllIn = useRef<boolean[]>([]);
+  useEffect(() => {
+    const now = s.seats.map((x) => x.allIn && !x.out && !x.folded);
+    now.forEach((v, i) => { if (v && !prevAllIn.current[i]) showCine('¡ALL-IN!', `${s.players[i]!.name} lo apuesta todo`); });
+    prevAllIn.current = now;
+  }, [s.seats, s.players, showCine]);
   const lastBets = useRef(0);
   useEffect(() => {
     const total = pot(s);
@@ -158,7 +165,11 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   useEffect(() => {
     if (s.phase === 'handOver' && s.result) {
       const mine = s.result.wins.find((w) => w.seat === myIdx);
-      if (mine) { juice.points(`+${mine.amount}`, 'gold'); show(`+${mine.amount} ${mine.hand ? `· ${mine.hand}` : ''}`); }
+      if (mine) {
+        const big = ({ 'Escalera': '¡ESCALERA!', 'Color': '¡COLOR!', 'Full': '¡FULL HOUSE!', 'Póker': '¡PÓKER!', 'Escalera de color': '¡ESCALERA DE COLOR!' } as Record<string, string>)[mine.hand];
+        if (big) showCine(big, `+${mine.amount} fichas`); else juice.points(`+${mine.amount}`, 'gold');
+        show(`+${mine.amount} ${mine.hand ? `· ${mine.hand}` : ''}`);
+      }
     }
     if (s.phase === 'betting') paid.current = false;
     if (s.phase === 'gameOver' && !paid.current) {

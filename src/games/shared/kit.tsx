@@ -4,7 +4,8 @@ import { AnimatedNumber } from '../mus/app/components/AnimatedNumber.tsx';
 import { CardBack, CardFace } from '../mus/app/components/CardFace.tsx';
 import { PhaseCinematic } from '../mus/app/components/PhaseCinematic.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
-import { CINE, type PhaseCine } from '../mus/app/game/useTableDirector.ts';
+import { type PhaseCine } from '../mus/app/game/useTableDirector.ts';
+import { juice } from '../../services/juice.ts';
 import { CardBackArt, FrenchFace } from '../../components/cards/FrenchFace.tsx';
 import type { AnyCard, SpanishCard, SpanishSuit } from '../../engine/deck.ts';
 import { CARD_EASE, FAST_EASE, feedback, useSettings } from '../../store/settings.ts';
@@ -174,16 +175,12 @@ export function Banner({ text }: { text: string | null }) {
 
 /** Cartel a pantalla casi completa (el de los lances de Mus) para momentos clave: ¡ESCOBA!, ¡VICTORIA!… */
 export function useCine(): { cine: PhaseCine | null; show: (title: string, subtitle?: string) => void } {
-  const [cine, setCine] = useState<PhaseCine | null>(null);
-  const seq = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Las cinemáticas se dibujan en GameFrame con <GameCinematic />; aquí solo se lanzan.
   const show = useCallback((title: string, subtitle?: string) => {
-    setCine({ key: ++seq.current, lance: 'grande', title, subtitle: subtitle ?? null });
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setCine(null), (CINE.in + CINE.hold) * 1000);
+    const tone = /\+2|\+4|CASTIGO|MENDIGO|ALL-IN/i.test(title) ? 'ruby' : 'gold';
+    juice.cinematic({ title, sub: subtitle, tone });
   }, []);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  return { cine, show };
+  return { cine: null, show };
 }
 
 export { PhaseCinematic };

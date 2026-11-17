@@ -114,7 +114,7 @@ export default function Uno() {
     lastSeq.current = key;
     const who = s.players.find((p) => p.id === e.by)!;
     if (e.kind === 'draw' && who.id !== me && e.text.includes('+4') && e.text.endsWith(s.players.find((p) => p.id === me)?.name ?? '#')) show(`${who.name} te echa un +4 · Color ${cap(COLOR_NAME[s.color])}`);
-    if (e.kind === 'draw') juice.impact();
+    if (e.kind === 'draw') void 0; // el golpe lo da la cinemática
     else if (e.text === 'Roba una carta') feedback('draw');
     else feedback(e.kind === 'uno' ? 'trick' : 'deal');
     // Sin carteles en el centro: el aviso va pegado al avatar afectado y una carta vuela desde el mazo.
@@ -134,12 +134,18 @@ export default function Uno() {
     if (e.text === 'Roba una carta') fly(slotOfId(e.by));
     else if (e.kind === 'draw') {
       const victim = s.players.find((p) => e.text.endsWith(p.name));
-      if (victim) { markPlayer(victim.id, e.text.includes('+4') ? '+4' : '+2'); fly(slotOfId(victim.id)); }
+      if (victim) {
+        markPlayer(victim.id, e.text.includes('+4') ? '+4' : '+2'); fly(slotOfId(victim.id));
+        juice.cinematic({ title: e.text.includes('+4') ? '¡+4!' : '¡+2!', sub: `${who.name} → ${victim.name}`, tone: 'ruby', good: who.id === me });
+      }
     } else if (e.text === 'Salta turno') {
       const idx = s.players.findIndex((p) => p.id === e.by);
       const skipped = s.players[(idx + s.dir + n) % n];
-      if (skipped) markPlayer(skipped.id, 'Ø');
+      if (skipped) { markPlayer(skipped.id, 'Ø'); juice.cinematic({ title: '¡SALTO DE TURNO!', sub: `${skipped.name} pierde el turno`, tone: 'electric', good: who.id === me }); }
     }
+    const colorTone = ({ red: 'ruby', green: 'emerald', blue: 'electric', yellow: 'gold' } as const)[s.color];
+    if (e.text === 'Cambio de sentido') juice.cinematic({ title: '¡CAMBIO DE SENTIDO!', sub: who.name, tone: colorTone, good: who.id === me });
+    if (e.kind === 'uno') juice.cinematic({ title: '¡ÚLTIMA CARTA · UNO!', sub: who.name, tone: colorTone, good: who.id === me });
     if (who.id === me) show(e.text);
   }, [s, show, me]);
 

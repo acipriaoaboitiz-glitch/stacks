@@ -80,7 +80,7 @@ export default function Presidente() {
     if (!s || !e || key === lastSeq.current) return;
     lastSeq.current = key;
     const who = s.players.find((p) => p.id === e.by);
-    if (e.text === '¡Corta con un 2!') juice.impact('¡LIMPIA MESA!', 'gold');
+    if (e.text === '¡Corta con un 2!') juice.cinematic({ title: '¡2 DE CASTIGO!', sub: `${who?.name ?? ''} limpia la mesa`, tone: 'ruby', good: who?.id === me });
     else feedback(e.kind === 'clear' ? 'trick' : e.kind === 'out' ? 'chip' : 'deal');
     if (!who) return;
     if (who.id === me) { if (e.kind !== 'info' || e.text !== 'Pasa') show(e.text); return; }
@@ -97,7 +97,8 @@ export default function Presidente() {
     const r = roleOf(s, me);
     if (!r) return;
     if (ROLE_PRIZE[r] > 0) wallet.add(ROLE_PRIZE[r]);
-    if (r === 'presidente') { wallet.recordWin('presidente'); showCine('¡PRESIDENTE!', `+${ROLE_PRIZE[r]} fichas`); }
+    if (r === 'mendigo') juice.cinematic({ title: '¡MENDIGO!', sub: 'Entregas tus 2 mejores cartas', tone: 'ruby', good: false });
+    if (r === 'presidente') { wallet.recordWin('presidente'); showCine('¡NUEVO REY!', `+${ROLE_PRIZE[r]} fichas`); }
   }, [s, showCine, me]);
 
   if (!s && online) {

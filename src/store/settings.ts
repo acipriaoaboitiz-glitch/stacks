@@ -154,6 +154,16 @@ export function playVictoryFanfare(): void {
     tone(c, t + 0.34, 2093, 0.4, 0.03, 'sine');
   });
 }
+/** Cinemática de jugada: golpe grave + acorde brillante (jugada tuya) o grave sombrío (castigo). */
+export function playCinematicSound(good: boolean): void {
+  buzz([25, 35, 30]);
+  withAudio((c, t) => {
+    tone(c, t, 110, 0.2, 0.5, 'sine', 40); noise(c, t, 0.1, 300, 0.32);
+    if (good) { [523, 659, 784, 1046].forEach((f, k) => tone(c, t + 0.06 + k * 0.045, f, 0.45, 0.06, 'triangle')); tone(c, t + 0.3, 2093, 0.5, 0.03, 'sine'); }
+    else { tone(c, t + 0.05, 196, 0.5, 0.07, 'sawtooth', 110); tone(c, t + 0.05, 185, 0.5, 0.05, 'sawtooth', 104); }
+  });
+}
+
 /** Derrota: dos notas graves descendentes y suaves. */
 export function playDefeatTone(): void { buzz([60, 40, 60]); withAudio((c, t) => { tone(c, t, 233, 0.3, 0.06, 'sine'); tone(c, t + 0.22, 175, 0.42, 0.06, 'sine'); }); }
 

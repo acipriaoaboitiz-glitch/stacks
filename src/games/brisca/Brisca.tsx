@@ -81,7 +81,9 @@ export default function Brisca() {
       if (lastShown.current !== key) {
         lastShown.current = key;
         feedback('trick');
-        if (ev.points >= 10) juice.points(`+${ev.points}`, 'gold');
+        const winCard = s.currentTrick.find((c) => c.playerId === ev.winnerId)?.card;
+        if (winCard?.rank === 1 && ev.points > 20) juice.cinematic({ title: '¡ARRASTRE DE AS!', sub: `${winner.name} · +${ev.points} puntos`, tone: 'gold', good: true });
+        else if (ev.points >= 10) juice.points(`+${ev.points}`, 'gold');
         if (ev.points > 0) {
           show(`+${ev.points} PUNTOS`);
           const at = Date.now();
