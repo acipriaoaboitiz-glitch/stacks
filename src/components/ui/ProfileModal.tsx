@@ -7,6 +7,7 @@ import { saveProfile, useProfile } from '../../store/profile.ts';
 import { useWallet } from '../../store/wallet.ts';
 import { PlayerAvatar, RANKS, rankFor } from './Hud.tsx';
 import { ProfileEditor } from './ProfileEditor.tsx';
+import { AccountPanel } from './AccountPanel.tsx';
 import { useBackClose } from '../../services/backStack.ts';
 
 /** Modal de edición del perfil (nombre, título, foto/avatar) con rango y victorias. */
@@ -38,6 +39,8 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
               <p className="mt-1 flex items-center justify-between text-[10px] text-stone-400"><span>{next ? `${w.chips.toLocaleString('es-ES')} / ${next.min.toLocaleString('es-ES')} fichas` : 'Rango máximo'}</span><span className="flex items-center gap-1"><Trophy size={11} />{totalWins} victorias</span></p>
             </div>
             <ProfileEditor initial={prof} submitLabel="Guardar" onSubmit={(p) => { saveProfile(p); onClose(); }} />
+            <h3 className="mb-2 mt-5 text-[11px] font-extrabold uppercase tracking-[.16em] text-amber-300/90">{t('acc.title')}</h3>
+            <AccountPanel />
             <h3 className="mb-2 mt-5 text-[11px] font-extrabold uppercase tracking-[.16em] text-amber-300/90">Victorias por juego</h3>
             <ul className="grid grid-cols-2 gap-1.5">
               {GAMES.map((g) => (

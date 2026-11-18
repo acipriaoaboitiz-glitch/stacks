@@ -16,12 +16,32 @@ const arm = (): void => {
   if (armed) return;
   try { window.history.pushState({ stacksBack: true }, ''); armed = true; } catch { /* sin history */ }
 };
+const onTrap = (): boolean => { try { return Boolean((window.history.state as { stacksBack?: boolean } | null)?.stacksBack); } catch { return false; } };
 const disarm = (): void => {
   if (!armed) return;
   armed = false;
+  // Solo se retrocede si seguimos encima de la entrada trampa: si ya se navegó a otra pantalla, un `back()` nos devolvería a la mesa.
+  if (!onTrap()) return;
   ignoreUntil = Date.now() + 250;
   try { window.history.back(); } catch { ignoreUntil = 0; }
 };
+
+/**
+ * Retira la entrada trampa del historial y espera a que el navegador la consuma. Se llama justo antes de navegar fuera de una mesa
+ * (`exitMatch`), para que ni el temporizador de limpieza ni el botón Atrás de Android devuelvan al jugador a la partida.
+ */
+export function releaseBackTrap(): Promise<void> {
+  window.clearTimeout(disarmTimer);
+  if (!armed || !onTrap()) { armed = false; return Promise.resolve(); }
+  armed = false;
+  ignoreUntil = Date.now() + 400;
+  return new Promise((resolve) => {
+    const done = (): void => { window.removeEventListener('popstate', done); resolve(); };
+    window.addEventListener('popstate', done);
+    window.setTimeout(done, 160);
+    try { window.history.back(); } catch { done(); }
+  });
+}
 
 if (typeof window !== 'undefined') {
   window.addEventListener('popstate', () => {

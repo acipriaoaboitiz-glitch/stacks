@@ -1,6 +1,8 @@
 import { memo, useEffect, useSyncExternalStore, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
-import { CARD_EASE } from '../../store/settings.ts';
+import { CARD_EASE, playWhoosh } from '../../store/settings.ts';
+import { gameTimeout } from '../../services/timers.ts';
+import { useThrow } from '../shared/useThrow.ts';
 import { cardLabel, type Color, type UnoCard as UnoCardData } from './engine.ts';
 
 /** Colores oficiales del set. */
@@ -163,29 +165,40 @@ interface Props {
   glow?: boolean;
   /** Bajo el dedo/cursor: sube 18 px y crece un 8 %. */
   lifted?: boolean;
+  /** Posición en el reparto: sale del mazo en cascada (45 ms por carta). */
+  deal?: number;
   rotate?: number;
   style?: CSSProperties;
 }
 
 /** Carta de UNO: usa el set SVG de /public/cards/uno si existe y, si no, el diseño vectorial propio. */
-export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, lifted, rotate = 0, style }: Props) {
+export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, lifted, deal, rotate = 0, style }: Props) {
   const vectors = useVectorSet();
   const interactive = Boolean(onClick);
+  const { handlers, click } = useThrow(() => onClick?.(), interactive);
+  useEffect(() => {
+    if (deal === undefined) return;
+    const id = gameTimeout(() => playWhoosh(), deal * 45);
+    return () => window.clearTimeout(id);
+  }, [deal]);
   const lit = glow || playable || selected;
   return (
     <motion.button
       type="button"
       disabled={!interactive}
-      onClick={onClick}
+      onClick={click}
+      {...(interactive ? handlers : {})}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl bg-[#0b1220] shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`${deal !== undefined ? 'deal-in ' : ''}relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl bg-[#0b1220] shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         boxShadow: lit ? '0 0 0 2px #f0c35f' : undefined,
+        ...(deal !== undefined ? { ['--d' as string]: deal } : {}),
+        ...(interactive ? { touchAction: 'pan-x' } : {}),
         ...style,
       }}
-      animate={{ y: lifted ? -18 : selected ? -12 : 0, scale: lifted ? 1.08 : 1, rotate }}
+      animate={{ y: lifted ? -18 : selected ? -12 : playable && interactive ? -8 : 0, scale: lifted ? 1.08 : 1, rotate }}
       whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
       transition={CARD_EASE}

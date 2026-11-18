@@ -14,6 +14,8 @@ import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScoreStrip, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import { BB, START_STACK, act, applyPokerAction, bestScore, botAct, handName, legal, newPoker, pot, type PAction, type PPlayer, type PokerAction, type PokerState } from './engine.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const WIN_BONUS = 200;
 const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3), botName(4), botName(5)];
@@ -89,7 +91,7 @@ export default function Poker() {
   const noS = s === null;
   useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
   const { dispatch } = useReplica<PokerState, PokerAction>(seating, s, setS, applyPokerAction, (st, peer) => st.players.find((q) => q.peerId === peer)?.id ?? null);
-  const exit = () => { if (online) setActiveRoom(null); nav('/'); };
+  const exit = () => { if (online) setActiveRoom(null); void exitMatch(nav); };
 
   if (online && !s) {
     return (
@@ -137,7 +139,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   // Turno de los bots (solo el anfitrión, o en local).
   useEffect(() => {
     if (s.phase !== 'betting' || !hostLike || s.players[s.turn]!.human) return;
-    const timer = window.setTimeout(() => {
+    const timer = gameTimeout(() => {
       setS((cur) => {
         if (!cur || cur.phase !== 'betting' || cur.players[cur.turn]!.human) return cur;
         return act(cur, botAct(cur)) ?? act(cur, { type: 'fold' }) ?? cur;
@@ -301,7 +303,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
       ) : <PillBar pills={pills} idle={status} />}
       <div className="flex items-end justify-center gap-[min(2vw,10px)] pt-[min(1.4dvh,10px)]" role="group" aria-label="Tus cartas">
         {me.hole.map((c, i) => (
-          <FaceCard key={c.id} card={c} scale={0.92} rotate={i === 0 ? -4 : 4} dim={me.folded} />
+          <FaceCard key={c.id} card={c} deal={i} scale={0.92} rotate={i === 0 ? -4 : 4} dim={me.folded} />
         ))}
       </div>
     </>

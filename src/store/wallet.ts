@@ -12,6 +12,8 @@ export interface WalletState {
   wins: Record<string, number>;
   /** Victorias seguidas (se corta con una derrota). */
   winStreak: number;
+  /** Partidas terminadas (para el perfil en la nube). */
+  games: number;
 }
 
 const KEY = 'latimba.wallet.v1';
@@ -28,7 +30,7 @@ const today = (): string => dayKey(new Date());
 const yesterday = (): string => dayKey(new Date(Date.now() - 86_400_000));
 
 function load(): WalletState {
-  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '', streak: 0, avatar: 0, wins: {}, winStreak: 0 };
+  const fallback: WalletState = { chips: START_CHIPS, name: 'Jugador', lastDailyClaim: '', streak: 0, avatar: 0, wins: {}, winStreak: 0, games: 0 };
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return fallback;
@@ -41,6 +43,7 @@ function load(): WalletState {
       avatar: typeof p.avatar === 'number' ? p.avatar : 0,
       wins: p.wins && typeof p.wins === 'object' ? p.wins : {},
       winStreak: typeof p.winStreak === 'number' && p.winStreak > 0 ? Math.floor(p.winStreak) : 0,
+      games: typeof p.games === 'number' && p.games > 0 ? Math.floor(p.games) : 0,
     };
   } catch {
     return fallback;
@@ -69,6 +72,9 @@ const subscribe = (l: () => void): (() => void) => {
 };
 
 export const getWallet = (): WalletState => state;
+/** Suscripción sin React (la usa la sincronización del perfil con la nube). */
+export const subscribeWallet = subscribe;
+export const totalWins = (s: WalletState = state): number => Object.values(s.wins).reduce((a, b) => a + b, 0);
 export const useWallet = (): WalletState => useSyncExternalStore(subscribe, getWallet);
 
 export const canClaimDaily = (s: WalletState = state): boolean => s.lastDailyClaim !== today();
@@ -108,7 +114,13 @@ export const wallet = {
   },
   setAvatar(avatar: number): void { set({ ...state, avatar }); },
   /** Fin de partida: suma o corta la racha de victorias. */
-  recordResult(won: boolean): void { set({ ...state, winStreak: won ? state.winStreak + 1 : 0 }); },
+  recordResult(won: boolean): void { set({ ...state, winStreak: won ? state.winStreak + 1 : 0, games: state.games + 1 }); },
+  /** Recupera saldo y estadísticas guardados en la nube al iniciar sesión en otro dispositivo (nunca baja lo ya ganado en local). */
+  hydrate(cloud: { chips: number; wins: number; games: number }): void {
+    const localWins = totalWins();
+    const wins = cloud.wins > localWins ? { ...state.wins, club: (state.wins.club ?? 0) + (cloud.wins - localWins) } : state.wins;
+    set({ ...state, chips: Math.max(0, Math.floor(cloud.chips)), wins, games: Math.max(state.games, cloud.games) });
+  },
   recordWin(gameId: string): void { set({ ...state, wins: { ...state.wins, [gameId]: (state.wins[gameId] ?? 0) + 1 } }); winListeners.forEach((f) => f(gameId)); },
   setName(name: string): void {
     set({ ...state, name: name.trim().slice(0, 16) || 'Jugador' });

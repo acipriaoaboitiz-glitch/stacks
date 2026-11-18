@@ -69,6 +69,15 @@ export const cosmetics = {
     return true;
   },
   equipTheme(id: ThemeId): void { if (themeUnlocked(id)) setSettings({ theme: id }); },
+  /** Al iniciar sesión en otro dispositivo: lo equipado en la nube pasa a ser tuyo (la nube solo guarda lo equipado, no la lista de compras). */
+  hydrate(cardBack: string, table: string): void {
+    const back = (cardBack === 'emerald' ? 'esmeralda' : cardBack) as BackId;
+    const theme = (table === 'emerald' ? 'esmeralda' : table) as ThemeId;
+    const backs = BACKS.some((b) => b.id === back) && !state.backs.includes(back) ? [...state.backs, back] : state.backs;
+    const themes = TAPETES.some((x) => x.id === theme) && !state.themes.includes(theme) ? [...state.themes, theme] : state.themes;
+    set({ backs, themes, back: backs.includes(back) ? back : state.back });
+    if (themes.includes(theme)) setSettings({ theme });
+  },
   reset(): void { try { localStorage.removeItem(KEY); } catch { /* sin almacenamiento */ } set(DEFAULT); if (!themeUnlocked(getSettings().theme)) setSettings({ theme: 'esmeralda' }); },
 };
 
@@ -76,6 +85,10 @@ export const cosmetics = {
 if (!themeUnlocked(getSettings().theme)) setSettings({ theme: 'esmeralda' });
 
 export const getCosmetics = (): State => state;
+/** Suscripción sin React (sincronización con la nube). */
+export const subscribeCosmetics = (l: () => void): (() => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
+/** Datos para guardar en la nube: lo que llevas equipado. */
+export const equippedForCloud = (): { card_back: string; table: string } => ({ card_back: state.back === 'esmeralda' ? 'emerald' : state.back, table: getSettings().theme === 'esmeralda' ? 'emerald' : getSettings().theme });
 export const useCosmetics = (): State => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, getCosmetics);
 /** Variante de dorso equipada (los componentes de cartas la leen con este hook para actualizarse al instante). */
 export function useCardBack(): BackVariant {

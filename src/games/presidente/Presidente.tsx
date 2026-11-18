@@ -19,6 +19,8 @@ import {
   ROLE_NAME, ROLE_PRIZE, TOP, applyPresAction, botMove, canPlay, newRound, power, roleOf,
   type DeckKind, type PresAction, type PresPlayer, type PresState, type Role,
 } from './engine.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const botNames = (): string[] => [1, 2, 3, 4, 5].map(botName);
 const makePlayers = (n: number): PresPlayer[] =>
@@ -64,7 +66,7 @@ export default function Presidente() {
     if (!s || s.phase !== 'play' || !hostLike) return;
     const p = s.players[s.turn]!;
     if (p.human) return;
-    const timer = window.setTimeout(() => {
+    const timer = gameTimeout(() => {
       setS((cur) => {
         if (!cur || cur.phase !== 'play' || cur.players[cur.turn]!.id !== p.id) return cur;
         const m = botMove(cur);
@@ -88,7 +90,7 @@ export default function Presidente() {
     const at = Date.now();
     const tone: Bubble['tone'] = e.kind === 'clear' ? 'ordago' : e.kind === 'out' ? 'good' : 'neutral';
     setBubbles((b) => ({ ...b, [who.id]: { text: e.kind === 'out' ? '¡Sale!' : e.text, tone, at } }));
-    window.setTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 1500);
+    gameTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 1500);
   }, [s, show, me]);
 
   // Serie de 3 rondas: cada ronda la gana quien sale primero (Rey); gana la serie quien más rondas sume.
@@ -121,7 +123,7 @@ export default function Presidente() {
 
   if (!s && online) {
     return (
-      <GameFrame gameId="presidente" onExit={() => { setActiveRoom(null); nav('/'); }}
+      <GameFrame gameId="presidente" onExit={() => { setActiveRoom(null); void exitMatch(nav); }}
         header={<p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300">COME💩</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
@@ -211,7 +213,7 @@ export default function Presidente() {
                 initial={{ scale: 1.25, opacity: 0, y: -10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
                 <div className="flex items-end">
                   {s.table.cards.map((c, i) => (
-                    <div key={c.id} style={{ marginLeft: i === 0 ? 0 : 'calc(var(--card-w) * -0.3)', zIndex: i }}><FaceCard card={c} scale={0.8} rotate={tilt(c.id) / 2} /></div>
+                    <div key={c.id} style={{ marginLeft: i === 0 ? 0 : 'calc(var(--card-w) * -0.3)', zIndex: i }}><FaceCard card={c} land scale={0.8} rotate={tilt(c.id) / 2} /></div>
                   ))}
                 </div>
                 <span className="rounded-full bg-black/35 px-3 py-0.5 text-[11px] font-bold text-amber-200/90">{s.players.find((p) => p.id === s.table!.by)!.name}</span>
@@ -243,7 +245,7 @@ export default function Presidente() {
         <div className="mx-auto flex w-max items-end px-2">
           {hand.map((c, i) => (
             <div key={c.id} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${gap})`, zIndex: i }}>
-              <FaceCard card={c} scale={0.8} selected={sel.includes(c.id)} dim={myTurn && !usable(c)}
+              <FaceCard card={c} deal={i} scale={0.8} selected={sel.includes(c.id)} dim={myTurn && !usable(c)}
                 onClick={myTurn || exchange ? () => toggle(c.id) : undefined} />
             </div>
           ))}
@@ -255,7 +257,7 @@ export default function Presidente() {
   return (
     <GameFrame
       gameId="presidente"
-      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      onExit={online ? () => { setActiveRoom(null); void exitMatch(nav); } : undefined}
       timer={{
         active: myTurn, id: `${s.turn}:${hand.length}:${s.table?.by ?? ''}:${s.table?.cards.length ?? 0}`,
         onTimeout: () => { setSel([]); if (s.phase !== 'play' || s.players[s.turn]!.id !== me) return; const m = botMove(s); dispatch(me, m.type === 'play' ? { k: 'play', ids: m.ids } : { k: 'pass' }); },
@@ -288,7 +290,7 @@ export default function Presidente() {
                 actions={[
                   ...(hostLike ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: champion !== null ? (online ? hostStart : start) : nextRound }] : []),
                   ...(online ? [] : [{ label: 'Cambiar mesa', onClick: () => { setStarted(false); setS(null); } }]),
-                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
+                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); void exitMatch(nav); } },
                 ]}
               >
                 <ul className="grid gap-1 text-sm">

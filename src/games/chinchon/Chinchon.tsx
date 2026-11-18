@@ -18,6 +18,8 @@ import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScoreStrip, u
 import {
   CLOSE_LIMIT, OUT_AT, applyChAction, arrange, botMove, canClose, looseValue, newGame, type ChAction, type ChPlayer, type ChState,
 } from './engine.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const WIN_BONUS = 100;
 const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
@@ -63,7 +65,7 @@ export default function Chinchon() {
 
   useEffect(() => {
     if (!s || (s.phase !== 'draw' && s.phase !== 'discard') || !hostLike || s.players[s.turn]!.human) return;
-    const timer = window.setTimeout(() => {
+    const timer = gameTimeout(() => {
       setS((cur) => {
         if (!cur || cur.players[cur.turn]!.human || (cur.phase !== 'draw' && cur.phase !== 'discard')) return cur;
         const m = botMove(cur);
@@ -105,7 +107,7 @@ export default function Chinchon() {
 
   if (!s && online) {
     return (
-      <GameFrame gameId="chinchon" onExit={() => { setActiveRoom(null); nav('/'); }}
+      <GameFrame gameId="chinchon" onExit={() => { setActiveRoom(null); void exitMatch(nav); }}
         header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">{t('g.chinchon.name')}</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
@@ -207,7 +209,7 @@ export default function Chinchon() {
           {ordered.map(({ card, grouped, gap }, i) => (
             <div key={card.id} style={{ marginLeft: i === 0 ? 0 : gap ? 'calc(var(--card-w) * 0.12)' : 'calc(var(--card-w) * -0.3)', zIndex: i }} className="relative">
               {grouped && <span aria-hidden className="absolute -bottom-1 left-1 right-1 h-[3px] rounded-full bg-emerald-400/80" />}
-              <FaceCard card={card} scale={0.82} selected={sel === card.id} glow={s.drawn === card.id} badge={grouped ? undefined : String(looseValue(card))}
+              <FaceCard card={card} deal={i} scale={0.82} selected={sel === card.id} glow={s.drawn === card.id} badge={grouped ? undefined : String(looseValue(card))}
                 onClick={myTurn && s.phase === 'discard' ? () => setSel((cur) => (cur === card.id ? null : card.id)) : undefined} />
             </div>
           ))}
@@ -220,7 +222,7 @@ export default function Chinchon() {
   return (
     <GameFrame
       gameId="chinchon"
-      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      onExit={online ? () => { setActiveRoom(null); void exitMatch(nav); } : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.phase}:${s.stock.length}`, onTimeout: () => { setSel(null); dispatch(me, s.phase === 'draw' ? { k: 'draw', source: 'stock' } : { k: 'discard', cardId: s.drawn ?? hand[0]!.id }); } }}
       header={<ScoreStrip items={s.scores.map((v, i) => ({ name: nm(i), value: v, us: i === myIdx }))} target={OUT_AT} />}
       felt={felt}
@@ -236,7 +238,7 @@ export default function Chinchon() {
                 taunt="Por los pelos"
                 title={over ? (s.winner === myIdx ? t('g.win') : `Gana ${nm(s.winner ?? 0)}`) : s.closer === null ? 'Ronda anulada' : `Fin de la ronda · cierra ${nm(s.closer)}`}
                 actions={over
-                  ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } }]
+                  ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); void exitMatch(nav); } }]
                   : hostLike ? [{ label: t('a.next'), primary: true, onClick: () => { setSel(null); setS((cur) => (cur ? applyChAction(cur, me, { k: 'next' }) ?? cur : cur)); } }] : []}
               >
                 <ul className="grid gap-1.5 text-sm" aria-label="Puntos de la ronda">

@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claves privadas: nunca se suben a GitHub
+.env
+.env.local
+.env.*.local

@@ -18,7 +18,7 @@ function Pill({ n }: { n: Notice }) {
   const Icon = n.kind === 'friend' ? UserPlus : n.kind === 'invite' ? Swords : Sparkles;
   const join = () => {
     feedback('big');
-    social.dismiss(n.id);
+    social.respondInvite(n, 'accepted');
     // Entra directo en la sala (aunque estés jugando contra la IA): el lobby abre `?join=` sin pasos intermedios.
     nav(`/?join=${n.code}&game=${n.game ?? 'mus'}`);
   };
@@ -43,7 +43,7 @@ function Pill({ n }: { n: Notice }) {
         <>
           <button type="button" onClick={join}
             className="min-h-8 shrink-0 touch-manipulation select-none rounded-full bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] px-3 text-[12px] font-extrabold text-[#2a1d02] active:scale-95">{t('n.join')}</button>
-          <button type="button" aria-label={t('n.ignore')} onClick={() => social.dismiss(n.id)}
+          <button type="button" aria-label={t('n.ignore')} title={t('n.ignore')} onClick={() => social.respondInvite(n, 'declined')}
             className="grid size-8 shrink-0 touch-manipulation select-none place-items-center rounded-full bg-white/10 text-stone-200 active:scale-95"><X size={14} aria-hidden /></button>
         </>
       )}

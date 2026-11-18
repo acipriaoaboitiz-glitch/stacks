@@ -22,6 +22,8 @@ import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, br
 import {
   applyTuteAction, botTute, declareTute, hasTute, legalCards, newTute, playTute, resolveTute, sing, singable, teamOf, teamPoints, winnerTeam, type TPlayer, type TuteAction, type TuteState,
 } from './engine.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const WIN_BONUS = 100;
 const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
@@ -66,13 +68,13 @@ export default function Tute() {
   useEffect(() => {
     if (!s || !hostLike) return;
     if (s.phase === 'trickDone') {
-      const timer = window.setTimeout(() => { feedback('trick'); setS((cur) => (cur ? resolveTute(cur) : cur)); }, aiDelay(1100));
+      const timer = gameTimeout(() => { feedback('trick'); setS((cur) => (cur ? resolveTute(cur) : cur)); }, aiDelay(1100));
       return () => window.clearTimeout(timer);
     }
     if (s.phase !== 'playing') return;
     const p = s.players[s.turn]!;
     if (p.human) return;
-    const timer = window.setTimeout(() => {
+    const timer = gameTimeout(() => {
       setS((cur) => {
         if (!cur || cur.phase !== 'playing' || cur.players[cur.turn]!.id !== p.id) return cur;
         const tute = declareTute(cur, p.id);
@@ -98,7 +100,7 @@ export default function Tute() {
       if (who.id === me) { progression.track('cante', 'tute'); show(e.text.replace('Canta', 'Cantas')); } else {
         const at = Date.now();
         setBubbles((b) => ({ ...b, [who.id]: { text: e.text, tone: 'bet', at } }));
-        window.setTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 2200);
+        gameTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 2200);
       }
     }
   }, [s, show, showCine, me]);
@@ -134,7 +136,7 @@ export default function Tute() {
 
   if (!s && online) {
     return (
-      <GameFrame gameId="tute" onExit={() => { setActiveRoom(null); nav('/'); }}
+      <GameFrame gameId="tute" onExit={() => { setActiveRoom(null); void exitMatch(nav); }}
         header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">{t('g.tute.name')}</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
@@ -214,7 +216,7 @@ export default function Tute() {
                   style={{ marginLeft: `calc(var(--card-w) * ${-0.36 + o.x})`, marginTop: `calc(var(--card-w) * ${-0.57 + o.y})`, zIndex: 2 }}
                   initial={human ? false : { x: DIR[slot].x * 160, y: DIR[slot].y * 160, opacity: 0, scale: 1.15 }}
                   animate={{ x: 0, y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 240, damping: 22 }}>
-                  <FaceCard card={tp.card} scale={0.72} rotate={tilt(tp.card.id)} {...briscaDeco(tp.card, s.trumpSuit)} />
+                  <FaceCard card={tp.card} land scale={0.72} rotate={tilt(tp.card.id)} {...briscaDeco(tp.card, s.trumpSuit)} />
                 </motion.div>
               );
             })}
@@ -251,7 +253,7 @@ export default function Tute() {
       {pills.length > 0 && <p className="text-center text-[11px] text-stone-400">{status}</p>}
       <div className="flex items-end justify-center gap-[min(1.2vw,8px)] pt-[min(3.2dvh,24px)]" role="group" aria-label="Tu mano">
         {s.hands[me]!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} scale={arr.length > 6 ? 0.66 : 0.8} rotate={(i - (arr.length - 1) / 2) * 1.4}
+          <FaceCard key={c.id} card={c} deal={i} scale={arr.length > 6 ? 0.66 : 0.8} rotate={(i - (arr.length - 1) / 2) * 1.4}
             dim={myTurn && !legalIds.has(c.id)} {...briscaDeco(c, s.trumpSuit)} onSelect={myTurn && legalIds.has(c.id) ? play : undefined} />
         ))}
       </div>
@@ -262,7 +264,7 @@ export default function Tute() {
   return (
     <GameFrame
       gameId="tute"
-      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      onExit={online ? () => { setActiveRoom(null); void exitMatch(nav); } : undefined}
       timer={{ active: myTurn, id: `${s.trick.length}:${s.hands[me]!.length}`, onTimeout: () => { const l = legalCards(s, me); const c = l[Math.floor(Math.random() * l.length)]; if (c) play(c); } }}
       header={<ScorePair labels={labels} values={[pts[0]!, pts[1]!]} target={120} subs={[myCantes[0] ? `cantes +${myCantes[0]}` : null, myCantes[1] ? `cantes +${myCantes[1]}` : null]} />}
       strip={(
@@ -284,7 +286,7 @@ export default function Tute() {
                   ...(online
                     ? hostLike ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: hostStart }] : []
                     : [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: () => start(count!) }, { label: t('a.format'), onClick: () => { setCount(null); setS(null); } }]),
-                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
+                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); void exitMatch(nav); } },
                 ]}
               >
                 <ScorePair labels={labels} values={[pts[0]!, pts[1]!]} />

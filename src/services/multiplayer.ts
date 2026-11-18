@@ -1,6 +1,9 @@
-import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase.ts';
 import { useSyncExternalStore } from 'react';
-import { localForced, shareBase } from './env.ts';
+import { shareBase } from './env.ts';
+import { getIdent } from '../store/identity.ts';
+import { dbCloseRoom, dbCreateRoom, dbUpdateRoom } from './roomsDb.ts';
 
 /**
  * Multijugador en tiempo real para cualquier juego de STACKS.
@@ -100,13 +103,11 @@ interface Transport {
 }
 
 // ─── Transporte Supabase (Presence + Broadcast) ──────────────────────────────────────────
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY) && !localForced;
+export { isSupabaseConfigured };
 
 class SupabaseTransport implements Transport {
   private ch: RealtimeChannel | null = null;
-  private client = createClient(SUPABASE_URL!, SUPABASE_KEY!, { realtime: { params: { eventsPerSecond: 10 } } });
+  private client = getSupabase()!;
 
   connect(code: string, meta: PeerMeta, h: Handlers): Promise<void> {
     const ch = this.client.channel(`stacks:${code}`, { config: { presence: { key: meta.id }, broadcast: { self: false } } });
@@ -316,7 +317,15 @@ export class Room {
   sendGame(data: unknown): void { this.transport.send({ ev: 'game', from: this.meta.id, data }); }
   onGame(cb: (from: string, data: unknown) => void): () => void { this.gameCbs.add(cb); return () => { this.gameCbs.delete(cb); }; }
   onStart(cb: (fillBots: boolean) => void): () => void { this.startCbs.add(cb); return () => { this.startCbs.delete(cb); }; }
+  /** El anfitrión refleja el estado de la sala en `stacks_rooms` (mejor esfuerzo, no bloquea el juego). */
+  private registry(status: 'waiting' | 'playing'): void {
+    if (!this.meta.isHost) return;
+    void dbUpdateRoom(this.code, { status, players: this.peers.map((p) => ({ name: p.name, seat: p.seat, host: p.isHost })) });
+  }
+  private registryTimer = 0;
   leave(): void {
+    window.clearTimeout(this.registryTimer);
+    if (this.meta.isHost) void dbCloseRoom(this.code); // sin salas colgadas en la base de datos
     this.timers.forEach((t) => window.clearInterval(t));
     this.timers = [];
     this.transport.close();
@@ -331,6 +340,7 @@ export class Room {
     this.publish();
   }
   private onPeers(list: PeerMeta[]): void {
+    if (this.meta.isHost && !this.started) { window.clearTimeout(this.registryTimer); this.registryTimer = window.setTimeout(() => this.registry('waiting'), 900); }
     this.peers = list.some((p) => p.id === this.meta.id) ? list : [...list, this.meta];
     // Mi propio meta es la fuente de verdad para mí.
     this.peers = this.peers.map((p) => (p.id === this.meta.id ? this.meta : p));
@@ -361,6 +371,8 @@ export class Room {
   private handleStart(fillBots: boolean): void {
     if (this.started) return;
     this.started = true;
+    window.clearTimeout(this.registryTimer);
+    this.registry('playing');
     this.publish();
     this.startCbs.forEach((cb) => cb(fillBots));
   }
@@ -397,6 +409,7 @@ export class Room {
 export const createRoom = async (gameId: string, name: string, code?: string): Promise<Room> => {
   const room = new Room(code ?? generateRoomCode(), gameId, name, true);
   await room.connect();
+  void dbCreateRoom(room.code, gameId, getIdent().uid, layoutFor(gameId).capacity);
   return room;
 };
 export const joinRoom = async (code: string, gameId: string, name: string): Promise<Room> => {

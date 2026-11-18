@@ -19,6 +19,8 @@ import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, Sc
 import {
   TARGET_SCORE, applyEscobaAction, botMove, escobaValue, findCaptures, isValidCapture, newMatch, play, type EscobaAction, type EscobaState,
 } from './engine.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const WIN_BONUS = 100;
 const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
@@ -99,7 +101,7 @@ export default function Escoba() {
   useEffect(() => {
     if (!s || s.phase !== 'playing' || !hostLike) return;
     if (s.players?.[s.turn]?.human ?? s.turn === 0) return;
-    const timer = window.setTimeout(() => {
+    const timer = gameTimeout(() => {
       setS((cur) => {
         if (!cur || cur.phase !== 'playing') return cur;
         const m = botMove(cur);
@@ -111,7 +113,7 @@ export default function Escoba() {
 
   if (!s && online) {
     return (
-      <GameFrame gameId="escoba" onExit={() => { setActiveRoom(null); nav('/'); }}
+      <GameFrame gameId="escoba" onExit={() => { setActiveRoom(null); void exitMatch(nav); }}
         header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">{t('g.escoba.name')}</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
@@ -209,7 +211,7 @@ export default function Escoba() {
                 <motion.div key={c.id} custom={exitDy(s.lastPlay?.by ?? 0)} variants={takeVariants} exit="exit"
                   initial={s.lastPlay && s.lastPlay.by !== myIdx && s.lastPlay.card.id === c.id ? { y: -160, opacity: 0, scale: 1.1, rotate: 20 } : { opacity: 0, scale: 0.6 }}
                   animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}>
-                  <FaceCard card={c} scale={0.7} rotate={tilt(c.id)} selected={selTable.includes(i)} {...escobaDeco(c)}
+                  <FaceCard card={c} land scale={0.7} rotate={tilt(c.id)} selected={selTable.includes(i)} {...escobaDeco(c)}
                     dim={!!card && caps.length > 0 && !caps.some((cap) => cap.includes(i))}
                     onClick={card && caps.length > 0 ? () => toggleTable(i) : undefined} />
                 </motion.div>
@@ -246,7 +248,7 @@ export default function Escoba() {
       <PillBar pills={pills} idle={status} />
       <div className="flex items-end justify-center gap-[min(2vw,12px)] pt-[min(3.4dvh,26px)]" role="group" aria-label="Tu mano">
         {s.hands[myIdx]!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} rotate={(i - (arr.length - 1) / 2) * 1.8} selected={selCard === c.id} dim={!myTurn} {...escobaDeco(c)}
+          <FaceCard key={c.id} card={c} deal={i} rotate={(i - (arr.length - 1) / 2) * 1.8} selected={selCard === c.id} dim={!myTurn} {...escobaDeco(c)}
             onClick={myTurn ? () => pickCard(c.id) : undefined} />
         ))}
       </div>
@@ -256,7 +258,7 @@ export default function Escoba() {
   return (
     <GameFrame
       gameId="escoba"
-      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      onExit={online ? () => { setActiveRoom(null); void exitMatch(nav); } : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.hands[myIdx]!.length}:${s.deck.length}`, onTimeout: () => { const m = botMove(s); clear(); dispatch(me, { k: 'play', cardId: m.cardId, take: m.take }); } }}
       header={n === 2
         ? <ScorePair labels={[t('ser.you'), online ? nm(1 - myIdx) : botName(1)]} values={[s.scores[myIdx]!, s.scores[1 - myIdx]!]} target={s.bo3 ? undefined : TARGET_SCORE} />
@@ -275,7 +277,7 @@ export default function Escoba() {
                 taunt="La escoba barrió contigo"
                 title={s.phase === 'matchOver' ? (iWon ? t('ser.champion') : t('ser.lost')) : t('ser.summary')}
                 actions={s.phase === 'matchOver'
-                  ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } }]
+                  ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); void exitMatch(nav); } }]
                   : hostLike ? [{ label: t('a.next'), primary: true, onClick: () => { clear(); setS((cur) => (cur ? applyEscobaAction(cur, me, { k: 'next' }) ?? cur : cur)); } }] : []}
               >
                 <table className="w-full text-sm">

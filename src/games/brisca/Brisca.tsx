@@ -20,6 +20,8 @@ import { Banner, FaceCard, briscaDeco, PhaseCinematic, PillBar, ResultOverlay, S
 import {
   applyBriscaAction, botChoose, evaluateBriscaTrick, getBriscaScores, initBriscaGame, playBriscaCard, resolveTrick, sidesFor, type BPlayer, type BriscaAction, type BriscaState,
 } from './engine.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const WIN_BONUS = 100;
 const seatNames = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
@@ -89,17 +91,17 @@ export default function Brisca() {
           show(`+${ev.points} PUNTOS`);
           const at = Date.now();
           setBubbles((b) => ({ ...b, [winner.id]: { text: `+${ev.points}`, tone: 'good', at } }));
-          window.setTimeout(() => setBubbles((b) => (b[winner.id]?.at === at ? { ...b, [winner.id]: undefined } : b)), 2200);
+          gameTimeout(() => setBubbles((b) => (b[winner.id]?.at === at ? { ...b, [winner.id]: undefined } : b)), 2200);
         }
       }
       if (!hostLike) return;
-      const t = window.setTimeout(() => setS((cur) => (cur ? resolveTrick(cur) : cur)), aiDelay(1100));
+      const t = gameTimeout(() => setS((cur) => (cur ? resolveTrick(cur) : cur)), aiDelay(1100));
       return () => window.clearTimeout(t);
     }
     if (s.phase !== 'playing' || !hostLike) return;
     const p = s.players[s.turnIndex]!;
     if (p.human) return;
-    const t = window.setTimeout(() => {
+    const t = gameTimeout(() => {
       setS((cur) => (cur && cur.phase === 'playing' && cur.players[cur.turnIndex]!.id === p.id
         ? playBriscaCard(cur, p.id, botChoose(cur, p.id)) : cur));
     }, botDelay());
@@ -136,7 +138,7 @@ export default function Brisca() {
 
   if (!s && online) {
     return (
-      <GameFrame gameId="brisca" onExit={() => { setActiveRoom(null); nav('/'); }}
+      <GameFrame gameId="brisca" onExit={() => { setActiveRoom(null); void exitMatch(nav); }}
         header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Brisca</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
@@ -208,7 +210,7 @@ export default function Brisca() {
                   style={{ marginLeft: `calc(var(--card-w) * ${-0.36 + o.x})`, marginTop: `calc(var(--card-w) * ${-0.57 + o.y})`, zIndex: 2 }}
                   initial={human ? false : { x: DIR[slot].x * 160, y: DIR[slot].y * 160, opacity: 0, scale: 1.15 }}
                   animate={{ x: 0, y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 240, damping: 22 }}>
-                  <FaceCard card={t.card} scale={0.72} rotate={tilt(t.card.id)} glow={decided === t.playerId} {...briscaDeco(t.card, s.trumpSuit)} />
+                  <FaceCard card={t.card} land scale={0.72} rotate={tilt(t.card.id)} glow={decided === t.playerId} {...briscaDeco(t.card, s.trumpSuit)} />
                 </motion.div>
               );
             })}
@@ -249,7 +251,7 @@ export default function Brisca() {
       <PillBar pills={[]} idle={status} />
       <div className="flex items-end justify-center gap-[min(2vw,12px)] pt-[min(3.4dvh,26px)]" role="group" aria-label="Tu mano">
         {s.hands[me]!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} rotate={(i - (arr.length - 1) / 2) * 1.8} dim={!myTurn} {...briscaDeco(c, s.trumpSuit)}
+          <FaceCard key={c.id} card={c} deal={i} rotate={(i - (arr.length - 1) / 2) * 1.8} dim={!myTurn} {...briscaDeco(c, s.trumpSuit)}
             onSelect={myTurn ? play : undefined} />
         ))}
       </div>
@@ -259,7 +261,7 @@ export default function Brisca() {
   return (
     <GameFrame
       gameId="brisca"
-      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      onExit={online ? () => { setActiveRoom(null); void exitMatch(nav); } : undefined}
       timer={{ active: myTurn, id: `${s.currentTrick.length}:${s.deck.length}`, onTimeout: () => { const h = s.hands[me]!; const c = h[Math.floor(Math.random() * h.length)]; if (c) play(c); } }}
       header={<ScorePair labels={n === 4 ? [t('ser.us'), t('ser.them')] : [t('ser.you'), online ? t('ser.rival') : botName(1)]} values={[mine, theirs]} target={120} />}
       strip={(
@@ -281,7 +283,7 @@ export default function Brisca() {
                   ...(online
                     ? hostLike ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: hostStart }] : []
                     : [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: () => start(count!) }, { label: 'Cambiar formato', onClick: () => { setCount(null); setS(null); } }]),
-                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
+                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); void exitMatch(nav); } },
                 ]}
               >
                 <ScorePair labels={sc.mode === 'teams' ? [sc.teamA.label, sc.teamB.label] : ['Tú', botName(1)]} values={[mine, theirs]} target={120} />

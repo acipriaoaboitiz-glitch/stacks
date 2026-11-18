@@ -20,6 +20,8 @@ import {
   type Color, type UnoAction, type UnoCard, type UnoPlayer, type UnoState,
 } from './engine.ts';
 import { UNO_HEX, UnoBack, UnoCard as UnoCardView } from './UnoCard.tsx';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -47,7 +49,7 @@ const reach = (slot: Slot, k: number): { x: number; y: number } => {
   const H = typeof window === 'undefined' ? 640 : window.innerHeight;
   return slot === 'top' ? { x: 0, y: -H * 0.26 * k } : slot === 'left' ? { x: -W * 0.33 * k, y: -H * 0.03 * k } : slot === 'right' ? { x: W * 0.33 * k, y: -H * 0.03 * k } : { x: 0, y: H * 0.32 * k };
 };
-const SPRING = { type: 'spring', stiffness: 360, damping: 24 } as const;
+const SPRING = { type: 'spring', stiffness: 420, damping: 26 } as const;
 
 /**
  * Anillo orbital: aro luminoso del color activo y tres cometas con flecha que giran en el sentido real del turno.
@@ -128,7 +130,7 @@ export default function Uno() {
     if (!s || s.winner || !hostLike) return;
     const p = s.players[s.turn]!;
     if (p.human) return;
-    const t = window.setTimeout(() => {
+    const t = gameTimeout(() => {
       setS((cur) => {
         if (!cur || cur.winner || cur.players[cur.turn]!.id !== p.id) return cur;
         const m = botMove(cur);
@@ -145,15 +147,15 @@ export default function Uno() {
     if (!unoPid || !unoAt || !hostLike) return;
     const timers: number[] = [];
     const left = Math.max(0, UNO_WINDOW - (Date.now() - unoAt));
-    timers.push(window.setTimeout(() => setS((cur) => (cur?.uno?.at === unoAt ? expireUno(cur) ?? cur : cur)), left));
+    timers.push(gameTimeout(() => setS((cur) => (cur?.uno?.at === unoAt ? expireUno(cur) ?? cur : cur)), left));
     const bots = s!.players.filter((p) => !p.human && p.id !== unoPid);
     if (!s!.players.find((p) => p.id === unoPid)!.human) {
       // Un bot se queda con 1 carta: 70 % lo canta; si no, tienes el margen para cazarlo.
-      if (Math.random() < 0.7) timers.push(window.setTimeout(() => setS((cur) => (cur?.uno?.at === unoAt ? callUno(cur, unoPid) ?? cur : cur)), 700 + Math.random() * 700));
+      if (Math.random() < 0.7) timers.push(gameTimeout(() => setS((cur) => (cur?.uno?.at === unoAt ? callUno(cur, unoPid) ?? cur : cur)), 700 + Math.random() * 700));
     } else if (bots.length && Math.random() < 0.6) {
       // Tú te has quedado con 1 carta: si tardas, un bot te caza.
       const by = bots[Math.floor(Math.random() * bots.length)]!;
-      timers.push(window.setTimeout(() => setS((cur) => (cur?.uno?.at === unoAt ? catchUno(cur, by.id) ?? cur : cur)), 1500 + Math.random() * 800));
+      timers.push(gameTimeout(() => setS((cur) => (cur?.uno?.at === unoAt ? catchUno(cur, by.id) ?? cur : cur)), 1500 + Math.random() * 800));
     }
     return () => timers.forEach((t) => window.clearTimeout(t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,8 +169,8 @@ export default function Uno() {
     if (!s || !prev || s.discard.length <= prev.discard.length) return;
     const by = prev.players[prev.turn];
     const card = s.discard[s.discard.length - 1]!;
-    if (by && by.id !== me) { feedback('whoosh'); window.setTimeout(() => feedback('play'), 170); }
-    if (card.kind === 'wild') window.setTimeout(() => juice.slam(), 200);
+    if (by && by.id !== me) { feedback('whoosh'); gameTimeout(() => feedback('play'), 170); }
+    if (card.kind === 'wild') gameTimeout(() => juice.slam(), 200);
   }, [s, me]);
 
   // Sucesos: globos de los bots, avisos pegados al avatar, vuelo escalonado de cartas, sonidos.
@@ -187,14 +189,14 @@ export default function Uno() {
       for (let i = 0; i < count; i++) {
         const id = ++flightId.current;
         setFlights((f) => [...f, { id, slot, delay: i * 0.085 }]);
-        window.setTimeout(() => feedback('draw'), i * 85);
-        window.setTimeout(() => setFlights((f) => f.filter((x) => x.id !== id)), 700 + i * 85);
+        gameTimeout(() => feedback('draw'), i * 85);
+        gameTimeout(() => setFlights((f) => f.filter((x) => x.id !== id)), 700 + i * 85);
       }
     };
     const markPlayer = (id: string, text: string): void => {
       const at = Date.now();
       setMarks((m) => ({ ...m, [id]: { text, at } }));
-      window.setTimeout(() => setMarks((m) => (m[id]?.at === at ? { ...m, [id]: undefined } : m)), 1700);
+      gameTimeout(() => setMarks((m) => (m[id]?.at === at ? { ...m, [id]: undefined } : m)), 1700);
     };
     if (e.text === 'Roba una carta') fly(slotOfId(e.by));
     else if (e.kind === 'draw') {
@@ -205,7 +207,7 @@ export default function Uno() {
         markPlayer(victim.id, `+${cnt}`); fly(slotOfId(victim.id), cnt);
         const pid = ++penaltyId.current;
         setPenalty({ id: pid, text: `+${cnt}`, toMe: victim.id === me });
-        window.setTimeout(() => setPenalty((cur) => (cur?.id === pid ? null : cur)), 1700);
+        gameTimeout(() => setPenalty((cur) => (cur?.id === pid ? null : cur)), 1700);
         if (!caught) juice.cinematic({ title: cnt === 4 ? '¡+4!' : '¡+2!', sub: `${who.name} → ${victim.name}`, tone: 'ruby', good: who.id === me });
       }
     } else if (e.text === 'Salta turno') {
@@ -261,7 +263,7 @@ export default function Uno() {
 
   if (!s && online) {
     return (
-      <GameFrame gameId="uno" onExit={() => { setActiveRoom(null); nav('/'); }}
+      <GameFrame gameId="uno" onExit={() => { setActiveRoom(null); void exitMatch(nav); }}
         header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">Uno</p>}
         felt={<div className="grid h-full place-items-center p-6 text-center"><p className="text-sm font-bold text-stone-300">Conectando con la mesa…</p></div>}
         bottom={null} />
@@ -384,7 +386,7 @@ export default function Uno() {
                     initial={fromSlot
                       ? { x: from.x + wobble, y: from.y, scale: bigCard ? 1.35 : 0.9, rotate: (fromSlot === 'left' ? -1 : 1) * 38 + wobble / 2, opacity: 1 }
                       : { scale: 1.25, opacity: 0, rotate: 14, y: -20, x: 0 }}
-                    animate={{ x: 0, y: 0, scale: 1, opacity: 1, rotate: 4 }}
+                    animate={{ x: 0, y: 0, scale: 1, opacity: 1, rotate: (Number(topCard.id.slice(1)) % 9) - 4 }}
                     transition={{ x: { duration: 0.3, ease: 'easeOut' }, y: SPRING, scale: SPRING, rotate: SPRING, opacity: { duration: 0.1 } }}>
                     <UnoCardView card={topCard} scale={1.05} glow />
                   </motion.div>
@@ -463,7 +465,7 @@ export default function Uno() {
         <div className="mx-auto flex w-max items-end px-2">
           {sorted.map((c, i) => (
             <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${sorted.length > 9 ? -0.46 : sorted.length > 6 ? -0.34 : -0.12})`, zIndex: hot === i ? 60 : i }}>
-              <UnoCardView card={c} scale={0.86} rotate={(i - (sorted.length - 1) / 2) * Math.min(3, 28 / sorted.length)} playable={playable.has(c.id)} lifted={hot === i} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
+              <UnoCardView card={c} deal={i} scale={0.86} rotate={(i - (sorted.length - 1) / 2) * Math.min(3, 28 / sorted.length)} playable={playable.has(c.id)} lifted={hot === i} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
             </div>
           ))}
         </div>
@@ -476,7 +478,7 @@ export default function Uno() {
     <GameFrame
       gameId="uno" feltTone="emerald"
       timer={{ active: myTurn, id: `${s.turn}:${myHand.length}:${s.drawn?.id ?? ''}:${s.drawPile.length}`, onTimeout: () => { setPickFor(null); const m = botMove(s); act(m.type === 'play' ? { k: 'play', cardId: m.cardId, color: m.color } : { k: m.type }); } }}
-      onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      onExit={online ? () => { setActiveRoom(null); void exitMatch(nav); } : undefined}
       strip={<SeriesGems entries={s.players.map((p) => ({ key: p.id, label: p.id === me ? t('ser.you') : p.name, wins: series.wins[p.id] ?? 0 }))} />}
       header={
         <div className="grid grid-cols-2 gap-[min(1.8vw,8px)]" role="group" aria-label="Estado">
@@ -506,7 +508,7 @@ export default function Uno() {
                   ...(online
                     ? seating.isHost ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: hostStart }] : []
                     : [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: () => start(count!) }, { label: 'Cambiar jugadores', onClick: () => { setCount(null); setS(null); } }]),
-                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
+                  { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); void exitMatch(nav); } },
                 ]}
               >
                 <ul className="grid gap-1 text-sm">

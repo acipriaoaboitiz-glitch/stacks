@@ -14,10 +14,13 @@ import { ProfileCard } from "../../components/ui/ProfileModal.tsx";
 import { ExitButton, QuickButtons } from '../../components/ui/QuickButtons.tsx';
 import { TurnTimerBar, type TurnTimerSpec } from '../../components/ui/TurnTimer.tsx';
 import { EmoteBubble, ReactionButton } from '../../components/ui/Reactions.tsx';
-import { ExitConfirm } from '../../components/ui/ExitConfirm.tsx';
+import { ExitConfirm, askExit } from '../../components/ui/ExitConfirm.tsx';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { useGameTimers } from '../../services/timers.ts';
 import { RulesModal } from '../../components/ui/RulesModal.tsx';
 import { SettingsModal } from '../../components/ui/SettingsModal.tsx';
 import { findGame } from '../registry.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const EMERALD_FELT =
   'repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px), radial-gradient(ellipse at center, #0F3A2A 0%, #0A2A1E 55%, #061810 100%)';
@@ -73,11 +76,11 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
   const cineTimer = useRef<number | null>(null);
   const shakeTimer = useRef<number | null>(null);
   useEffect(() => subscribeJuice({
-    onShake: () => { setShaking(false); window.requestAnimationFrame(() => setShaking(true)); if (shakeTimer.current) window.clearTimeout(shakeTimer.current); shakeTimer.current = window.setTimeout(() => setShaking(false), 280); },
-    onCinematic: (c) => { setCinematic(c); if (cineTimer.current) window.clearTimeout(cineTimer.current); cineTimer.current = window.setTimeout(() => setCinematic(null), 1650); },
-    onSlam: (sl) => { setSlamFx(null); window.requestAnimationFrame(() => setSlamFx(sl)); if (slamTimer.current) window.clearTimeout(slamTimer.current); slamTimer.current = window.setTimeout(() => setSlamFx(null), 700); },
-    onChips: (c) => { const r = feltRef.current?.getBoundingClientRect(); setChipFx({ ...c, w: r?.width ?? 320, h: r?.height ?? 420 }); if (chipTimer.current) window.clearTimeout(chipTimer.current); chipTimer.current = window.setTimeout(() => setChipFx(null), 1500); },
-    onCallout: (c) => { setCallouts((cur) => [...cur.slice(-1), c]); window.setTimeout(() => setCallouts((cur) => cur.filter((x) => x.id !== c.id)), 1100); },
+    onShake: () => { setShaking(false); window.requestAnimationFrame(() => setShaking(true)); if (shakeTimer.current) window.clearTimeout(shakeTimer.current); shakeTimer.current = gameTimeout(() => setShaking(false), 280); },
+    onCinematic: (c) => { setCinematic(c); if (cineTimer.current) window.clearTimeout(cineTimer.current); cineTimer.current = gameTimeout(() => setCinematic(null), 1650); },
+    onSlam: (sl) => { setSlamFx(null); window.requestAnimationFrame(() => setSlamFx(sl)); if (slamTimer.current) window.clearTimeout(slamTimer.current); slamTimer.current = gameTimeout(() => setSlamFx(null), 700); },
+    onChips: (c) => { const r = feltRef.current?.getBoundingClientRect(); setChipFx({ ...c, w: r?.width ?? 320, h: r?.height ?? 420 }); if (chipTimer.current) window.clearTimeout(chipTimer.current); chipTimer.current = gameTimeout(() => setChipFx(null), 1500); },
+    onCallout: (c) => { setCallouts((cur) => [...cur.slice(-1), c]); gameTimeout(() => setCallouts((cur) => cur.filter((x) => x.id !== c.id)), 1100); },
   }), []);
   // Reacciones compartidas: en una sala de este juego se envían a todos y se ven las de los demás.
   const activeRoom = getActiveRoom();
@@ -90,7 +93,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
     room?.react(text);
     setEmote(text);
     if (emoteTimer.current) window.clearTimeout(emoteTimer.current);
-    emoteTimer.current = window.setTimeout(() => setEmote(null), 2200);
+    emoteTimer.current = gameTimeout(() => setEmote(null), 2200);
   };
   useEffect(() => () => { if (emoteTimer.current) window.clearTimeout(emoteTimer.current); }, []);
 
@@ -104,7 +107,9 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
   const active = Boolean(timer?.active);
   useEffect(() => { if (active && !wasActive.current) feedback('turn'); wasActive.current = active; }, [active]);
 
-  const exit = (): void => { if (onExit) onExit(); else void nav('/'); };
+  useGameTimers(); // al desmontar la mesa se cancelan todos los temporizadores de la partida
+  const doExit = (): void => { if (onExit) onExit(); else void exitMatch(nav); };
+  const exit = (): void => { if (!askExit()) doExit(); };
 
   return (
     <div className="musapp">
@@ -156,7 +161,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
           {overlays}
         </main>
 
-        <ExitConfirm onExit={exit} />
+        <ExitConfirm onExit={doExit} />
         <SettingsModal open={settings} onClose={() => setSettings(false)} />
         <RulesModal game={rules ? game : null} onClose={() => setRules(false)} />
         <Toaster />

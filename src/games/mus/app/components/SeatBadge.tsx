@@ -44,7 +44,7 @@ function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signal
   const name = info.name ?? 'Libre';
   const remaining = deadline ? Math.max(0, deadline - Date.now()) : 0;
   return (
-    <div className="relative grid min-w-0 justify-items-center gap-[2px]" role="group" aria-label={`${name}${turn ? ', tiene el turno' : ''}${mano ? ', es mano' : ''}`}>
+    <div className="relative grid min-w-0 justify-items-center gap-[2px] transition-opacity duration-200" style={{ opacity: turn ? 1 : 0.78 }} role="group" aria-label={`${name}${turn ? ', tiene el turno' : ''}${mano ? ', es mano' : ''}`}>
       <motion.div
         className="relative grid place-items-center rounded-full p-[3px]"
         key={signalPulseAt ?? 'idle'}

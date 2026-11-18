@@ -19,6 +19,8 @@ import {
   LADDER, OPENER, SEISES_LIMIT, SIX_INDEX, WIN_ROUND, applySeisesAction, botMove, canPass, isPlayable, ladderIndex, newSeises,
   type SPlayer, type SeisesAction, type SeisesState,
 } from './engine.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const WIN_BONUS = 100;
 const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
@@ -98,7 +100,7 @@ export default function Seises() {
   // IA: el que abre con el 6 de oros lo tira automáticamente a los ~400 ms; el resto, con su pausa natural.
   useEffect(() => {
     if (!s || s.phase !== 'playing' || !hostLike || s.players[s.turn]!.human) return;
-    const timer = window.setTimeout(() => {
+    const timer = gameTimeout(() => {
       setS((cur) => {
         if (!cur || cur.phase !== 'playing' || cur.players[cur.turn]!.human) return cur;
         const m = botMove(cur);
@@ -121,7 +123,7 @@ export default function Seises() {
     if (e.by === myIdx) return;
     const at = Date.now();
     setBubbles((b) => ({ ...b, [e.by]: { text: e.kind === 'out' ? '¡Sin cartas!' : e.text, tone: e.kind === 'out' ? 'good' : 'neutral', at } }));
-    window.setTimeout(() => setBubbles((b) => (b[e.by]?.at === at ? { ...b, [e.by]: undefined } : b)), 1500);
+    gameTimeout(() => setBubbles((b) => (b[e.by]?.at === at ? { ...b, [e.by]: undefined } : b)), 1500);
   }, [s, myIdx]);
   useEffect(() => {
     if (s && s.phase === 'playing') paid.current = false;
@@ -137,7 +139,7 @@ export default function Seises() {
   }, [dispatch, me]);
 
   const pick = useCallback((c: AnyCard) => throwCard(c as SpanishCard), [throwCard]);
-  const exit = () => { if (online) setActiveRoom(null); nav('/'); };
+  const exit = () => { if (online) setActiveRoom(null); void exitMatch(nav); };
 
   if (!s && online) {
     return (
@@ -217,7 +219,7 @@ export default function Seises() {
             const ok = myTurn && isPlayable(s, c);
             return (
               <div key={c.id} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${gap})`, zIndex: i }}>
-                <FaceCard card={c} scale={0.8} glow={ok} dim={myTurn && !ok} badge={ladderIndex(c) >= 0 ? String(c.rank) : undefined} onSelect={ok ? pick : undefined} />
+                <FaceCard card={c} deal={i} scale={0.8} glow={ok} dim={myTurn && !ok} badge={ladderIndex(c) >= 0 ? String(c.rank) : undefined} onSelect={ok ? pick : undefined} />
               </div>
             );
           })}

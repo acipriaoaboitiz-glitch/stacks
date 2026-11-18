@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ExitConfirm } from '../../../../components/ui/ExitConfirm.tsx';
+import { ExitConfirm, askExit } from '../../../../components/ui/ExitConfirm.tsx';
+import { useGameTimers } from '../../../../services/timers.ts';
 import { GameCinematic } from '../../../../components/ui/GameCinematic.tsx';
 import { playCinematicSound } from '../../../../store/settings.ts';
 import { legalActions, teamOf } from '@mus/engine';
@@ -29,6 +30,7 @@ import { PREFS, haptic, prefOn, setPref, sound } from '../lib/feedback.ts';
 import { useGameSettings } from '../lib/settings.tsx';
 import { toast } from '../lib/toast.ts';
 import { useWakeLock } from '../lib/wakeLock.ts';
+import { gameTimeout } from '../../../../services/timers.ts';
 
 interface TableProps {
   source: GameSource;
@@ -61,6 +63,7 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  useGameTimers(); // al salir se cancelan los temporizadores de la partida
   const [menu, setMenu] = useState(false);
   // Cinemática de jugada épica (¡ÓRDAGO!): capa con fondo difuminado de ~1 s, sin bloquear la mesa.
   const [cine, setCine] = useState<{ id: number; title: string; sub: string } | null>(null);
@@ -132,7 +135,7 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
         setCine({ id: Date.now(), title: '¡ÓRDAGO!', sub: `${name} lo apuesta todo` });
         playCinematicSound(false);
         if (cineTimer.current) window.clearTimeout(cineTimer.current);
-        cineTimer.current = window.setTimeout(() => setCine(null), 1650);
+        cineTimer.current = gameTimeout(() => setCine(null), 1650);
       }
       if (e.t === 'award' && e.kind === 'deje') sound('point');
       if (e.t === 'gameWon') sound('point');
@@ -236,7 +239,7 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
       <div className="desk-zoom mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
         {/* 1 · Marcador */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-          <div className="flex items-center gap-1.5"><ExitButton onClick={onExit} /><IconBtn label="Menú" onClick={() => setMenu(true)}><IconMenu /></IconBtn></div>
+          <div className="flex items-center gap-1.5"><ExitButton onClick={() => { if (!askExit()) onExit(); }} /><IconBtn label="Menú" onClick={() => setMenu(true)}><IconMenu /></IconBtn></div>
           <Scoreboard view={view} mySeat={mySeat} />
           <QuickButtons onRules={() => setRules(true)} onSettings={() => setSettings(true)} />
         </header>

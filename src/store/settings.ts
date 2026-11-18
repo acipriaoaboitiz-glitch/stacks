@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { PREFS, setPref } from '../games/mus/app/lib/feedback.ts';
 import { getAudioContext } from '../services/audioCore.ts';
+import { burst, clink, clinkCascade, fanfare, flick, jitter, masterOut, note, slam, turnChime } from '../utils/sound.ts';
 import { triggerHaptic } from '../services/haptics.ts';
 
 /** El «hover» se queda pegado en pantallas táctiles: los efectos de ratón solo se usan con puntero fino. */
@@ -69,6 +70,7 @@ export function setSettings(patch: Partial<Settings>): void {
 }
 
 export const getSettings = (): Settings => state;
+export const subscribeSettings = (l: () => void): (() => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
 export const useSettings = (): Settings =>
   useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, getSettings);
 
@@ -104,7 +106,7 @@ function noise(c: AudioContext, at: number, dur: number, freq: number, gain: num
   const g = c.createGain();
   g.gain.setValueAtTime(gain, at);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  src.connect(bp).connect(g).connect(c.destination);
+  src.connect(bp).connect(g).connect(masterOut(c));
   src.start(at, Math.random() * 0.5);
   src.stop(at + dur);
 }
@@ -117,7 +119,7 @@ function tone(c: AudioContext, at: number, freq: number, dur: number, gain: numb
   if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, at + dur);
   g.gain.setValueAtTime(gain, at);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  o.connect(g).connect(c.destination);
+  o.connect(g).connect(masterOut(c));
   o.start(at);
   o.stop(at + dur);
 }
@@ -134,82 +136,36 @@ const withAudio = (fn: (c: AudioContext, t: number) => void): void => {
   if (c) fn(c, c.currentTime);
 };
 
-/** Barrido de ruido filtrado (roce/deslizamiento de papel): el filtro viaja de `f0` a `f1`. */
-function sweep(c: AudioContext, at: number, dur: number, f0: number, f1: number, gain: number): void {
-  noiseBuf ??= (() => {
-    const b = c.createBuffer(1, c.sampleRate, c.sampleRate);
-    const d = b.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    return b;
-  })();
-  const src = c.createBufferSource();
-  src.buffer = noiseBuf;
-  const bp = c.createBiquadFilter();
-  bp.type = 'bandpass'; bp.Q.value = 1.4;
-  bp.frequency.setValueAtTime(f0, at);
-  bp.frequency.exponentialRampToValueAtTime(f1, at + dur);
-  const g = c.createGain();
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(gain, at + dur * 0.35);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  src.connect(bp).connect(g).connect(c.destination);
-  src.start(at, Math.random() * 0.5);
-  src.stop(at + dur + 0.02);
-}
-
-/** Chasquido de una carta contra el tapete en capas: roce de entrada (whoosh) + golpe seco (~120 ms). */
+/** Carta que cae en la mesa: roce (Card Flick) + golpe seco amortiguado. */
 export function playCardSnap(): void {
   buzz([12]);
-  withAudio((c, t) => { sweep(c, t, 0.09, 1200, 3600, 0.1); noise(c, t + 0.07, 0.04, 3400, 0.26); tone(c, t + 0.07, 190, 0.035, 0.12, 'sine', 120); });
+  withAudio((c, t) => { flick(c, t, 0.17); note(c, t + 0.04, jitter(190), 0.05, 0.11, 'sine', 120); burst(c, t + 0.04, 0.03, 'bandpass', jitter(3400), 2800, 0.16, 1.1); });
 }
-/** Robar: deslizamiento de papel (barrido de ruido ascendente) con un soplo agudo (~110 ms). */
-export function playCardDraw(): void { buzz(8); withAudio((c, t) => { sweep(c, t, 0.11, 900, 4200, 0.11); tone(c, t, 420, 0.06, 0.035, 'sine', 780); }); }
+/** Robar / repartir: roce de cartón satinado (Card Flick). */
+export function playCardDraw(): void { buzz(8); withAudio((c, t) => flick(c, t)); }
 /** Roce suave de una carta que vuela (reparto, vuelo de cartas de un bot). */
-export function playWhoosh(): void { withAudio((c, t) => { sweep(c, t, 0.14, 700, 2600, 0.09); }); }
-/** Golpe seco sobre el fieltro: sub-grave corto + ruido amortiguado (carta clave). */
-export function playFeltThud(): void { buzz([35]); withAudio((c, t) => { tone(c, t, 95, 0.14, 0.45, 'sine', 48); noise(c, t, 0.07, 260, 0.34); sweep(c, t, 0.08, 1800, 600, 0.08); }); }
+export function playWhoosh(): void { withAudio((c, t) => flick(c, t, 0.14)); }
+/** Card Slam: capa grave 115 → 42 Hz + chasquido de papel (carta clave). */
+export function playFeltThud(): void { buzz([35]); withAudio((c, t) => slam(c, t)); }
 /** Micro-clic al deslizar el dedo sobre las cartas de la mano. */
-export function playTick(): void { buzz(4); withAudio((c, t) => { tone(c, t, 1900, 0.018, 0.035, 'square', 1300); }); }
-/** Cascada metálica de fichas: `n` choques con tono y separación variables. */
-export function playCoinCascade(n = 8): void {
-  buzz([14, 30, 14, 30, 14]);
-  withAudio((c, t) => {
-    for (let i = 0; i < n; i++) {
-      const at = t + i * 0.06 + (i % 3) * 0.012;
-      const f = 2300 + ((i * 397) % 1700);
-      tone(c, at, f, 0.11, 0.05, 'triangle', f * 1.35);
-      tone(c, at + 0.004, f * 1.5, 0.08, 0.025, 'sine');
-      noise(c, at, 0.03, 7500, 0.05);
-    }
-  });
-}
-/** Tu turno: campanilla de cristal (parciales inarmónicos 1 : 2,76 : 5,4 con caída larga). */
-export function playTurnPing(): void {
-  buzz([20, 40, 20]);
-  withAudio((c, t) => {
-    [[1, 0.05, 0.5], [2.76, 0.028, 0.34], [5.4, 0.014, 0.2]].forEach(([r, g, d]) => tone(c, t, 880 * r!, d!, g!, 'sine'));
-    [[1.5, 0.035, 0.45], [4.14, 0.016, 0.28]].forEach(([r, g, d]) => tone(c, t + 0.11, 880 * r!, d!, g!, 'sine'));
-  });
-}
-/** Jugada fuerte (+4, corte, Órdago, cierre): golpe grave con sub-bass (~120 ms). */
-export function playImpact(): void { buzz([45]); withAudio((c, t) => { tone(c, t, 120, 0.12, 0.5, 'sine', 42); noise(c, t, 0.08, 320, 0.3); }); }
-/** Fichas / puntos: tintineo metálico 1200 → 1800 Hz. */
-export function playChipClink(): void { buzz(6); withAudio((c, t) => { tone(c, t, 1200, 0.09, 0.07, 'triangle', 1800); tone(c, t + 0.05, 1500, 0.09, 0.06, 'triangle', 2100); noise(c, t, 0.03, 7000, 0.06); }); }
-/** Victoria: arpegio Do-Mi-Sol-Do con brillo. */
-export function playVictoryFanfare(): void {
-  buzz([30, 50, 30, 50, 80]);
-  withAudio((c, t) => {
-    [523, 659, 784, 1046].forEach((fq, k) => { tone(c, t + k * 0.075, fq, 0.32, 0.07, 'triangle'); tone(c, t + k * 0.075, fq * 2, 0.22, 0.02, 'sine'); });
-    tone(c, t + 0.34, 2093, 0.4, 0.03, 'sine');
-  });
-}
-/** Cinemática de jugada: golpe grave + acorde brillante (jugada tuya) o grave sombrío (castigo). */
+export function playTick(): void { buzz(4); withAudio((c, t) => { note(c, t, jitter(1900), 0.02, 0.035, 'square', 1300, 0.002); }); }
+/** Cascada de fichas de casino: choques cristalinos con 35 ms entre ficha y ficha. */
+export function playCoinCascade(n = 8): void { buzz([14, 30, 14, 30, 14]); withAudio((c, t) => clinkCascade(c, t, n)); }
+/** Tu turno: acorde cálido tipo marimba/Rhodes. */
+export function playTurnPing(): void { buzz([20, 40, 20]); withAudio((c, t) => turnChime(c, t)); }
+/** Jugada fuerte (+4, corte, Órdago, cierre): Card Slam. */
+export function playImpact(): void { buzz([45]); withAudio((c, t) => slam(c, t)); }
+/** Fichas / puntos: dos choques de ficha. */
+export function playChipClink(): void { buzz(6); withAudio((c, t) => { clink(c, t); clink(c, t + 0.035); }); }
+/** Victoria de ronda o partida: fanfarria armónica. */
+export function playVictoryFanfare(): void { buzz([30, 50, 30, 50, 80]); withAudio((c, t) => fanfare(c, t)); }
+/** Cinemática de jugada: golpe grave + fanfarria corta (jugada tuya) o grave sombrío (castigo). */
 export function playCinematicSound(good: boolean): void {
   buzz([25, 35, 30]);
   withAudio((c, t) => {
-    tone(c, t, 110, 0.2, 0.5, 'sine', 40); noise(c, t, 0.1, 300, 0.32);
-    if (good) { [523, 659, 784, 1046].forEach((f, k) => tone(c, t + 0.06 + k * 0.045, f, 0.45, 0.06, 'triangle')); tone(c, t + 0.3, 2093, 0.5, 0.03, 'sine'); }
-    else { tone(c, t + 0.05, 196, 0.5, 0.07, 'sawtooth', 110); tone(c, t + 0.05, 185, 0.5, 0.05, 'sawtooth', 104); }
+    slam(c, t);
+    if (good) { fanfare(c, t + 0.08); }
+    else { note(c, t + 0.05, jitter(196), 0.5, 0.07, 'sawtooth', 110); note(c, t + 0.05, jitter(185), 0.5, 0.05, 'sawtooth', 104); }
   });
 }
 

@@ -8,7 +8,9 @@ import { type PhaseCine } from '../mus/app/game/useTableDirector.ts';
 import { juice } from '../../services/juice.ts';
 import { CardBackArt, FrenchFace } from '../../components/cards/FrenchFace.tsx';
 import type { AnyCard, SpanishCard, SpanishSuit } from '../../engine/deck.ts';
-import { CARD_EASE, FAST_EASE, feedback, useSettings } from '../../store/settings.ts';
+import { CARD_EASE, FAST_EASE, feedback, playWhoosh, useSettings } from '../../store/settings.ts';
+import { gameTimeout } from '../../services/timers.ts';
+import { useThrow } from './useThrow.ts';
 import { wallet } from '../../store/wallet.ts';
 import { points as briscaPoints } from '../brisca/engine.ts';
 import { escobaValue } from '../escoba/engine.ts';
@@ -84,7 +86,11 @@ export function ScorePair({ labels = ['Nosotros', 'Ellos'], values, target, subs
 
 // ─── Naipes ──────────────────────────────────────────────────────────────────────────────────────
 /** Tamaño de carta: `--card-w` (definida por la mesa) multiplicada por `scale`. */
-export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onClick, onSelect, selected, dim, glow, aura, shimmer, badge, title, rotate = 0, className = '', style }: {
+export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onClick, onSelect, selected, dim, glow, aura, shimmer, badge, title, rotate = 0, className = '', style, deal, land }: {
+  /** Posición en el reparto: la carta sale del mazo en cascada (45 ms por carta) con roce de cartón. */
+  deal?: number;
+  /** Carta que cae en el centro de la mesa: micro-rotación natural y rebote corto (spring 420 / 26). */
+  land?: boolean;
   card: AnyCard; faceDown?: boolean; scale?: number; onClick?: () => void;
   /** Alternativa estable a `onClick`: recibe la carta (así la carta no se vuelve a pintar en cada frame del padre). */
   onSelect?: (card: AnyCard) => void; selected?: boolean; dim?: boolean; glow?: boolean;
@@ -99,6 +105,12 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
 }) {
   const interactive = Boolean(onClick || onSelect);
   const handle = useCallback(() => { if (onSelect) onSelect(card); else onClick?.(); }, [onSelect, onClick, card]);
+  const { handlers, click } = useThrow(handle, interactive);
+  useEffect(() => {
+    if (deal === undefined) return;
+    const id = gameTimeout(() => playWhoosh(), deal * 45);
+    return () => window.clearTimeout(id);
+  }, [deal]);
   const { help } = useSettings();
   if (!help) { badge = undefined; aura = false; shimmer = false; }
   const content = faceDown
@@ -108,22 +120,26 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
     <motion.button
       type="button"
       disabled={!interactive}
-      onClick={handle}
+      onClick={click}
+      {...(interactive ? handlers : {})}
       aria-pressed={interactive ? selected : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : undefined}
       title={faceDown ? undefined : title}
-      className={`${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation select-none overflow-hidden rounded-none border border-black/40 shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+      className={`${deal !== undefined ? 'deal-in ' : ''}${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation select-none overflow-hidden rounded-none border border-black/40 shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         aspectRatio: card.deck === 'fr' ? '167 / 243' : '12 / 19',
         // Una sola sombra sencilla por carta: las sombras múltiples hunden los FPS en iOS Safari.
         boxShadow: selected || glow ? '0 0 0 2px #f0c35f' : (aura || shimmer) && !faceDown ? '0 0 0 1.5px rgba(240,195,95,.9)' : undefined,
+        ...(deal !== undefined ? { ['--d' as string]: deal } : {}),
+        ...(interactive ? { touchAction: 'pan-x' } : {}),
         ...style,
       }}
-      animate={{ y: selected ? -12 : glow && interactive ? -6 : 0, rotate }}
+      initial={land ? { y: -26, scale: 1.2, opacity: 0, rotate: rotate + 9 } : undefined}
+      animate={{ y: selected ? -12 : interactive && !dim ? -8 : glow && interactive ? -6 : 0, rotate, ...(land ? { scale: 1, opacity: 1 } : {}) }}
       whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
-      transition={CARD_EASE}
+      transition={land ? LAND_SPRING : CARD_EASE}
     >
       {content}
       {!faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,.14)_0%,rgba(255,255,255,0)_45%,rgba(0,0,0,.08)_100%)]" />}
@@ -137,11 +153,13 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
   );
 });
 
-/** Giro natural estable por carta (-6°…+6°). */
+const LAND_SPRING = { type: 'spring', stiffness: 420, damping: 26 } as const;
+
+/** Giro natural estable por carta (-4°…+4°). */
 export const tilt = (id: string): number => {
   let h = 0;
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 997;
-  return (h % 13) - 6;
+  return (h % 9) - 4;
 };
 
 // ─── Avisos ──────────────────────────────────────────────────────────────────────────────────────
@@ -229,7 +247,7 @@ export function ResultOverlay({ title, children, actions, outcome, prize = 0, ta
   }, [outcome]);
   const win = outcome === 'win';
   return (
-    <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div data-result-overlay className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {win && <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">{CONFETTI.map((c, i) => (
         <span key={i} className="confetti" style={{ left: `${c.left}%`, background: c.color, ['--dx' as string]: `${c.dx}px`, ['--rot' as string]: `${c.rot}deg`, ['--dur' as string]: `${c.dur}s`, ['--delay' as string]: `${c.delay}s` }} />
       ))}</div>}

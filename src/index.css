@@ -263,3 +263,13 @@ html.is-standalone .cine-focus { background: rgba(4, 18, 12, .92); -webkit-backd
 @media (min-width: 1366px) and (min-height: 760px) and (hover: hover) { :root { --z: 1.22; } }
 @media (min-width: 1600px) and (min-height: 900px) and (hover: hover) { :root { --z: 1.4; } }
 @media (min-width: 1900px) and (min-height: 1000px) and (hover: hover) { :root { --z: 1.55; } }
+
+/* Fundido de entrada entre pantallas (160 ms, solo opacidad) */
+@keyframes route-in { from { opacity: 0 } to { opacity: 1 } }
+#root.route-in { animation: route-in 160ms ease-out both; }
+@media (prefers-reduced-motion: reduce) { #root.route-in { animation: none; } }
+
+/* Reparto en cascada: cada carta sale del mazo con 45 ms de diferencia (solo transform/opacity; sin fill-mode final para no pisar a Framer) */
+@keyframes deal-in { from { opacity: 0; transform: translate3d(0, -34vh, 0) rotate(-14deg) scale(.7); } }
+.deal-in { animation: deal-in 340ms cubic-bezier(.2, .8, .25, 1) backwards; animation-delay: calc(var(--d, 0) * 45ms); }
+@media (prefers-reduced-motion: reduce) { .deal-in { animation: none; } }

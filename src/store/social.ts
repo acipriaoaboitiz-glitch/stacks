@@ -1,10 +1,11 @@
 import { useSyncExternalStore } from 'react';
 import { connectClub, type Card, type ClubTransport, type Presence, type Status, type Wire } from '../services/club.ts';
-import { dbInvite, dbLoadFriendships, dbRequest, dbSearch, dbSetFriendship, dbSubscribe, dbTop, dbUpsertProfile, type DbProfile } from '../services/socialDb.ts';
+import { dbInvite, dbLoadFriendships, dbRequest, dbRespondInvite, dbSearch, dbSetFriendship, dbSubscribe, dbTop, toCard } from '../services/socialDb.ts';
+import { pushProfile } from './profileSync.ts';
 import { feedback } from './settings.ts';
 import { findGame } from '../games/registry.ts';
 import { tr, trf } from '../i18n/index.ts';
-import { displayName, getIdent, handleOf, rerollTag } from './identity.ts';
+import { displayName, getIdent, handleOf } from './identity.ts';
 import { getWallet } from './wallet.ts';
 
 /**
@@ -19,6 +20,8 @@ export interface Notice {
   from?: Card;
   game?: string;
   code?: string;
+  /** Fila de `stacks_game_invites` (para aceptar o rechazar en la base de datos). */
+  inviteId?: string;
   text: string;
 }
 interface Persisted { friends: Record<string, Friend>; incoming: Record<string, Card & { at: number }>; outgoing: Record<string, Card & { at: number }> }
@@ -133,25 +136,32 @@ let started = false;
 let unsubDb: (() => void) | null = null;
 let beat = 0;
 
-async function syncDb(): Promise<void> {
-  const me = myCard();
-  let r = await dbUpsertProfile(me, getWallet().chips, Object.values(getWallet().wins).reduce((a, b) => a + b, 0));
-  for (let i = 0; r === 'conflict' && i < 5; i++) { rerollTag(); r = await dbUpsertProfile(myCard(), getWallet().chips, 0); }
-  if (r !== 'ok') return;
-  const { rows, profiles } = await dbLoadFriendships(me.uid);
+/** Carga amistades de `stacks_friendships` y las mezcla con el estado local. */
+async function loadFriends(): Promise<void> {
+  const me = getIdent().uid;
+  const { rows, profiles } = await dbLoadFriendships(me);
   for (const row of rows) {
-    const other = row.requester_uid === me.uid ? row.addressee_uid : row.requester_uid;
+    const other = row.requester_id === me ? row.addressee_id : row.requester_id;
     const p = profiles[other];
     if (!p) continue;
-    if (row.status === 'accepted') addFriend(p, p);
-    else if (row.addressee_uid === me.uid && !data.friends[other]) data.incoming[other] = { ...sameCard(p), at: data.incoming[other]?.at ?? Date.now() };
-    else if (row.requester_uid === me.uid && !data.friends[other]) data.outgoing[other] = { ...sameCard(p), at: data.outgoing[other]?.at ?? Date.now() };
+    const card = toCard(p);
+    const stats = { chips: Number(p.chips), wins: p.wins };
+    if (row.status === 'accepted') addFriend(card, stats);
+    else if (row.addressee_id === me && !data.friends[other]) data.incoming[other] = { ...card, at: data.incoming[other]?.at ?? Date.now() };
+    else if (row.requester_id === me && !data.friends[other]) data.outgoing[other] = { ...card, at: data.outgoing[other]?.at ?? Date.now() };
   }
   publish(true);
+}
+
+async function syncDb(): Promise<void> {
+  // Primero el perfil propio (las amistades e invitaciones lo referencian), luego amigos y cambios en vivo.
+  if ((await pushProfile()) !== 'ok') return;
+  const me = getIdent().uid;
+  await loadFriends();
   unsubDb?.();
-  unsubDb = dbSubscribe(me.uid, () => { void syncDb(); }, (inv) => {
-    const f = data.friends[inv.from_uid];
-    if (f) notify({ kind: 'invite', from: sameCard(f), game: inv.game, code: inv.code, text: trf('n.invite', { h: handleOf(f.name, f.tag), g: findGame(inv.game) ? tr(`g.${inv.game}.name`) : inv.game }) });
+  unsubDb = dbSubscribe(me, () => { void loadFriends(); }, (inv) => {
+    const f = data.friends[inv.from_user_id];
+    if (f) notify({ kind: 'invite', from: sameCard(f), game: inv.game_type, code: inv.room_code, inviteId: inv.id, text: trf('n.invite', { h: handleOf(f.name, f.tag), g: findGame(inv.game_type) ? tr(`g.${inv.game_type}.name`) : inv.game_type }) });
   });
 }
 
@@ -190,7 +200,7 @@ export const social = {
     if (!needle) return [];
     const me = getIdent().uid;
     const live = [...peers.values()].filter((p) => `${p.name}#${p.tag}`.toLowerCase().includes(needle) || p.tag === needle);
-    const db: DbProfile[] = await dbSearch(q);
+    const db = await dbSearch(q);
     const out = new Map<string, Card>();
     for (const p of [...live, ...db]) if (p.uid !== me) out.set(p.uid, sameCard(p));
     return [...out.values()].slice(0, 8);
@@ -227,6 +237,12 @@ export const social = {
     send({ k: 'rm', to: uid, from: myCard() });
     void dbSetFriendship(getIdent().uid, uid, 'removed');
     publish(true);
+  },
+  /** Acepta o rechaza una invitación recibida (actualiza `stacks_game_invites`). */
+  respondInvite(n: Notice, status: 'accepted' | 'declined'): void {
+    if (n.inviteId) void dbRespondInvite(n.inviteId, status);
+    notices = notices.filter((x) => x.id !== n.id);
+    publish();
   },
   invite(uid: string, game: string, code: string): void {
     send({ k: 'invite', to: uid, from: myCard(), game, code });

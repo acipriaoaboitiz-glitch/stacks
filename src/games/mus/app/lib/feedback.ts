@@ -1,4 +1,5 @@
 import { getAudioContext } from '../../../../services/audioCore.ts';
+import { masterOut } from '../../../../utils/sound.ts';
 import { triggerHaptic } from '../../../../services/haptics.ts';
 import { store } from './storage.ts';
 
@@ -43,7 +44,7 @@ function tone(c: AudioContext, freq: number, at: number, dur: number, gain = 0.0
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.exponentialRampToValueAtTime(level, t0 + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  o.connect(g).connect(c.destination);
+  o.connect(g).connect(masterOut(c));
   o.start(t0);
   o.stop(t0 + dur + 0.03);
 }

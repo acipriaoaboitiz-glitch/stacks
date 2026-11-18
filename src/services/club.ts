@@ -26,7 +26,7 @@ export interface ClubTransport {
   close(): void;
 }
 
-const CHANNEL = 'stacks:club';
+const CHANNEL = 'stacks-presence';
 
 class SupabaseClub implements ClubTransport {
   readonly kind = 'supabase' as const;

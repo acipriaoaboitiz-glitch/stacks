@@ -31,6 +31,14 @@ let state: Ident = load();
 const listeners = new Set<() => void>();
 
 export const getIdent = (): Ident => state;
+/** Al iniciar sesión en otro dispositivo se adopta la identidad (uid y TAG) de la cuenta en la nube. */
+export function adoptIdentity(uid: string, tag: string): void {
+  if (testAs) return;
+  state = { uid, tag: tag.replace('#', '') };
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* sin almacenamiento */ }
+  listeners.forEach((l) => l());
+}
+export const subscribeIdent = (l: () => void): (() => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
 /** Si el servidor rechaza el TAG por estar repetido con ese apodo, se sortea otro. */
 export function rerollTag(): string {
   if (testAs) return state.tag;

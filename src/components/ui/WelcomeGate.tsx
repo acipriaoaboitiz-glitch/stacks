@@ -1,13 +1,17 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Logo, Wordmark } from './Logo.tsx';
 import { ProfileEditor } from './ProfileEditor.tsx';
+import { AccountPanel } from './AccountPanel.tsx';
+import { useT } from '../../i18n/index.ts';
 import { saveProfile, TITLES, useProfile } from '../../store/profile.ts';
 import { APP_NAME } from '../../config.ts';
 
 /** Si no hay perfil guardado, pide apodo, título y avatar/foto antes de mostrar el lobby. */
 export function WelcomeGate({ children }: { children: ReactNode }) {
   const profile = useProfile();
+  const t = useT();
+  const [signin, setSignin] = useState(false);
   if (profile) return <>{children}</>;
   return (
     // El body tiene overflow oculto: el gate scrollea por sí mismo (fixed + overflow-y-auto) para que en móviles bajos o con teclado se llegue siempre al botón.
@@ -19,7 +23,8 @@ export function WelcomeGate({ children }: { children: ReactNode }) {
           <h1 aria-label={APP_NAME}><Wordmark size={26} /></h1>
           <p className="text-[12px] text-stone-400">Crea tu perfil para entrar a la mesa</p>
         </div>
-        <ProfileEditor initial={{ name: '', title: TITLES[3], avatar: 0, photo: null }} submitLabel="Entrar al club" onSubmit={saveProfile} />
+        {signin ? <AccountPanel mode="signin" /> : <ProfileEditor initial={{ name: '', title: TITLES[3], avatar: 0, photo: null }} submitLabel="Entrar al club" onSubmit={saveProfile} />}
+        <button type="button" onClick={() => setSignin((v) => !v)} className="mt-3 w-full touch-manipulation text-center text-[12px] font-bold text-amber-200/80 underline-offset-2 hover:underline">{signin ? t('acc.back') : t('acc.have')}</button>
       </motion.div>
     </div>
     </div>

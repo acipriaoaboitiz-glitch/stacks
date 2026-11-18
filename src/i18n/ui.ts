@@ -6,7 +6,7 @@ type Dict = Record<string, string>;
 
 export const uiEs: Dict = {
   'bot.name': 'Jugador',
-  'exit.title': '¿Salir de la partida?', 'exit.body': 'Si sales ahora, perderás la partida en curso.', 'exit.stay': 'Seguir jugando', 'exit.leave': 'Salir',
+  'exit.title': '¿Salir de la partida?', 'exit.body': 'Si sales ahora, perderás la partida en curso.', 'exit.stay': 'Continuar', 'exit.leave': 'Salir',
   // Social
   'soc.title': 'Amigos', 'soc.myId': 'Tu ID de jugador', 'soc.copy': 'Copiar', 'soc.copied': 'Copiado', 'soc.copyAria': 'Copiar mi ID',
   'soc.searchPh': 'Buscar Apodo#1234', 'soc.searchAria': 'Buscar jugadores', 'soc.results': 'Resultados', 'soc.searching': 'Buscando…',
@@ -18,7 +18,7 @@ export const uiEs: Dict = {
   'soc.liveSupabase': 'En vivo · Supabase Realtime', 'soc.liveLocal': 'Modo local · solo pestañas de este navegador', 'soc.offline': 'Sin conexión',
   'st.off': '⚫ Desconectado', 'st.lobby': '🟢 En el lobby', 'st.room': '🟡 En sala privada', 'st.playing': '🃏 Jugando a {g}', 'st.aGame': 'una partida',
   'n.newFriend': 'Nuevo amigo: {h}', 'n.accepted': '{h} aceptó tu solicitud', 'n.alreadyFriends': '{h} y tú ya sois amigos', 'n.invite': '{h} te invita a jugar a {g}',
-  'n.join': 'Unirse ahora', 'n.ignore': 'Ignorar',
+  'n.join': 'Unirse', 'n.ignore': 'Rechazar',
   'room.inviteTable': 'Invitar a la mesa', 'room.noneOnline': 'Ningún amigo conectado ahora. Comparte el enlace.', 'room.invited': 'Enviada ✓', 'room.invite': 'Invitar',
   'room.shareLink': 'Compartir enlace', 'room.plusInvite': '+ Invitar',
   // Ranking
@@ -54,7 +54,7 @@ export const uiEs: Dict = {
 
 export const uiEn: Dict = {
   'bot.name': 'Player',
-  'exit.title': 'Leave the game?', 'exit.body': 'If you leave now, you will lose the game in progress.', 'exit.stay': 'Keep playing', 'exit.leave': 'Leave',
+  'exit.title': 'Leave the game?', 'exit.body': 'If you leave now, you will lose the game in progress.', 'exit.stay': 'Continue', 'exit.leave': 'Leave',
   'soc.title': 'Friends', 'soc.myId': 'Your player ID', 'soc.copy': 'Copy', 'soc.copied': 'Copied', 'soc.copyAria': 'Copy my ID',
   'soc.searchPh': 'Search Name#1234', 'soc.searchAria': 'Search players', 'soc.results': 'Results', 'soc.searching': 'Searching…',
   'soc.noResults': 'Nobody with that name. Ask for their full ID (Name#1234) and make sure they have STACKS open.',
@@ -65,7 +65,7 @@ export const uiEn: Dict = {
   'soc.liveSupabase': 'Live · Supabase Realtime', 'soc.liveLocal': 'Local mode · this browser’s tabs only', 'soc.offline': 'Offline',
   'st.off': '⚫ Offline', 'st.lobby': '🟢 In the lobby', 'st.room': '🟡 In a private room', 'st.playing': '🃏 Playing {g}', 'st.aGame': 'a game',
   'n.newFriend': 'New friend: {h}', 'n.accepted': '{h} accepted your request', 'n.alreadyFriends': 'You and {h} are now friends', 'n.invite': '{h} invites you to play {g}',
-  'n.join': 'Join now', 'n.ignore': 'Ignore',
+  'n.join': 'Join', 'n.ignore': 'Decline',
   'room.inviteTable': 'Invite to the table', 'room.noneOnline': 'No friends online right now. Share the link.', 'room.invited': 'Sent ✓', 'room.invite': 'Invite',
   'room.shareLink': 'Share link', 'room.plusInvite': '+ Invite',
   'lb.title': 'Club ranking', 'lb.friends': 'My friends', 'lb.global': 'Global top', 'lb.pos': 'Your position: {a} of {b}', 'lb.chips': 'Chips', 'lb.wins': 'Wins',
@@ -96,7 +96,7 @@ export const uiEn: Dict = {
 
 export const uiFr: Dict = {
   'bot.name': 'Joueur',
-  'exit.title': 'Quitter la partie ?', 'exit.body': 'Si vous quittez maintenant, vous perdrez la partie en cours.', 'exit.stay': 'Continuer à jouer', 'exit.leave': 'Quitter',
+  'exit.title': 'Quitter la partie ?', 'exit.body': 'Si vous quittez maintenant, vous perdrez la partie en cours.', 'exit.stay': 'Continuer', 'exit.leave': 'Quitter',
   'soc.title': 'Amis', 'soc.myId': 'Votre ID de joueur', 'soc.copy': 'Copier', 'soc.copied': 'Copié', 'soc.copyAria': 'Copier mon ID',
   'soc.searchPh': 'Rechercher Pseudo#1234', 'soc.searchAria': 'Rechercher des joueurs', 'soc.results': 'Résultats', 'soc.searching': 'Recherche…',
   'soc.noResults': 'Personne avec ce pseudo. Demandez son ID complet (Pseudo#1234) et vérifiez qu’il a STACKS ouvert.',
@@ -107,7 +107,7 @@ export const uiFr: Dict = {
   'soc.liveSupabase': 'En direct · Supabase Realtime', 'soc.liveLocal': 'Mode local · onglets de ce navigateur uniquement', 'soc.offline': 'Hors ligne',
   'st.off': '⚫ Hors ligne', 'st.lobby': '🟢 Dans le lobby', 'st.room': '🟡 Dans un salon privé', 'st.playing': '🃏 Joue à {g}', 'st.aGame': 'une partie',
   'n.newFriend': 'Nouvel ami : {h}', 'n.accepted': '{h} a accepté votre demande', 'n.alreadyFriends': '{h} et vous êtes maintenant amis', 'n.invite': '{h} vous invite à jouer à {g}',
-  'n.join': 'Rejoindre', 'n.ignore': 'Ignorer',
+  'n.join': 'Rejoindre', 'n.ignore': 'Refuser',
   'room.inviteTable': 'Inviter à la table', 'room.noneOnline': 'Aucun ami en ligne pour le moment. Partagez le lien.', 'room.invited': 'Envoyée ✓', 'room.invite': 'Inviter',
   'room.shareLink': 'Partager le lien', 'room.plusInvite': '+ Inviter',
   'lb.title': 'Classement du club', 'lb.friends': 'Mes amis', 'lb.global': 'Top mondial', 'lb.pos': 'Votre place : {a} sur {b}', 'lb.chips': 'Jetons', 'lb.wins': 'Victoires',
@@ -138,7 +138,7 @@ export const uiFr: Dict = {
 
 export const uiDe: Dict = {
   'bot.name': 'Spieler',
-  'exit.title': 'Spiel verlassen?', 'exit.body': 'Wenn du jetzt gehst, verlierst du das laufende Spiel.', 'exit.stay': 'Weiterspielen', 'exit.leave': 'Verlassen',
+  'exit.title': 'Spiel verlassen?', 'exit.body': 'Wenn du jetzt gehst, verlierst du das laufende Spiel.', 'exit.stay': 'Weiter', 'exit.leave': 'Verlassen',
   'soc.title': 'Freunde', 'soc.myId': 'Deine Spieler-ID', 'soc.copy': 'Kopieren', 'soc.copied': 'Kopiert', 'soc.copyAria': 'Meine ID kopieren',
   'soc.searchPh': 'Name#1234 suchen', 'soc.searchAria': 'Spieler suchen', 'soc.results': 'Ergebnisse', 'soc.searching': 'Suche…',
   'soc.noResults': 'Niemand mit diesem Namen. Frag nach der vollständigen ID (Name#1234) und ob STACKS geöffnet ist.',
@@ -149,7 +149,7 @@ export const uiDe: Dict = {
   'soc.liveSupabase': 'Live · Supabase Realtime', 'soc.liveLocal': 'Lokaler Modus · nur Tabs dieses Browsers', 'soc.offline': 'Offline',
   'st.off': '⚫ Offline', 'st.lobby': '🟢 In der Lobby', 'st.room': '🟡 In privatem Raum', 'st.playing': '🃏 Spielt {g}', 'st.aGame': 'ein Spiel',
   'n.newFriend': 'Neuer Freund: {h}', 'n.accepted': '{h} hat deine Anfrage angenommen', 'n.alreadyFriends': 'Du und {h} seid jetzt befreundet', 'n.invite': '{h} lädt dich zu {g} ein',
-  'n.join': 'Jetzt beitreten', 'n.ignore': 'Ignorieren',
+  'n.join': 'Beitreten', 'n.ignore': 'Ablehnen',
   'room.inviteTable': 'An den Tisch einladen', 'room.noneOnline': 'Gerade ist kein Freund online. Teile den Link.', 'room.invited': 'Gesendet ✓', 'room.invite': 'Einladen',
   'room.shareLink': 'Link teilen', 'room.plusInvite': '+ Einladen',
   'lb.title': 'Club-Rangliste', 'lb.friends': 'Meine Freunde', 'lb.global': 'Weltweite Top', 'lb.pos': 'Deine Platzierung: {a} von {b}', 'lb.chips': 'Chips', 'lb.wins': 'Siege',

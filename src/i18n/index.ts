@@ -1,5 +1,6 @@
 import { getSettings, useSettings, type Lang } from '../store/settings.ts';
 import { coreDe, coreFr } from './core2.ts';
+import { accDe, accEn, accEs, accFr } from './acc.ts';
 import { olDe, olEn, olEs, olFr } from './ol.ts';
 import { RULES } from './rules.ts';
 import { uiDe, uiEn, uiEs, uiFr } from './ui.ts';
@@ -98,11 +99,11 @@ const eu: Dict = {
 };
 
 const DICTS: Record<Lang, Dict> = {
-  es: { ...es, ...uiEs, ...olEs },
-  en: { ...en, ...uiEn, ...olEn },
+  es: { ...es, ...uiEs, ...olEs, ...accEs },
+  en: { ...en, ...uiEn, ...olEn, ...accEn },
   eu: { ...eu },
-  fr: { ...coreFr, ...uiFr, ...olFr },
-  de: { ...coreDe, ...uiDe, ...olDe },
+  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr },
+  de: { ...coreDe, ...uiDe, ...olDe, ...accDe },
 };
 
 /** Sustituye `{n}`, `{h}`… en una traducción. */

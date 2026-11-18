@@ -33,6 +33,7 @@ export function saveProfile(p: Profile): void {
   listeners.forEach((l) => l());
 }
 export const getProfile = (): Profile | null => state;
+export const subscribeProfile = (l: () => void): (() => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
 export const useProfile = (): Profile | null =>
   useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, getProfile);
 

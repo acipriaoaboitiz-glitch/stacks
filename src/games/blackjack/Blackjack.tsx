@@ -16,6 +16,7 @@ import {
   canDouble, canHit, canSplit, deal, dealerStep, double, handValue, hit, newShoe, split, stand,
   totalBet, totalPayout, type BJCard, type BJState, type Hand, type Outcome,
 } from './engine.ts';
+import { gameTimeout } from '../../services/timers.ts';
 
 const MAX_BET = 5000;
 
@@ -86,7 +87,7 @@ export default function Blackjack() {
   // El crupier juega solo, carta a carta.
   useEffect(() => {
     if (!game || game.phase !== 'dealer') return;
-    const t = window.setTimeout(() => apply(dealerStep(game)), botDelay());
+    const t = gameTimeout(() => apply(dealerStep(game)), botDelay());
     return () => window.clearTimeout(t);
   }, [game, apply]);
 

@@ -8,6 +8,7 @@ import { GameSettingsProvider } from './app/lib/settings.tsx';
 import { Table } from './app/pages/Table.tsx';
 import { aiDelay } from '../../store/settings.ts';
 import { useWallet } from '../../store/wallet.ts';
+import { exitMatch } from '../../services/exitMatch.ts';
 
 /**
  * Mesa de Mus de Mus Online (React + Tailwind + Framer Motion), tal cual su juego: mismo motor, bots, señas,
@@ -36,7 +37,7 @@ export default function MusApp({ roomCode }: { roomCode?: string }) {
             key={round}
             source={source}
             endAction={{ label: 'Otra partida', run: () => setRound((r) => r + 1) }}
-            onExit={() => nav('/')}
+            onExit={() => void exitMatch(nav)}
           />
           <Toaster />
         </div>
