@@ -465,7 +465,7 @@ export default function Uno() {
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>Tú</b>
           <span className="whitespace-nowrap rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{myHand.length} {myHand.length === 1 ? "carta" : "cartas"}</span>
         </div>
-        <span className="min-w-0 truncate text-right text-[11px] text-stone-400">{status}</span>
+        <span className="sr-only" aria-live="polite">{status}</span>
       </div>
       <AnimatePresence>
         {pickFor && (

@@ -252,7 +252,7 @@ export default function Tute() {
         <span className="text-[11px] text-stone-400">Triunfo: <b className="text-amber-200">{SUIT_LABEL[s.trumpSuit]}</b></span>
       </div>
       <PillBar pills={pills} idle={pills.length === 0 ? status : undefined} />
-      {pills.length > 0 && <p className="text-center text-[11px] text-stone-400">{status}</p>}
+      <p className="sr-only" aria-live="polite">{status}</p>
       <div className="flex items-end justify-center gap-[min(1.2vw,8px)] pt-[min(3.2dvh,24px)]" role="group" aria-label="Tu mano">
         {s.hands[me]!.map((c, i, arr) => (
           <FaceCard key={c.id} card={c} deal={i} scale={arr.length > 6 ? 0.66 : 0.8} rotate={(i - (arr.length - 1) / 2) * 1.4}

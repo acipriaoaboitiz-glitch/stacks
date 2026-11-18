@@ -19,16 +19,16 @@ export function VipShopModal({ open, onClose }: { open: boolean; onClose: () => 
       {open && (
         <motion.div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('vip.title')}
-            className="glass-panel w-full max-w-md overflow-y-auto rounded-t-3xl p-4 sm:rounded-3xl" style={{ maxHeight: '92dvh', paddingBottom: 'calc(16px + var(--safe-b))' }}
+            className="border border-white/[0.08] bg-[#091511] shadow-2xl w-full max-w-md overflow-y-auto rounded-t-2xl p-4 sm:rounded-2xl" style={{ maxHeight: '92dvh', paddingBottom: 'calc(16px + var(--safe-b))' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', stiffness: 320, damping: 32 }} onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center gap-2">
               <Gem size={20} className="text-amber-300" aria-hidden />
-              <h2 className="flex-1 font-[var(--font-display)] text-xl font-bold gold-text">{t('vip.title')}</h2>
+              <h2 className="flex-1 text-[19px] font-bold tracking-tight text-white">{t('vip.title')}</h2>
               <span className="font-mono text-sm font-bold tabular-nums text-amber-200">{w.chips.toLocaleString('es-ES')}</span>
               <button type="button" onClick={onClose} aria-label={t('a.close')} className="grid size-9 touch-manipulation place-items-center rounded-xl bg-white/10"><X size={16} /></button>
             </div>
 
-            <h3 className="mb-2 text-[11px] font-extrabold uppercase tracking-[.16em] text-amber-300/90">{t('vip.backs')}</h3>
+            <h3 className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[.14em] text-white/45">{t('vip.backs')}</h3>
             <div className="grid grid-cols-2 gap-2">
               {BACKS.map((b) => {
                 const owned = c.backs.includes(b.id);
@@ -53,7 +53,7 @@ export function VipShopModal({ open, onClose }: { open: boolean; onClose: () => 
               })}
             </div>
 
-            <h3 className="mb-2 mt-4 text-[11px] font-extrabold uppercase tracking-[.16em] text-amber-300/90">{t('vip.mats')}</h3>
+            <h3 className="mb-2 mt-4 px-1 text-[11px] font-bold uppercase tracking-[.14em] text-white/45">{t('vip.mats')}</h3>
             <div className="grid grid-cols-3 gap-2">
               {TAPETES.map((tp) => {
                 const owned = c.themes.includes(tp.id);

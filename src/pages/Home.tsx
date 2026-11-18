@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Gem, Globe, Play, Trophy, Users, X } from 'lucide-react';
@@ -18,11 +18,16 @@ import { EconomyModal } from '../components/ui/EconomyModal.tsx';
 import { RulesModal } from '../components/ui/RulesModal.tsx';
 import { ProfileCard } from '../components/ui/ProfileModal.tsx';
 import { SettingsModal } from '../components/ui/SettingsModal.tsx';
-import { GAMES, findGame, type GameInfo } from '../games/registry.ts';
+import { GAMES, findGame, type GameCategory, type GameInfo } from '../games/registry.ts';
 import { useT } from '../i18n/index.ts';
 import type { Room } from '../services/multiplayer.ts';
 import { feedback } from '../store/settings.ts';
 import { useBackClose } from '../services/backStack.ts';
+
+/** Secciones del lobby (el orden es el de la barra). */
+const CATS: { id: 'all' | GameCategory; key: string }[] = [
+  { id: 'all', key: 'cat.all' }, { id: 'espanola', key: 'cat.es' }, { id: 'casino', key: 'cat.casino' }, { id: 'duelos', key: 'cat.duel' },
+];
 
 /** Polvo dorado del fondo: posiciones fijas, animación CSS (transform/opacity), sin JS por fotograma. */
 const DUST = Array.from({ length: 16 }, (_, i) => ({
@@ -30,12 +35,13 @@ const DUST = Array.from({ length: 16 }, (_, i) => ({
 }));
 
 /** Tarjeta del carrusel: foco de luz, medallón dorado y emblema. Estática (sin animaciones infinitas) para mantener 60 FPS en móvil. */
-const Slide = memo(function Slide({ game, active }: { game: GameInfo; active: boolean }) {
+const Slide = memo(function Slide({ game }: { game: GameInfo; active: boolean }) {
   const t = useT();
   const [c1, c2] = game.tint;
   return (
     <div className="relative grid h-full w-full content-between overflow-hidden rounded-[28px] p-4"
-      style={{ background: `radial-gradient(ellipse at 50% -4%, rgba(255,236,190,.24), transparent 52%), radial-gradient(ellipse at 50% 40%, ${game.accent}40, transparent 62%), linear-gradient(160deg, ${c1}, ${c2} 85%)`, border: `1.5px solid ${game.accent}${active ? 'cc' : '66'}` }}>
+      style={{ background: `radial-gradient(ellipse at 50% -4%, rgba(255,236,190,.24), transparent 52%), radial-gradient(ellipse at 50% 40%, ${game.accent}40, transparent 62%), linear-gradient(160deg, ${c1}, ${c2} 85%)`, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/3 rounded-t-[28px]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,0))' }} />
       <span className="font-mono relative z-10 flex w-fit items-center gap-1 rounded-full px-2.5 py-[3px] text-[11px]" style={{ background: '#000a', color: game.accent, border: `1px solid ${game.accent}55` }}>
         <Users size={11} aria-hidden /> {t(`g.${game.id}.pl`)}
       </span>
@@ -120,7 +126,7 @@ export default function Home() {
   }, []);
   // Invitar a un amigo: usa la sala activa o crea una privada del juego seleccionado y te lleva a ella.
   const inviteFriend = async (f: Friend) => {
-    const g = GAMES[curRef.current]!;
+    const g = game;
     let room = getActiveRoom();
     if (!room) {
       try { room = await createRoom(g.id, wal.name); setActiveRoom(room); } catch { return; }
@@ -141,11 +147,13 @@ export default function Home() {
     if (params.has('room') || params.has('sala') || params.has('join')) { params.delete('room'); params.delete('sala'); params.delete('join'); params.delete('game'); setParams(params, { replace: true }); }
   };
 
-  const N = GAMES.length;
+  const [cat, setCat] = useState<'all' | GameCategory>('all');
+  const LIST = useMemo(() => (cat === 'all' ? GAMES : GAMES.filter((g) => g.category === cat)), [cat]);
+  const N = LIST.length;
   const [cur, setCur] = useState(0);
   const curRef = useRef(0);
   curRef.current = cur;
-  const game = GAMES[cur]!;
+  const game = LIST[Math.min(cur, N - 1)]!;
   const scroller = useRef<HTMLDivElement>(null);
   /** Distancia entre el centro de una tarjeta y la siguiente (ancho + hueco). */
   const stepOf = (el: HTMLDivElement): number => {
@@ -182,6 +190,12 @@ export default function Home() {
       c.style.zIndex = String(10 - Math.round(a));
     });
   }, []);
+  useEffect(() => {
+    setCur(0);
+    const el = scroller.current;
+    if (el) el.scrollTo({ left: 0, behavior: 'auto' });
+    applyFx();
+  }, [cat, applyFx]);
   useEffect(() => { applyFx(); window.addEventListener('resize', applyFx); return () => window.removeEventListener('resize', applyFx); }, [applyFx]);
   const onScroll = useCallback(() => {
     const el = scroller.current;
@@ -232,6 +246,17 @@ export default function Home() {
       <div className="desk-zoom relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between overflow-hidden px-4 pt-3" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
+        {/* Barra de secciones con selector deslizante */}
+        <div role="tablist" aria-label="Secciones" className="no-scrollbar relative z-20 flex w-full max-w-full gap-0.5 overflow-x-auto rounded-2xl border border-white/[0.08] bg-white/[0.035] p-1">
+          {CATS.map((c) => (
+            <button key={c.id} type="button" role="tab" aria-selected={cat === c.id} onClick={() => { if (cat !== c.id) { feedback('tap'); setCat(c.id); } }}
+              className={`relative shrink-0 touch-manipulation whitespace-nowrap rounded-xl px-2.5 py-2 text-[11px] font-bold transition-colors ${cat === c.id ? 'text-[#2a1d02]' : 'text-white/55 active:text-white'}`}>
+              {cat === c.id && <motion.span layoutId="lobby-category" aria-hidden className="absolute inset-0 rounded-xl bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] shadow-[0_2px_10px_rgba(212,175,55,.35)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+              <span className="relative">{t(c.key)}</span>
+            </button>
+          ))}
+        </div>
+
         {/* polvo dorado flotando muy despacio */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           {DUST.map((d, i) => <span key={i} className="dust" style={{ left: `${d.left}%`, width: d.size, height: d.size, ['--dur' as string]: `${d.dur}s`, ['--delay' as string]: `${d.delay}s`, ['--dx' as string]: `${d.dx}px`, ['--o' as string]: d.o }} />)}
@@ -240,10 +265,10 @@ export default function Home() {
         <div aria-hidden />
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
-        <div className="relative z-10 w-full" style={{ height: 'min(44dvh, 370px)' }}>
+        <motion.div key={cat} className="relative z-10 w-full" style={{ height: 'min(40dvh, 360px)' }} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
           <div ref={scroller} onScroll={onScroll} onPointerMove={tilt} onPointerLeave={untilt} role="group" aria-label="Juegos"
             className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain]">
-            {GAMES.map((g, i) => (
+            {LIST.map((g, i) => (
               <div key={g.id} ref={(n) => { cards.current[i] = n; }}
                 className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform"
                 role="group" aria-label={t(`g.${g.id}.name`)} aria-current={i === cur} onClick={() => { if (i !== cur) { feedback('tap'); goTo(i); } }}>
@@ -258,7 +283,7 @@ export default function Home() {
           </div>
           <button type="button" aria-label="←" onClick={() => goTo(curRef.current - 1)} className="absolute left-0 top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronLeft size={18} /></button>
           <button type="button" aria-label="→" onClick={() => goTo(curRef.current + 1)} className="absolute right-0 top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronRight size={18} /></button>
-        </div>
+        </motion.div>
 
         {/* Acciones del juego elegido */}
         <div className="relative z-10 grid w-full max-w-sm gap-2">
@@ -272,17 +297,6 @@ export default function Home() {
             <Globe size={16} aria-hidden /> {t('lobby.online')}
           </button>
         </div>
-
-        {/* Dock de juegos */}
-        <nav className="no-scrollbar relative z-10 flex w-full items-center gap-1.5 overflow-x-auto px-1 sm:justify-center" aria-label="Juegos">
-          {GAMES.map((g, i) => (
-            <button key={g.id} type="button" aria-label={t(`g.${g.id}.name`)} title={t(`g.${g.id}.name`)} onClick={() => { feedback('tap'); goTo(i); }}
-              className="relative grid size-10 shrink-0 touch-manipulation place-items-center rounded-2xl border active:scale-90"
-              style={i === cur ? { borderColor: g.accent, background: `${g.accent}22` } : { borderColor: 'rgba(255,255,255,.1)', background: 'rgba(255,255,255,.05)' }}>
-              <g.icon size={20} style={{ color: i === cur ? g.accent : '#9fb3a8' }} />
-            </button>
-          ))}
-        </nav>
       </div>
 
       <OnlineLobbyModal game={online} initialCode={inviteCode} existing={hostRoom} onClose={() => { setHostRoom(null); closeOnline(); }} onStart={startOnline} />

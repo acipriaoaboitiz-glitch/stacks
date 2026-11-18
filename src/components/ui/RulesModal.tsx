@@ -14,15 +14,15 @@ export function RulesModal({ game, onClose }: { game: GameInfo | null; onClose: 
         <motion.div className="fixed inset-0 z-40 flex items-end justify-center" style={{ background: '#000a' }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={`${t('lobby.rulesPick')} · ${t(`g.${game.id}.name`)}`}
-            className="w-full max-w-md rounded-t-3xl p-5"
-            style={{ background: 'var(--color-surface)', border: '1px solid var(--line-2)', paddingBottom: 'calc(20px + var(--safe-b))', maxHeight: '85dvh', overflowY: 'auto' }}
+            className="w-full max-w-md rounded-t-2xl border border-white/[0.08] bg-[#091511] shadow-2xl p-5"
+            style={{ paddingBottom: 'calc(20px + var(--safe-b))', maxHeight: '85dvh', overflowY: 'auto' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
             onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center gap-3">
               <game.icon size={26} style={{ color: game.accent }} aria-hidden />
               <div className="flex-1">
-                <h2 className="font-display text-xl font-bold gold-text">{t(`g.${game.id}.name`)}</h2>
+                <h2 className="text-[19px] font-bold tracking-tight text-white">{t(`g.${game.id}.name`)}</h2>
                 <p className="text-xs font-semibold" style={{ color: 'var(--color-muted)' }}>{t(`g.${game.id}.pl`)}</p>
               </div>
               <button type="button" onClick={onClose} aria-label={t('a.close')}

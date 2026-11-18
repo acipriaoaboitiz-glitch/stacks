@@ -251,7 +251,7 @@ export default function Escoba() {
         </div>
         <span className="text-[11px] text-stone-400">Ronda {s.roundNo} · escobas <b className="text-amber-200">{s.escobas[myIdx]}</b></span>
       </div>
-      {pills.length > 0 && <p className="text-center text-[12px] font-semibold text-amber-100/80" aria-live="polite">{status}</p>}
+      <p className="sr-only" aria-live="polite">{status}</p>
       <PillBar pills={pills} idle={status} />
       <div className="flex items-end justify-center gap-[min(2vw,12px)] pt-[min(3.4dvh,26px)]" role="group" aria-label="Tu mano">
         {s.hands[myIdx]!.map((c, i, arr) => (

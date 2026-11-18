@@ -44,10 +44,10 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
         </div>
       )}
       <AnimatePresence>
-        {(x.last || x.bet > 0) && !x.out && (
-          <motion.span key={`${x.last}-${x.bet}`} initial={{ opacity: 0, y: -4, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+        {x.bet > 0 && !x.out && !x.folded && (
+          <motion.span key={x.bet} initial={{ opacity: 0, y: -4, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
             className={`rounded-full px-2 py-[1px] text-[10px] font-extrabold ${x.folded ? 'bg-zinc-800 text-stone-400' : 'bg-amber-300 text-amber-950'}`}>
-            {x.folded ? 'Retirada' : x.bet > 0 ? `${x.last ?? ''} ${x.last?.startsWith('Sube') ? '' : x.bet}`.trim() : x.last}
+            {x.bet}
           </motion.span>
         )}
       </AnimatePresence>
@@ -250,7 +250,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
           <div className="absolute z-[6] grid justify-items-center gap-1.5" style={at(50, 50)}>
             <div className="grid justify-items-center gap-1" aria-label={`Bote ${total}`}>
               <ChipPile amount={s.seats.reduce((a2, x) => a2 + x.committed, 0)} size={20} />
-              <span className="font-mono rounded-full border border-white/10 bg-black/45 px-3 py-0.5 text-[13px] font-bold text-amber-200 tabular-nums">Bote {total}</span>
+              <span className="font-mono rounded-full border border-white/10 bg-black/45 px-3 py-0.5 text-[13px] font-bold text-amber-200 tabular-nums">{total}</span>
             </div>
             <div className="flex items-center justify-center gap-[min(1vw,5px)]" aria-label="Cartas comunitarias">
               {Array.from({ length: 5 }, (_, k) => {
@@ -274,7 +274,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
           <span className="font-mono rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-amber-200">{me.stack}{me.bet > 0 ? ` · apuesta ${me.bet}` : ''}</span>
           {s.button === myIdx && <span className="grid size-[17px] place-items-center rounded-full bg-white text-[9px] font-extrabold text-zinc-900">D</span>}
         </div>
-        <span className="truncate text-right text-[11px] text-stone-400">{myHand || status}</span>
+        <span className="truncate text-right text-[11px] text-stone-400">{myHand}</span>
       </div>
       {raising !== null && lg ? (
         <div className="grid w-full max-w-md gap-2 rounded-2xl border border-white/10 bg-zinc-900/75 p-2.5" role="group" aria-label="Subir apuesta">

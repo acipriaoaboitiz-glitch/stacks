@@ -53,7 +53,7 @@ export function TableCenter({ view, mySeat, names, banner }: { view: PublicState
   return (
     <div className="grid h-full min-h-0 place-items-center">
       <AnimatePresence mode="wait">
-        {banner ? (
+        {false && banner ? (
           <motion.div
             key={banner}
             className="px-2 text-center font-[var(--font-display)] text-[clamp(22px,7vw,34px)] font-bold leading-tight text-amber-300 [text-shadow:0_0_18px_rgba(240,195,95,.45)]"

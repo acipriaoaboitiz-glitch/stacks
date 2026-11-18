@@ -226,7 +226,7 @@ export default function Domino() {
     <>
       <div className="flex w-full items-center justify-between gap-2 text-[11px] text-stone-400">
         <span className="font-mono tabular-nums">{e ? `${e.left} · ${e.right}` : ''}</span>
-        <span className="min-w-0 truncate text-right">{status}</span>
+        <span className="sr-only" aria-live="polite">{status}</span>
       </div>
       {/* Action Rail: altura fija reservada para que la mesa nunca se mueva */}
       <div className="flex min-h-[48px] w-full items-center justify-center gap-2" role="group" aria-label={t('dm.actions')}>

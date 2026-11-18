@@ -21,11 +21,11 @@ export function EconomyModal({ open, onClose }: { open: boolean; onClose: () => 
       {open && (
         <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('eco.title')}
-            className="glass-panel max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-3xl p-4" initial={{ scale: 0.94, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} transition={FAST_EASE}
+            className="border border-white/[0.08] bg-[#091511] shadow-2xl max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-3xl p-4" initial={{ scale: 0.94, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} transition={FAST_EASE}
             onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center gap-2">
               <Gift size={20} className="text-amber-300" aria-hidden />
-              <h2 className="font-display flex-1 text-xl font-black gold-text">{t('eco.title')}</h2>
+              <h2 className="flex-1 text-[19px] font-bold tracking-tight text-white">{t('eco.title')}</h2>
               <button type="button" onClick={onClose} aria-label={t('a.close')} className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: '#ffffff14' }}><X size={16} /></button>
             </div>
 

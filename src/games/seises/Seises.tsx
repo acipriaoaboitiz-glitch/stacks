@@ -1,3 +1,4 @@
+import { Trophy } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -210,7 +211,7 @@ export default function Seises() {
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{online ? nm(myIdx) : t('g.you')}</b>
           <span className="whitespace-nowrap rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{hand.length} {hand.length === 1 ? 'carta' : 'cartas'}</span>
         </div>
-        <span className="min-w-0 truncate text-right text-[11px] text-stone-400">{status}</span>
+        <span className="sr-only" aria-live="polite">{status}</span>
       </div>
       <PillBar pills={pills} />
       <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.2dvh,16px)]" role="group" aria-label="Tu mano">
@@ -260,7 +261,7 @@ export default function Seises() {
                 <ul className="grid gap-1.5 text-sm" aria-label="Puntos de la ronda">
                   {s.lines.map((l, i) => (
                     <li key={i} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 ${i === s.roundWinner ? 'border-emerald-400/40 bg-emerald-900/25' : 'border-white/10 bg-white/5'}`}>
-                      <span className={`min-w-0 truncate ${i === s.roundWinner ? 'font-bold text-amber-300' : ''}`}>{nm(i)}{over && i === s.winner ? ' 🏆' : ''}</span>
+                      <span className={`min-w-0 truncate ${i === s.roundWinner ? 'font-bold text-amber-300' : ''}`}>{nm(i)}{over && i === s.winner ? <Trophy size={13} strokeWidth={1.75} className="ml-1 inline text-amber-300" aria-hidden /> : null}</span>
                       <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
                         <b className={`rounded-full px-2 py-[1px] text-[12px] ${l.delta < 0 ? 'bg-emerald-500/25 text-emerald-300' : 'bg-white/10 text-stone-200'}`}>{l.delta > 0 ? '+' : ''}{l.delta} pts</b>
                         <span className="text-[12px] text-stone-300"><b className={i === s.scores.indexOf(best) ? 'text-amber-300' : 'text-stone-50'}>{s.scores[i]}</b> / {SEISES_LIMIT}</span>

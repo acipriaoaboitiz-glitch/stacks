@@ -18,7 +18,7 @@ const POOL: MissionDef[] = [
   { id: 'winUno', text: 'Gana una partida de UNO o COME💩', target: 1, reward: 150, counts: (e, g) => e === 'win' && (g === 'uno' || g === 'presidente') },
   { id: 'hands3', text: 'Juega 3 manos de Póker', target: 3, reward: 120, counts: (e, g) => e === 'hand' && g === 'poker' },
   { id: 'handsRl', text: 'Juega 5 giros de Ruleta', target: 5, reward: 150, counts: (e, g) => e === 'hand' && g === 'ruleta' },
-  { id: 'winTable', text: 'Gana Dominó o El Mentiroso', target: 1, reward: 150, counts: (e, g) => e === 'win' && (g === 'domino' || g === 'mentiroso') },
+  { id: 'winTable', text: 'Gana un juego de Duelos & Mesa', target: 1, reward: 150, counts: (e, g) => e === 'win' && (g === 'domino' || g === 'mentiroso' || g === 'tres' || g === 'cuatro' || g === 'flota') },
 ];
 
 export interface MissionView { id: string; text: string; target: number; reward: number; progress: number; claimed: boolean; done: boolean }

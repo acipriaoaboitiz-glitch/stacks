@@ -26,7 +26,8 @@ const botNames = (): string[] => [1, 2, 3, 4, 5].map(botName);
 const makePlayers = (n: number): PresPlayer[] =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: i === 0 ? tr('g.you') : botNames()[i - 1]!, human: i === 0 }));
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
-const MARK: Record<Role, string> = { presidente: '👑', vicepresidente: '🥈', pueblo: '', subalterno: '🥉', mendigo: '💩' };
+/** Insignia corta junto al avatar (sin emojis). */
+const MARK: Record<Role, string> = { presidente: 'Rey', vicepresidente: '2º', pueblo: '', subalterno: '3º', mendigo: '4º' };
 
 export default function Presidente() {
   const nav = useNavigate();
@@ -37,7 +38,7 @@ export default function Presidente() {
   const [started, setStarted] = useState(false);
   const [s, setS] = useState<PresState | null>(null);
   const [sel, setSel] = useState<string[]>([]);
-  const [bubbles, setBubbles] = useState<Record<string, Bubble | undefined>>({});
+  const [, setBubbles] = useState<Record<string, Bubble | undefined>>({});
   const { banner, show } = useBanner(1300);
   const { cine, show: showCine } = useCine();
   const lastSeq = useRef('');
@@ -108,7 +109,7 @@ export default function Presidente() {
     if (!r) return;
     if (ROLE_PRIZE[r] > 0) wallet.add(ROLE_PRIZE[r]);
     if (r === 'mendigo') juice.cinematic({ title: '¡COME💩!', sub: 'Entregas tus 2 mejores cartas al Rey', tone: 'ruby', good: false });
-    if (r === 'presidente') { wallet.recordWin('presidente'); juice.chips('me'); showCine('¡NUEVO REY! 👑', `+${ROLE_PRIZE[r]} fichas`); }
+    if (r === 'presidente') { wallet.recordWin('presidente'); juice.chips('me'); showCine('¡NUEVO REY!', `+${ROLE_PRIZE[r]} fichas`); }
   }, [s, showCine, me]);
 
   // Primera ronda: quien tiene el 3 de oros abre obligado; se preseleccionan el 3 de oros y todos sus demás treses.
@@ -140,7 +141,7 @@ export default function Presidente() {
               <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">COME💩</h2>
               <p className="-mt-2 text-[13px] font-semibold text-amber-200/80">De mendigo a rey de la mesa</p>
               <Button variant="primary" block onClick={start}>Repartir</Button>
-              <p className="text-xs text-stone-400">Baraja española de 40 cartas · tú y 3 jugadores. Quedarte sin cartas el primero te hace Rey 👑; el último es COME💩. El 2 es la carta más alta y corta la mesa.</p>
+              <p className="text-xs text-stone-400">Baraja española de 40 cartas · tú y 3 jugadores. Quedarte sin cartas el primero te hace Rey; el último es COME💩. El 2 es la carta más alta y corta la mesa.</p>
             </div>
           </div>
         }
@@ -197,8 +198,8 @@ export default function Presidente() {
     const role = roleOf(s, p.id);
     const tag = place >= 0 ? ` · ${place + 1}º` : ` · ${n}`;
     return (
-      <SeatBadge key={p.id} info={info(i, `${role && s.phase !== 'done' ? MARK[role] : ''}${p.name}${tag}`)} tone="them" mano={false} turn={s.turn === i && s.phase === 'play'} deadline={null}
-        cards={n} bubble={bubbles[p.id]} bubbleSide="below" />
+      <SeatBadge key={p.id} info={info(i, `${p.name}${tag}`)} tone="them" mano={false} turn={s.turn === i && s.phase === 'play'} deadline={null}
+        cards={n} badge={role && s.phase !== 'done' ? MARK[role] || undefined : undefined} />
     );
   };
 
@@ -235,10 +236,10 @@ export default function Presidente() {
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <TableAvatar name="Tú" tone="me" active={myTurn || exchange} className="size-9 text-[15px]" />
-          <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{myRole ? `${myRole === 'mendigo' ? '' : `${MARK[myRole]} `}${ROLE_NAME[myRole]}` : 'Tú'}</b>
+          <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{myRole ? ROLE_NAME[myRole] : 'Tú'}</b>
           <span className="whitespace-nowrap rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{hand.length} {hand.length === 1 ? 'carta' : 'cartas'}</span>
         </div>
-        <span className="min-w-0 truncate text-right text-[11px] text-stone-400">{status}</span>
+        <span className="sr-only" aria-live="polite">{status}</span>
       </div>
       <PillBar pills={pills} />
       <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.4dvh,18px)]" role="group" aria-label="Tu mano">
@@ -286,7 +287,7 @@ export default function Presidente() {
                 outcome={myRole === 'presidente' ? 'win' : myRole === 'mendigo' ? 'lose' : undefined}
                 prize={myRole ? ROLE_PRIZE[myRole] : 0}
                 taunt="Te ha tocado COME💩"
-                title={myRole === 'presidente' ? '¡Eres el Rey! 👑' : myRole === 'mendigo' ? '¡Eres COME💩!' : `Has quedado ${ROLE_NAME[myRole ?? 'pueblo']}`}
+                title={myRole === 'presidente' ? '¡Eres el Rey!' : myRole === 'mendigo' ? '¡Eres COME💩!' : `Has quedado ${ROLE_NAME[myRole ?? 'pueblo']}`}
                 actions={[
                   ...(hostLike ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: champion !== null ? (online ? hostStart : start) : nextRound }] : []),
                   ...(online ? [] : [{ label: 'Cambiar mesa', onClick: () => { setStarted(false); setS(null); } }]),
@@ -299,7 +300,7 @@ export default function Presidente() {
                     const r = s.roles![id]!;
                     return (
                       <li key={id} className="flex justify-between border-b border-white/10 py-1">
-                        <span className={i === 0 ? 'font-bold text-amber-300' : ''}>{i + 1}º · {MARK[r]} {p.name}</span>
+                        <span className={i === 0 ? 'font-bold text-amber-300' : ''}>{i + 1}º · {p.name}</span>
                         <span className="text-stone-300">{ROLE_NAME[r]}</span>
                       </li>
                     );

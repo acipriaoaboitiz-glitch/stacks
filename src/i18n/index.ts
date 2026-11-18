@@ -1,7 +1,7 @@
 import { getSettings, useSettings, type Lang } from '../store/settings.ts';
 import { coreDe, coreFr } from './core2.ts';
 import { accDe, accEn, accEs, accFr } from './acc.ts';
-import { clubDe, clubEn, clubEs, clubFr, CLUB_RULES } from './club.ts';
+import { catDe, catEn, catEs, catFr, setDe, setEn, setEs, setFr, clubDe, clubEn, clubEs, clubFr, CLUB_RULES } from './club.ts';
 import { olDe, olEn, olEs, olFr } from './ol.ts';
 import { RULES } from './rules.ts';
 import { uiDe, uiEn, uiEs, uiFr } from './ui.ts';
@@ -100,11 +100,11 @@ const eu: Dict = {
 };
 
 const DICTS: Record<Lang, Dict> = {
-  es: { ...es, ...uiEs, ...olEs, ...accEs, ...clubEs },
-  en: { ...en, ...uiEn, ...olEn, ...accEn, ...clubEn },
+  es: { ...es, ...uiEs, ...olEs, ...accEs, ...clubEs, ...catEs, ...setEs },
+  en: { ...en, ...uiEn, ...olEn, ...accEn, ...clubEn, ...catEn, ...setEn },
   eu: { ...eu },
-  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr, ...clubFr },
-  de: { ...coreDe, ...uiDe, ...olDe, ...accDe, ...clubDe },
+  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr, ...clubFr, ...catFr, ...setFr },
+  de: { ...coreDe, ...uiDe, ...olDe, ...accDe, ...clubDe, ...catDe, ...setDe },
 };
 
 /** Sustituye `{n}`, `{h}`… en una traducción. */

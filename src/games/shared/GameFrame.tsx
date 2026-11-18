@@ -3,9 +3,8 @@ import { feedback } from '../../store/settings.ts';
 import { getActiveRoom, useRoom } from '../../services/multiplayer.ts';
 import { useWallet } from '../../store/wallet.ts';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
 import { GameCinematic } from '../../components/ui/GameCinematic.tsx';
-import { subscribeJuice, type Callout, type ChipBurst, type Cinematic, type Slam } from '../../services/juice.ts';
+import { subscribeJuice, type ChipBurst, type Cinematic, type Slam } from '../../services/juice.ts';
 import { ChipFlight, SlamSparks } from '../../components/ui/TableFx.tsx';
 import '../mus/app/mus.css';
 import { Toaster } from '../mus/app/components/ui.tsx';
@@ -66,7 +65,6 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
   const [emote, setEmote] = useState<string | null>(null);
   // Game Feel: temblor de mesa (250 ms) y textos de impacto, disparados desde `juice` por cualquier juego.
   const [shaking, setShaking] = useState(false);
-  const [callouts, setCallouts] = useState<Callout[]>([]);
   const [cinematic, setCinematic] = useState<Cinematic | null>(null);
   const [slamFx, setSlamFx] = useState<Slam | null>(null);
   const [chipFx, setChipFx] = useState<(ChipBurst & { w: number; h: number }) | null>(null);
@@ -80,13 +78,13 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
     onCinematic: (c) => { setCinematic(c); if (cineTimer.current) window.clearTimeout(cineTimer.current); cineTimer.current = gameTimeout(() => setCinematic(null), 1650); },
     onSlam: (sl) => { setSlamFx(null); window.requestAnimationFrame(() => setSlamFx(sl)); if (slamTimer.current) window.clearTimeout(slamTimer.current); slamTimer.current = gameTimeout(() => setSlamFx(null), 700); },
     onChips: (c) => { const r = feltRef.current?.getBoundingClientRect(); setChipFx({ ...c, w: r?.width ?? 320, h: r?.height ?? 420 }); if (chipTimer.current) window.clearTimeout(chipTimer.current); chipTimer.current = gameTimeout(() => setChipFx(null), 1500); },
-    onCallout: (c) => { setCallouts((cur) => [...cur.slice(-1), c]); gameTimeout(() => setCallouts((cur) => cur.filter((x) => x.id !== c.id)), 1100); },
+    onCallout: () => { /* sin avisos flotantes sobre la mesa */ },
   }), []);
   // Reacciones compartidas: en una sala de este juego se envían a todos y se ven las de los demás.
   const activeRoom = getActiveRoom();
   const room = activeRoom && activeRoom.gameId === gameId ? activeRoom : null;
   const roomSnap = useRoom(room);
-  const { name: myName, winStreak } = useWallet();
+  const { name: myName } = useWallet();
   const others = (roomSnap?.reactions ?? []).filter((r) => r.name !== myName);
   const emoteTimer = useRef<number | null>(null);
   const sendEmote = (text: string) => {
@@ -138,26 +136,10 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
               {chipFx && <ChipFlight key={chipFx.id} target={chipFx.target} n={chipFx.n} w={chipFx.w} h={chipFx.h} />}
               {/* foco cenital suave y viñeta cinematográfica */}
               <div aria-hidden className="pointer-events-none absolute inset-0 z-[15]" style={{ background: 'radial-gradient(ellipse at 50% 44%, rgba(255,226,160,.17) 0%, rgba(255,226,160,.05) 38%, rgba(255,226,160,0) 62%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.5) 100%)' }} />
-              <div className="pointer-events-none absolute inset-x-0 bottom-14 z-20 flex flex-col items-center gap-1" aria-live="polite">
-                {others.map((r) => (
-                  <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>
-                ))}
-              </div>
-              {winStreak >= 2 && <span className="pointer-events-none absolute right-2 top-2 z-20 rounded-full border border-orange-300/50 bg-orange-950/90 px-2.5 py-1 text-[11px] font-extrabold text-orange-200">🔥 Racha x{winStreak}</span>}
-              <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center" aria-live="assertive">
-                <AnimatePresence>
-                  {callouts.map((c) => (
-                    <motion.div key={c.id} className={`absolute px-3 text-center font-[var(--font-display)] text-[clamp(30px,10vw,52px)] font-black leading-none will-change-transform ${c.tone === 'red' ? 'text-red-400' : c.tone === 'neon' ? 'text-cyan-300' : 'text-amber-300'}`}
-                      style={{ textShadow: '0 3px 0 rgba(0,0,0,.7), 0 0 18px currentColor' }}
-                      initial={{ scale: 0.3, opacity: 0, y: 20 }} animate={{ scale: [0.3, 1.18, 1], opacity: 1, y: 0 }} exit={{ scale: 1.15, opacity: 0, y: -24 }}
-                      transition={{ duration: 0.28, ease: 'easeOut' }}>{c.text}</motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
               <ReactionButton onSend={sendEmote} />
             </section>
             </div>
-            <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<EmoteBubble text={emote} /></section>
+            <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<EmoteBubble text={emote} /><div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-1" aria-live="polite">{others.map((r) => <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>)}</div></section>
           </div>
           {timer?.active && <div aria-hidden className="turn-glow pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20" style={{ background: 'linear-gradient(to top, rgba(240,195,95,.5), transparent)' }} />}
           {cinematic && <GameCinematic key={cinematic.id} title={cinematic.title} sub={cinematic.sub} tone={cinematic.tone} />}

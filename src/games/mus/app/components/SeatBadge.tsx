@@ -1,6 +1,6 @@
 import { memo } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import type { Bubble, Tone } from '../game/describe.ts';
+import { motion } from 'framer-motion';
+import type { Bubble } from '../game/describe.ts';
 import type { SeatInfo } from '../game/types.ts';
 import { CardBack } from './CardFace.tsx';
 import { TableAvatar } from './TableAvatar.tsx';
@@ -24,23 +24,8 @@ interface SeatBadgeProps {
   bubbleSide?: 'below' | 'left' | 'right' | 'above';
 }
 
-const BUBBLE_TONE: Record<Tone, string> = {
-  neutral: 'bg-stone-100 text-zinc-900',
-  bet: 'bg-amber-300 text-amber-950',
-  good: 'bg-emerald-100 text-emerald-950',
-  bad: 'bg-red-100 text-red-950',
-  ordago: 'bg-rose-500 text-white',
-};
-
-const BUBBLE_POS: Record<NonNullable<SeatBadgeProps['bubbleSide']>, string> = {
-  below: 'left-1/2 top-full mt-0.5 -translate-x-1/2',
-  above: 'bottom-full left-1/2 mb-0.5 -translate-x-1/2',
-  left: 'left-0 top-full mt-0.5',
-  right: 'right-0 top-full mt-0.5',
-};
-
 /** Jugador en la mesa: avatar con anillo de turno, mano, conexión, cartas boca abajo y su último «grito». */
-function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signalPulseAt, bubbleSide = 'below', badge, alert, aura }: SeatBadgeProps) {
+function SeatBadgeView({ info, tone, mano, turn, deadline, cards, signalPulseAt, badge, alert, aura }: SeatBadgeProps) {
   const name = info.name ?? 'Libre';
   const remaining = deadline ? Math.max(0, deadline - Date.now()) : 0;
   return (
@@ -105,20 +90,7 @@ function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signal
         ))}
         {cards > 4 && <b className="ml-0.5 text-[10px] tabular-nums text-amber-200/90">×{cards}</b>}
       </span>
-      <AnimatePresence>
-        {bubble && (
-          <motion.span
-            key={bubble.at}
-            className={`absolute z-10 max-w-[34vw] whitespace-normal rounded-xl px-2.5 py-1 text-center text-[11px] font-extrabold leading-tight shadow-[0_4px_14px_rgba(0,0,0,.45)] ${BUBBLE_TONE[bubble.tone]} ${BUBBLE_POS[bubbleSide]}`}
-            initial={{ opacity: 0, scale: 0.6, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.25 } }}
-            transition={{ type: 'spring', stiffness: 420, damping: 22 }}
-          >
-            {bubble.text}
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {/* Sin bocadillos sobre la mesa: el turno se ve solo en el anillo dorado del avatar */}
     </div>
   );
 }

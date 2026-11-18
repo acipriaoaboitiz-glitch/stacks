@@ -38,10 +38,7 @@ export function PillBar({ pills, idle }: { pills: PillSpec[]; idle?: string }) {
     <div className="flex min-h-[50px] items-center justify-center">
       <AnimatePresence mode="wait">
         {pills.length === 0 ? (
-          <motion.div key="idle" className="rounded-full border border-white/10 bg-zinc-900/60 px-4 py-2 text-[12px] text-stone-400"
-            initial={{ opacity: 0 }} animate={{ opacity: idle ? 1 : 0 }} exit={{ opacity: 0, transition: { duration: 0.15 } }}>
-            {idle || ' '}
-          </motion.div>
+          <motion.div key="idle" className="sr-only" aria-live="polite">{idle || ' '}</motion.div>
         ) : (
           <motion.div key="actions" role="group" aria-label="Acciones"
             className="flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/95 p-[5px]"

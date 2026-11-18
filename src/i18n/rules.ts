@@ -57,7 +57,7 @@ export const RULES: Partial<Record<Lang, Record<string, string[]>>> = {
       'First round: whoever holds the 3 of coins must start, playing that 3 (alone or with every other 3 they hold: pair, trio or four). You always play one card, a pair, a trio or four of a kind.',
       'The next player must beat the value with the same number of cards, or pass. A 2 cuts the table instantly: the centre is cleared and the player who threw it leads again.',
       'If everyone passes or someone cuts with a 2, the table is cleared and the trick winner leads.',
-      'In order of going out: 1st King 👑, 2nd, 3rd and 4th COME💩. Next round COME💩 hands their 2 best cards to the King, who gives back their 2 worst. Then COME💩 leads freely. The series is 3 rounds.',
+      'In order of going out: 1st King, 2nd, 3rd and 4th COME💩. Next round COME💩 hands their 2 best cards to the King, who gives back their 2 worst. Then COME💩 leads freely. The series is 3 rounds.',
     ],
     seises: [
       '40-card Spanish deck dealt among all players. Whoever holds the 6 of coins starts and places it on the table.',
@@ -122,7 +122,7 @@ export const RULES: Partial<Record<Lang, Record<string, string[]>>> = {
       'Première manche : celui qui a le 3 d’or commence et joue ce 3 (seul, ou avec tous ses autres 3 : paire, brelan ou carré). On joue toujours une carte, une paire, un brelan ou un carré.',
       'Le suivant doit battre la valeur avec le même nombre de cartes, ou passer. Un 2 coupe la table : le centre est nettoyé et celui qui l’a jeté rejoue.',
       'Si tout le monde passe ou si quelqu’un coupe avec un 2, la table est nettoyée et le vainqueur du pli rejoue.',
-      'Dans l’ordre de sortie : 1er Roi 👑, 2e, 3e et 4e COME💩. À la manche suivante, COME💩 donne ses 2 meilleures cartes au Roi, qui lui rend ses 2 pires. Puis COME💩 ouvre librement. La série compte 3 manches.',
+      'Dans l’ordre de sortie : 1er Roi, 2e, 3e et 4e COME💩. À la manche suivante, COME💩 donne ses 2 meilleures cartes au Roi, qui lui rend ses 2 pires. Puis COME💩 ouvre librement. La série compte 3 manches.',
     ],
     seises: [
       'Jeu espagnol de 40 cartes distribué entre tous. Celui qui a le 6 d’or commence et le pose sur la table.',
@@ -187,7 +187,7 @@ export const RULES: Partial<Record<Lang, Record<string, string[]>>> = {
       'Erste Runde: Wer die Münz-3 hält, beginnt und spielt diese 3 (allein oder mit allen anderen 3ern: Paar, Drilling oder Vierling). Gespielt wird immer eine Karte, ein Paar, ein Drilling oder ein Vierling.',
       'Der Nächste muss den Wert mit gleich vielen Karten überbieten oder passen. Eine 2 schneidet den Tisch sofort ab: Die Mitte wird geräumt und wer sie legte, spielt wieder aus.',
       'Passen alle oder schneidet jemand mit einer 2, wird der Tisch geräumt und der Stichgewinner spielt aus.',
-      'In der Reihenfolge des Aussteigens: 1. König 👑, 2., 3. und 4. COME💩. In der nächsten Runde gibt COME💩 seine 2 besten Karten an den König, der ihm seine 2 schlechtesten zurückgibt. Danach spielt COME💩 frei aus. Die Serie hat 3 Runden.',
+      'In der Reihenfolge des Aussteigens: 1. König, 2., 3. und 4. COME💩. In der nächsten Runde gibt COME💩 seine 2 besten Karten an den König, der ihm seine 2 schlechtesten zurückgibt. Danach spielt COME💩 frei aus. Die Serie hat 3 Runden.',
     ],
     seises: [
       'Spanisches 40-Karten-Blatt, an alle verteilt. Wer die Münz-6 hat, beginnt und legt sie auf den Tisch.',

@@ -13,7 +13,7 @@ import {
 import { feedback } from '../../store/settings.ts';
 import { useWallet } from '../../store/wallet.ts';
 
-const QUICK = ['¡Buena jugada!', '¡Órdago!', '¡Qué suerte!', 'GG', '😎', '🔥'];
+const QUICK = ['¡Buena jugada!', '¡Órdago!', '¡Qué suerte!', 'GG'];
 const TEAM_COLOR = { A: '#34d399', B: '#fbbf24' } as const;
 
 function PingBars({ ping }: { ping: number | null }) {

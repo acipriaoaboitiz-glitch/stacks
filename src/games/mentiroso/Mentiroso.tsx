@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Minus, Plus } from 'lucide-react';
+import { Dices, Minus, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { botName, tr, useT } from '../../i18n/index.ts';
 import { juice } from '../../services/juice.ts';
@@ -209,7 +209,7 @@ export default function Mentiroso() {
     const d = diceOf(p.id);
     return (
       <div className="flex flex-col items-center gap-1">
-        <SeatBadge info={info(i, p.name)} tone="them" mano={false} turn={s.turn === i && s.phase === 'bid'} deadline={null} cards={0} badge={`🎲${d.length}`} />
+        <SeatBadge info={info(i, p.name)} tone="them" mano={false} turn={s.turn === i && s.phase === 'bid'} deadline={null} cards={0} badge={String(d.length)} />
         <CupBox dice={d} covered={!shown(p.id)} hits={hitsOf(p.id)} unit={slot === 'top' ? TOP_UNIT : SIDE_UNIT} shakeKey={shake} label={p.name} dir={slot === 'right' ? -1 : 1} />
       </div>
     );
@@ -219,12 +219,9 @@ export default function Mentiroso() {
   const bidValid = validBid(s, qty, face);
   const autoQty = (f: number): number => (!s.bid ? 1 : f > s.bid.face ? s.bid.qty : s.bid.qty + 1);
   const pickFace = (f: number) => { setFace(f); setQty((q) => (validBid(s, q, f) ? q : Math.min(total, autoQty(f)))); feedback('tap'); };
-  const bidder = r ? s.players.find((p) => p.id === r.bid.by) : s.bid ? s.players.find((p) => p.id === s.bid!.by) : null;
   const shownBid = r ? r.bid : s.bid;
   const myDice = diceOf(me);
   const myCovered = revealing ? !shown(me) : !lifted;
-  const loser = r?.loser ? s.players.find((p) => p.id === r.loser) : null;
-  const gainer = r?.gainer ? s.players.find((p) => p.id === r.gainer) : null;
 
   const felt = (
     <div className="grid h-full grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
@@ -238,15 +235,9 @@ export default function Mentiroso() {
               <b className="font-[var(--font-display)] text-2xl tabular-nums text-amber-200">{shownBid.qty}×</b>
               <Die face={shownBid.face} size="calc(var(--card-w) * 0.4)" hit={revealing} />
             </motion.div>
-          ) : <p className="text-sm font-bold text-stone-300">{t('mt.firstBid')}</p>}
-          <p className="min-h-[1.2em] text-[12px] text-stone-300">{bidder && !revealing ? t('mt.bidBy', { n: bidder.name }) : ''}</p>
-          {revealing && (
-            <p className="text-[13px] font-extrabold tabular-nums text-amber-200">
-              {rev.counted > 0 || rev.done ? t('mt.found', { n: rev.counted, f: r!.bid.face }) : ''}
-              {rev.done && loser ? ` · ${t('mt.loses', { n: loser.name })}` : ''}
-              {rev.done && gainer ? ` · ${t('mt.gains', { n: gainer.name })}` : ''}
-            </p>
-          )}
+          ) : <Dices size={30} strokeWidth={1.5} className="text-amber-200/25" aria-hidden />}
+          {/* recuento: solo números, sin textos sobre la mesa */}
+          {revealing && <p className="font-[var(--font-display)] text-xl font-extrabold tabular-nums text-amber-200" aria-live="polite">{rev.counted}<span className="text-amber-200/50"> / {r!.bid.qty}</span></p>}
         </div>
       </div>
       <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center">{seat('right')}</div>
@@ -298,7 +289,7 @@ export default function Mentiroso() {
           </div>
           <div className="min-w-0 rounded-[13px] border border-white/10 bg-gradient-to-br from-orange-400/10 to-black/30 px-3 py-1.5">
             <p className="text-[9px] font-extrabold uppercase tracking-[.14em] text-orange-300">{t('mt.dice')}</p>
-            <b className="block text-[13px] tabular-nums">🎲 {s.players.reduce((n, p) => n + diceOf(p.id).length, 0)}</b>
+            <b className="flex items-center gap-1 text-[13px] tabular-nums"><Dices size={14} strokeWidth={1.75} aria-hidden />{s.players.reduce((n, p) => n + diceOf(p.id).length, 0)}</b>
           </div>
         </div>
       )}

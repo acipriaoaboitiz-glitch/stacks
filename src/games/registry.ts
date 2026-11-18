@@ -1,7 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
-import { CircleDot, Columns2, Crown, Diamond, Dices, Flame, Hash, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
+import { CircleDot, Grid3x3, LayoutGrid, Ship, Columns2, Crown, Diamond, Dices, Flame, Hash, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
 
-export type GameCategory = 'espanola' | 'francesa' | 'familiar' | 'mesa';
+/** Secciones del lobby: Baraja Española · Casino & Cartas · Duelos & Mesa. */
+export type GameCategory = 'espanola' | 'casino' | 'duelos';
 
 export interface GameInfo {
   id: string;
@@ -74,7 +75,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'blackjack', name: 'Blackjack 21', tagline: 'Pide, plántate, dobla o divide', category: 'francesa', deck: 'fr', players: 'vs Crupier',
+    id: 'blackjack', name: 'Blackjack 21', tagline: 'Pide, plántate, dobla o divide', category: 'casino', deck: 'fr', players: 'vs Crupier',
     icon: Spade, route: '/play/blackjack', playable: true, accent: '#f0c35f', tint: ['#3a2f08', '#0d1a12'],
     rules: [
       'Acércate a 21 sin pasarte. Figuras valen 10, el As 1 u 11, el resto su número.',
@@ -84,7 +85,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'poker', name: 'Póker', tagline: 'Ciegas, flop, turn y river', category: 'francesa', deck: 'fr', players: 'Mesa de 4',
+    id: 'poker', name: 'Póker', tagline: 'Ciegas, flop, turn y river', category: 'casino', deck: 'fr', players: 'Mesa de 4',
     icon: Diamond, route: '/play/poker', playable: true, accent: '#e0605c', tint: ['#3d1212', '#0d1a12'],
     rules: [
       'Cada jugador recibe 2 cartas privadas y se juegan 5 comunitarias (flop, turn y river), con ciegas de 10 y 20.',
@@ -94,7 +95,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'uno', name: 'Uno', tagline: 'Vacía tu mano el primero', category: 'familiar', deck: 'uno', players: '2–4 jugadores',
+    id: 'uno', name: 'Uno', tagline: 'Vacía tu mano el primero', category: 'casino', deck: 'uno', players: '2–4 jugadores',
     icon: Zap, route: '/play/uno', playable: true, accent: '#f87171', tint: ['#3a1210', '#0d1a12'],
     rules: [
       'Baraja de 108 cartas en cuatro colores: números 0–9, «Salta», «Cambio de sentido», «+2», comodines y «+4».',
@@ -105,14 +106,14 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'presidente', name: 'COME💩', tagline: 'De mendigo a rey de la mesa', category: 'familiar', deck: 'es', players: '4 jugadores',
+    id: 'presidente', name: 'COME💩', tagline: 'De mendigo a rey de la mesa', category: 'espanola', deck: 'es', players: '4 jugadores',
     icon: Landmark, route: '/play/comemierda', playable: true, accent: '#d4af37', tint: ['#2e2608', '#0d1a12'],
     rules: [
       'Baraja española de 40 cartas repartida entre 4 jugadores (10 cada uno). Jerarquía de mayor a menor: 2 > As > Rey > Caballo > Sota > 7 > 6 > 5 > 4 > 3.',
       'Primera ronda: empieza obligado quien tenga el 3 de oros y sale soltando ese 3 (solo, o junto a todos los demás treses que tenga: pareja, trío o póker). Se juega siempre una carta, una pareja, un trío o un póker del mismo valor.',
       'El siguiente jugador debe superar el valor con la misma cantidad de cartas, o pasar. Un 2 corta la mesa al instante: se limpia el centro y vuelve a salir quien lo tiró.',
       'Si todos pasan o alguien corta con un 2, se limpia la mesa y vuelve a salir quien ganó la baza.',
-      'Según el orden en que te quedas sin cartas: 1º Rey 👑, 2º, 3º y 4º COME💩. En la ronda siguiente COME💩 entrega sus 2 mejores cartas al Rey, y el Rey le da sus 2 peores. Después sale COME💩, con libertad para tirar cualquier carta o combinación. La serie dura 3 rondas.',
+      'Según el orden en que te quedas sin cartas: 1º Rey, 2º, 3º y 4º COME💩. En la ronda siguiente COME💩 entrega sus 2 mejores cartas al Rey, y el Rey le da sus 2 peores. Después sale COME💩, con libertad para tirar cualquier carta o combinación. La serie dura 3 rondas.',
     ],
   },
   {
@@ -127,7 +128,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'domino', name: 'Dominó', tagline: 'Marfil, doble seis y cierre', category: 'mesa', deck: 'none', players: '1v1 · 2v2',
+    id: 'domino', name: 'Dominó', tagline: 'Marfil, doble seis y cierre', category: 'duelos', deck: 'none', players: '1v1 · 2v2',
     icon: Columns2, route: '/play/domino', playable: true, accent: '#f1e7c6', tint: ['#2d2a1c', '#0d1a12'],
     rules: [
       'Se juega con 28 fichas (del doble blanco al doble seis). Cada jugador recibe 7 fichas; en 1v1 las 14 restantes forman el pozo, y en 2v2 se juega por parejas.',
@@ -137,7 +138,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'mentiroso', name: 'El Mentiroso', tagline: 'Dados, faroles y cubiletes', category: 'mesa', deck: 'none', players: '2–4 jugadores',
+    id: 'mentiroso', name: 'El Mentiroso', tagline: 'Dados, faroles y cubiletes', category: 'duelos', deck: 'none', players: '2–4 jugadores',
     icon: Dices, route: '/play/mentiroso', playable: true, accent: '#d4af37', tint: ['#2a1d0a', '#0d1a12'],
     rules: [
       'Cada jugador tiene 5 dados bajo su cubilete. Toca tu cubilete para levantarlo y ver tus dados en secreto.',
@@ -147,13 +148,43 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'ruleta', name: 'Ruleta VIP', tagline: 'Pleno, docenas y golpe de suerte', category: 'mesa', deck: 'none', players: 'Mesa compartida',
+    id: 'ruleta', name: 'Ruleta VIP', tagline: 'Pleno, docenas y golpe de suerte', category: 'casino', deck: 'none', players: 'Mesa compartida',
     icon: CircleDot, route: '/play/ruleta', playable: true, accent: '#c0213a', tint: ['#3a0f18', '#0d1a12'],
     rules: [
       'Ruleta europea con 37 casillas (0–36). Elige una ficha de 10, 50, 100 o 500 y toca el tablero para apostar; puedes repartir varias apuestas.',
       'Pleno a un número paga ×36 (35 a 1). Docena (1–12, 13–24, 25–36) paga ×3. Rojo/Negro y Par/Impar pagan ×2. El 0 solo paga al pleno.',
       'Pulsa «Girar Ruleta»: la rueda y la bola frenan hasta que la bola cae en una casilla y se cobran las apuestas ganadoras.',
       'Deshacer quita la última ficha, Borrar retira todas y Repetir vuelve a colocar las apuestas de la jugada anterior. Fichas virtuales, nunca dinero real.',
+    ],
+  },
+  {
+    id: 'tres', name: '3 en Raya', tagline: 'Serie al mejor de 3', category: 'duelos', deck: 'none', players: '1v1',
+    icon: Grid3x3, route: '/play/tres', playable: true, accent: '#d4af37', tint: ['#2b1d0f', '#0d1a12'],
+    rules: [
+      'Tablero de 3×3. Uno juega con la X (oro) y el otro con la O (marfil); se turnan para colocar una ficha en una casilla libre.',
+      'Gana la ronda quien alinee tres fichas propias en horizontal, vertical o diagonal. Un rayo dorado marca la línea ganadora.',
+      'Si se llena el tablero sin línea hay tablas y la ronda no puntúa. Cada ronda abre uno distinto.',
+      'Gana la partida quien gane 2 rondas (al mejor de 3).',
+    ],
+  },
+  {
+    id: 'cuatro', name: '4 en Raya', tagline: 'Deja caer, conecta cuatro', category: 'duelos', deck: 'none', players: '1v1',
+    icon: LayoutGrid, route: '/play/cuatro', playable: true, accent: '#e23a52', tint: ['#2a1016', '#0d1a12'],
+    rules: [
+      'Tablero vertical de 7 columnas por 6 filas. Toca una columna para soltar tu ficha (oro o rubí): cae hasta la casilla libre más baja.',
+      'Gana la ronda quien conecte cuatro fichas propias seguidas en horizontal, vertical o diagonal. Las cuatro se iluminan con un halo dorado.',
+      'Si se llena el tablero sin conexión hay tablas. Cada ronda abre uno distinto.',
+      'Gana la partida quien gane 2 rondas (al mejor de 3).',
+    ],
+  },
+  {
+    id: 'flota', name: 'Hundir la Flota', tagline: 'Radar 7×7, duelo rápido', category: 'duelos', deck: 'none', players: '1v1',
+    icon: Ship, route: '/play/flota', playable: true, accent: '#34d399', tint: ['#08291f', '#0d1a12'],
+    rules: [
+      'Cada jugador tiene 4 barcos de 4, 3, 2 y 2 casillas en un tablero de 7×7. Pulsa «Aleatorio» para recolocar tu flota y «Listo» cuando te guste.',
+      'En tu turno toca una casilla del radar rival para disparar. Una onda azul indica agua y un destello oro y carmesí indica tocado.',
+      'Si tocas un barco repites disparo; si fallas, pasa el turno. Un barco con todas sus casillas tocadas queda hundido.',
+      'Gana quien hunda primero toda la flota rival. Partidas de 2 a 3 minutos.',
     ],
   },
 ];

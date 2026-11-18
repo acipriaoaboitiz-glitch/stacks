@@ -201,7 +201,7 @@ export default function Chinchon() {
             Sueltas: {looseNow}
           </span>
         </div>
-        <span className="text-[11px] text-stone-400">{status}</span>
+        <span className="sr-only" aria-live="polite">{status}</span>
       </div>
       <PillBar pills={pills} />
       <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.6dvh,20px)]" role="group" aria-label="Tu mano">

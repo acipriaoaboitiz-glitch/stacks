@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Smile, X } from 'lucide-react';
+import { Crosshair, Clover, Handshake, Smile, ThumbsUp, X, type LucideIcon } from 'lucide-react';
 import { emoteSound, FAST_EASE, type EmoteId } from '../../store/settings.ts';
 
-export const EMOTES: { id: EmoteId; icon: string; label: string; text: string }[] = [
-  { id: 'clap', icon: '👏', label: '¡Buena jugada!', text: '👏 ¡Buena jugada!' },
-  { id: 'hit', icon: '🎯', label: '¡Órdago!', text: '🎯 ¡Órdago!' },
-  { id: 'laugh', icon: '🍀', label: '¡Qué suerte!', text: '🍀 ¡Qué suerte!' },
-  { id: 'turn', icon: '🤝', label: 'GG', text: '🤝 GG' },
+export const EMOTES: { id: EmoteId; icon: LucideIcon; label: string; text: string }[] = [
+  { id: 'clap', icon: ThumbsUp, label: '¡Buena jugada!', text: '¡Buena jugada!' },
+  { id: 'hit', icon: Crosshair, label: '¡Órdago!', text: '¡Órdago!' },
+  { id: 'laugh', icon: Clover, label: '¡Qué suerte!', text: '¡Qué suerte!' },
+  { id: 'turn', icon: Handshake, label: 'GG', text: 'GG' },
 ];
 
 /** Botón flotante con 4 reacciones rápidas. `onSend` recibe el texto que se muestra en el bocadillo del avatar. */
@@ -22,7 +22,7 @@ export function ReactionButton({ onSend }: { onSend: (text: string) => void }) {
             {EMOTES.map((e) => (
               <button key={e.id} type="button" aria-label={e.label} title={e.label}
                 onClick={() => { emoteSound(e.id); onSend(e.text); setOpen(false); }}
-                className="grid size-9 place-items-center rounded-full text-[18px] transition active:scale-90">{e.icon}</button>
+                className="grid size-9 place-items-center rounded-full text-[18px] transition active:scale-90"><e.icon size={18} strokeWidth={1.75} aria-hidden /></button>
             ))}
           </motion.div>
         )}
