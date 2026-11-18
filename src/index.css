@@ -273,3 +273,6 @@ html.is-standalone .cine-focus { background: rgba(4, 18, 12, .92); -webkit-backd
 @keyframes deal-in { from { opacity: 0; transform: translate3d(0, -34vh, 0) rotate(-14deg) scale(.7); } }
 .deal-in { animation: deal-in 340ms cubic-bezier(.2, .8, .25, 1) backwards; animation-delay: calc(var(--d, 0) * 45ms); }
 @media (prefers-reduced-motion: reduce) { .deal-in { animation: none; } }
+
+/* App instalada: en una mesa el lienzo queda clavado a la pantalla (100dvh), sin scroll ni rebote. */
+html.is-standalone.table-lock body { position: fixed; inset: 0; width: 100%; height: 100dvh; overflow: hidden; }

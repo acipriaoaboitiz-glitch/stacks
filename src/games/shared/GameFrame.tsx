@@ -23,9 +23,9 @@ import { findGame } from '../registry.ts';
 import { gameTimeout } from '../../services/timers.ts';
 
 const EMERALD_FELT =
-  'repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px), radial-gradient(ellipse at center, #0F3A2A 0%, #0A2A1E 55%, #061810 100%)';
+  'radial-gradient(ellipse at center, #0F3A2A 0%, #0A2A1E 55%, #061810 100%)';
 const FELT_BG =
-  'repeating-linear-gradient(45deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px), repeating-linear-gradient(-45deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px), repeating-linear-gradient(45deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px), repeating-linear-gradient(-45deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 52%, var(--tapete-glow), transparent 52%), radial-gradient(ellipse at center, var(--tapete-a), var(--tapete-b) 72%, var(--tapete-c) 100%)';
+  'radial-gradient(ellipse at 50% 52%, var(--tapete-glow), transparent 52%), radial-gradient(ellipse at center, var(--tapete-a), var(--tapete-b) 72%, var(--tapete-c) 100%)';
 
 interface Props {
   gameId: string;

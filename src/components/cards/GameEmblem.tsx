@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { SvgDefs } from './art.tsx';
+import { TableEmblemBody } from './TableArt.tsx';
 
 /** Emblema SVG a medida para cada juego (viewBox 100×100). */
 function Card({ x, y, r = 0, w = 34, h = 50, children }: { x: number; y: number; r?: number; w?: number; h?: number; children?: ReactNode }) {
@@ -97,6 +98,8 @@ function Body({ id }: { id: string }) {
           <circle cx="82" cy="84" r="12" fill="#7f1d1d" stroke="#fde68a" strokeWidth="2.5" strokeDasharray="4 3" />
         </g>
       );
+    case 'domino': case 'mentiroso': case 'ruleta':
+      return <TableEmblemBody id={id} />;
     case 'sieteymedia':
       return (<g><circle cx="50" cy="50" r="40" fill="url(#st-coin)" stroke="#6b4306" strokeWidth="3" /><circle cx="50" cy="50" r="32" fill="none" stroke="#6b4306" strokeWidth="1.5" strokeDasharray="2 3" /><text x="50" y="50" textAnchor="middle" dominantBaseline="central" fontFamily="Cinzel, Georgia, serif" fontWeight="900" fontSize="30" fill="#3b2410">7½</text></g>);
     case 'klondike':

@@ -14,6 +14,9 @@ import Poker from './games/poker/Poker.tsx';
 import Presidente from './games/presidente/Presidente.tsx';
 import Seises from './games/seises/Seises.tsx';
 import Tute from './games/tute/Tute.tsx';
+import Domino from './games/domino/Domino.tsx';
+import Mentiroso from './games/mentiroso/Mentiroso.tsx';
+import Ruleta from './games/ruleta/Ruleta.tsx';
 import Home from './pages/Home.tsx';
 
 // Enlace directo a mesa: «?sala=CODIGO» (WhatsApp, etc.) se traslada al hash que lee el router.
@@ -44,6 +47,9 @@ export default function App() {
         <Route path="/play/comemierda" element={<Presidente />} />
         <Route path="/play/presidente" element={<Presidente />} />
         <Route path="/play/seises" element={<Seises />} />
+        <Route path="/play/domino" element={<Domino />} />
+        <Route path="/play/mentiroso" element={<Mentiroso />} />
+        <Route path="/play/ruleta" element={<Ruleta />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

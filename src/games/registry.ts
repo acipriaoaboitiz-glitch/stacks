@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
-import { Crown, Diamond, Flame, Hash, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
+import { CircleDot, Columns2, Crown, Diamond, Dices, Flame, Hash, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
 
-export type GameCategory = 'espanola' | 'francesa' | 'familiar';
+export type GameCategory = 'espanola' | 'francesa' | 'familiar' | 'mesa';
 
 export interface GameInfo {
   id: string;
@@ -9,7 +9,8 @@ export interface GameInfo {
   name: string;
   tagline: string;
   category: GameCategory;
-  deck: 'es' | 'fr' | 'uno';
+  /** 'none' = juegos de mesa sin baraja (dominó, dados, ruleta). */
+  deck: 'es' | 'fr' | 'uno' | 'none';
   players: string;
   icon: LucideIcon;
   route: string;
@@ -123,6 +124,36 @@ export const GAMES: GameInfo[] = [
       'Si no tienes ninguna jugada, pasas. Solo puedes pasar si de verdad no puedes colocar nada.',
       'Quien se queda sin cartas gana la ronda y resta 10 puntos. Los demás suman sus cartas: As 1, del 2 al 7 su valor, Sota 10, Caballo 11 y Rey 12.',
       'Cuando alguien llega a 150 puntos acaba la partida y gana quien menos puntos tiene.',
+    ],
+  },
+  {
+    id: 'domino', name: 'Dominó', tagline: 'Marfil, doble seis y cierre', category: 'mesa', deck: 'none', players: '1v1 · 2v2',
+    icon: Columns2, route: '/play/domino', playable: true, accent: '#f1e7c6', tint: ['#2d2a1c', '#0d1a12'],
+    rules: [
+      'Se juega con 28 fichas (del doble blanco al doble seis). Cada jugador recibe 7 fichas; en 1v1 las 14 restantes forman el pozo, y en 2v2 se juega por parejas.',
+      'Abre la ronda quien tenga el doble más alto (el 6-6). Después, en tu turno colocas una ficha cuyo número coincida con uno de los dos extremos de la cadena. Toca la ficha y, si encaja por los dos lados, elige Izquierda o Derecha.',
+      'Si no puedes jugar, en 1v1 robas del pozo hasta tener una ficha jugable; si el pozo está vacío (o en 2v2), pasas.',
+      '¡DOMINÓ! gana quien se queda sin fichas; ¡CIERRE! si nadie puede mover, gana quien menos puntos tenga en la mano. El ganador suma los puntos de las fichas rivales. Gana la partida quien gane 2 rondas (al mejor de 3).',
+    ],
+  },
+  {
+    id: 'mentiroso', name: 'El Mentiroso', tagline: 'Dados, faroles y cubiletes', category: 'mesa', deck: 'none', players: '2–4 jugadores',
+    icon: Dices, route: '/play/mentiroso', playable: true, accent: '#d4af37', tint: ['#2a1d0a', '#0d1a12'],
+    rules: [
+      'Cada jugador tiene 5 dados bajo su cubilete. Toca tu cubilete para levantarlo y ver tus dados en secreto.',
+      'En tu turno subes la apuesta sobre cuántos dados de una cara hay en TODA la mesa («cuatro 5s»): más cantidad, o la misma cantidad con una cara mayor.',
+      'O cantas «¡MENTIROSO!» si crees que la apuesta anterior es mentira: se destapan todos los cubiletes y se cuentan los dados. Si hay menos de los apostados pierde un dado quien apostó; si hay igual o más, lo pierdes tú.',
+      '«¡EXACTO!» (si hay justo los dados apostados recuperas uno; si no, pierdes uno). Quien pierde el duelo empieza la ronda siguiente. Gana el último jugador con dados.',
+    ],
+  },
+  {
+    id: 'ruleta', name: 'Ruleta VIP', tagline: 'Pleno, docenas y golpe de suerte', category: 'mesa', deck: 'none', players: 'Mesa compartida',
+    icon: CircleDot, route: '/play/ruleta', playable: true, accent: '#c0213a', tint: ['#3a0f18', '#0d1a12'],
+    rules: [
+      'Ruleta europea con 37 casillas (0–36). Elige una ficha de 10, 50, 100 o 500 y toca el tablero para apostar; puedes repartir varias apuestas.',
+      'Pleno a un número paga ×36 (35 a 1). Docena (1–12, 13–24, 25–36) paga ×3. Rojo/Negro y Par/Impar pagan ×2. El 0 solo paga al pleno.',
+      'Pulsa «Girar Ruleta»: la rueda y la bola frenan hasta que la bola cae en una casilla y se cobran las apuestas ganadoras.',
+      'Deshacer quita la última ficha, Borrar retira todas y Repetir vuelve a colocar las apuestas de la jugada anterior. Fichas virtuales, nunca dinero real.',
     ],
   },
 ];

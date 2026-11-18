@@ -198,7 +198,7 @@ export default function Presidente() {
     const tag = place >= 0 ? ` · ${place + 1}º` : ` · ${n}`;
     return (
       <SeatBadge key={p.id} info={info(i, `${role && s.phase !== 'done' ? MARK[role] : ''}${p.name}${tag}`)} tone="them" mano={false} turn={s.turn === i && s.phase === 'play'} deadline={null}
-        cards={Math.min(n, 5)} bubble={bubbles[p.id]} bubbleSide="below" />
+        cards={n} bubble={bubbles[p.id]} bubbleSide="below" />
     );
   };
 

@@ -158,13 +158,13 @@ export default function Chinchon() {
     const k = slots.indexOf(slot);
     if (k === -1) return null;
     const i = (myIdx + k) % n;
-    return <div className={s.out[i] ? 'opacity-40' : ''}><SeatBadge info={info(i, `${nm(i)}${s.out[i] ? ' ✕' : ''}`)} tone="them" mano={s.dealer === i} turn={s.turn === i && !s.out[i] && (s.phase === 'draw' || s.phase === 'discard')} deadline={null} cards={Math.min(s.hands[i]!.length, 7)} /></div>;
+    return <div className={s.out[i] ? 'opacity-40' : ''}><SeatBadge info={info(i, `${nm(i)}${s.out[i] ? ' ✕' : ''}`)} tone="them" mano={s.dealer === i} turn={s.turn === i && !s.out[i] && (s.phase === 'draw' || s.phase === 'discard')} deadline={null} cards={s.hands[i]!.length} /></div>;
   };
 
   const pileW = 'calc(var(--card-w) * 0.8)';
   const felt = (
     <>
-      <div className="grid h-full grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
+      <div className="grid h-full grid-cols-[minmax(0,.7fr)_minmax(0,2.2fr)_minmax(0,.7fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
         <div className="col-start-2 row-start-1 justify-self-center">{seat('top')}</div>
         <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat('left')}</div>
         <div className="col-start-2 row-start-2 grid min-h-0 place-items-center">

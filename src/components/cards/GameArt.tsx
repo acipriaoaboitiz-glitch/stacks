@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { UnoFace } from '../../games/uno/UnoCard.tsx';
 import type { UnoCard } from '../../games/uno/engine.ts';
 import { Chip } from './Chip.tsx';
+import { TABLE_GAMES, TableArt } from './TableArt.tsx';
 
 const BASE = import.meta.env.BASE_URL;
 interface Piece { src?: string; uno?: UnoCard; x: number; y: number; r: number }
@@ -25,6 +26,7 @@ const ART: Record<string, { cards: Piece[]; chips?: { v: 1 | 5 | 25 | 100 | 500;
 
 /** Ilustración realista de cada juego: naipes reales con brillo y sombra de contacto, y fichas de casino. */
 export function GameArt({ id, size = 150 }: { id: string; size?: number }) {
+  if (TABLE_GAMES.has(id)) return <TableArt id={id} size={size} />;
   const art = ART[id] ?? ART.mus!;
   const k = size / 150;
   const french = id === 'blackjack' || id === 'poker';

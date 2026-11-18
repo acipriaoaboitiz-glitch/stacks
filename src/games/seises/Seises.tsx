@@ -188,7 +188,7 @@ export default function Seises() {
         <div className="flex flex-wrap items-start justify-center gap-x-[min(4vw,18px)]">
           {opponents.map((i) => (
             <SeatBadge key={i} info={info(i, `${nm(i)} · ${s.hands[i]!.length}`)} tone="them" mano={false} turn={s.turn === i && s.phase === 'playing'} deadline={null}
-              cards={Math.min(s.hands[i]!.length, 6)} bubble={bubbles[i]} bubbleSide="below" />
+              cards={s.hands[i]!.length} bubble={bubbles[i]} bubbleSide="below" />
           ))}
         </div>
         <div className="grid min-h-0 place-items-center" aria-label="Mesa: un carril por palo">

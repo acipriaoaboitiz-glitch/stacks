@@ -18,7 +18,6 @@ export function OvalTable({ children }: { children: ReactNode }) {
       {/* fieltro */}
       <div aria-hidden className="absolute inset-[6%_4.1%] overflow-hidden rounded-[50%]"
         style={{ background: 'radial-gradient(ellipse at 50% 46%, #0B2E20 0%, #0A2819 55%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55)' }}>
-        <div className="absolute inset-0 opacity-70" style={{ background: 'repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,.05) 0 2px, transparent 2px 4px)' }} />
       </div>
       {/* línea de apuestas */}
       <div aria-hidden className="absolute inset-[22%_15%] rounded-[50%]" style={{ border: '2px dashed rgba(212,175,55,.18)' }} />

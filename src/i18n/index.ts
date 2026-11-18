@@ -1,6 +1,7 @@
 import { getSettings, useSettings, type Lang } from '../store/settings.ts';
 import { coreDe, coreFr } from './core2.ts';
 import { accDe, accEn, accEs, accFr } from './acc.ts';
+import { clubDe, clubEn, clubEs, clubFr, CLUB_RULES } from './club.ts';
 import { olDe, olEn, olEs, olFr } from './ol.ts';
 import { RULES } from './rules.ts';
 import { uiDe, uiEn, uiEs, uiFr } from './ui.ts';
@@ -99,11 +100,11 @@ const eu: Dict = {
 };
 
 const DICTS: Record<Lang, Dict> = {
-  es: { ...es, ...uiEs, ...olEs, ...accEs },
-  en: { ...en, ...uiEn, ...olEn, ...accEn },
+  es: { ...es, ...uiEs, ...olEs, ...accEs, ...clubEs },
+  en: { ...en, ...uiEn, ...olEn, ...accEn, ...clubEn },
   eu: { ...eu },
-  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr },
-  de: { ...coreDe, ...uiDe, ...olDe, ...accDe },
+  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr, ...clubFr },
+  de: { ...coreDe, ...uiDe, ...olDe, ...accDe, ...clubDe },
 };
 
 /** Sustituye `{n}`, `{h}`… en una traducción. */
@@ -113,7 +114,7 @@ export const trf = (key: string, vars: Record<string, string | number>, lang: La
 /** Nombre de un bot en el idioma activo: «Jugador 1», «Player 1», «Joueur 1», «Spieler 1». */
 export const botName = (i: number): string => `${tr('bot.name')} ${i}`;
 /** Reglas de un juego en el idioma activo (cae al texto español del registro). */
-export const rulesFor = (id: string, fallback: string[], lang: Lang = getSettings().lang): string[] => RULES[lang]?.[id] ?? fallback;
+export const rulesFor = (id: string, fallback: string[], lang: Lang = getSettings().lang): string[] => RULES[lang]?.[id] ?? (lang === 'en' || lang === 'fr' || lang === 'de' ? CLUB_RULES[lang][id] : undefined) ?? fallback;
 
 /** Traducción puntual (fuera de componentes). */
 export function tr(key: string, lang: Lang = getSettings().lang): string {

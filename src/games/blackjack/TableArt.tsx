@@ -13,7 +13,6 @@ export function SemiTable({ children }: { children: ReactNode }) {
       <div aria-hidden className="absolute inset-[1%_1.2%]" style={{ borderRadius: RADIUS, background: 'linear-gradient(180deg,#1b1f1d 0%,#121514 45%,#0b0d0c 100%)', boxShadow: 'inset 0 5px 12px rgba(255,255,255,.09), inset 0 -12px 24px rgba(0,0,0,.85), 0 14px 28px rgba(0,0,0,.55)' }} />
       <div aria-hidden className="absolute inset-[6%_5.6%_5%]" style={{ borderRadius: RADIUS, border: '2px solid rgba(212,175,55,.32)', boxShadow: '0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(251,224,138,.35)' }} />
       <div aria-hidden className="absolute inset-[6.8%_6.3%_5.8%] overflow-hidden" style={{ borderRadius: RADIUS, background: 'radial-gradient(ellipse at 50% 30%, #0B2E20 0%, #0A2819 55%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55)' }}>
-        <div className="absolute inset-0 opacity-70" style={{ background: 'repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,.05) 0 2px, transparent 2px 4px)' }} />
       </div>
       {children}
     </div>

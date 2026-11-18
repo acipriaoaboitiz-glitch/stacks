@@ -208,7 +208,7 @@ export default function Escoba() {
 
   const felt = (
     <>
-      <div className="grid h-full grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
+      <div className="grid h-full grid-cols-[minmax(0,.7fr)_minmax(0,2.2fr)_minmax(0,.7fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
         <div className="col-start-2 row-start-1 justify-self-center">{seat('top')}</div>
         <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat('left')}</div>
         <div className="col-start-2 row-start-2 grid min-h-0 place-items-center" aria-label="Mesa">

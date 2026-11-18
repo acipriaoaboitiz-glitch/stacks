@@ -130,3 +130,41 @@ export function play(fn: (c: AudioContext, t: number) => void): void {
   const c = getAudioContext();
   if (c) fn(c, c.currentTime);
 }
+
+/** Golpe seco de una ficha de dominó de marfil sobre fieltro/madera. */
+export function clack(c: AudioContext, t: number): void {
+  note(c, t, jitter(250), 0.07, 0.4, 'sine', 120, 0.002);
+  burst(c, t, 0.025, 'bandpass', jitter(1900), 1400, 0.3, 1.2);
+  burst(c, t + 0.004, 0.05, 'lowpass', jitter(650), 300, 0.2, 0.8);
+}
+
+/** Dados chocando dentro del cubilete: ráfaga de choques breves y desordenados. */
+export function diceRattle(c: AudioContext, t: number, dur = 0.75): void {
+  const n = 16 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < n; i++) {
+    const at = t + Math.random() * dur;
+    burst(c, at, 0.03, 'bandpass', jitter(2300, 0.25), 1500, 0.1 + Math.random() * 0.1, 1.4);
+    if (i % 3 === 0) note(c, at, jitter(330, 0.2), 0.04, 0.05, 'sine', 180, 0.002);
+  }
+}
+
+/** Un dado (o el cubilete) golpeando la mesa. */
+export function diceDrop(c: AudioContext, t: number): void {
+  note(c, t, jitter(190), 0.1, 0.35, 'sine', 90, 0.002);
+  burst(c, t, 0.04, 'bandpass', jitter(1700), 1200, 0.22, 1.1);
+}
+
+/** Bola de ruleta: rodar por la pista con choques cada vez más espaciados y tres rebotes finales. */
+export function rouletteRoll(c: AudioContext, t: number, dur: number): void {
+  const n = 46;
+  for (let i = 0; i < n; i++) {
+    const p = i / (n - 1);
+    const at = t + dur * (1 - (1 - p) * (1 - p) * (1 - p)) * 0.9; // los choques se espacian al frenar
+    burst(c, at, 0.02, 'bandpass', jitter(3000 - p * 900, 0.1), 2400, 0.07 + p * 0.05, 2);
+  }
+  [0.9, 0.94, 0.98].forEach((r, k) => {
+    const at = t + dur * r;
+    note(c, at, jitter(1800 - k * 300), 0.05, 0.1 - k * 0.025, 'triangle', 1100, 0.002);
+    burst(c, at, 0.02, 'highpass', 5000, 4000, 0.07, 0.7);
+  });
+}
