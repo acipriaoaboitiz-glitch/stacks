@@ -258,7 +258,7 @@ export function ResultOverlay({ title, children, actions, outcome, prize = 0, ta
   }, [outcome]);
   const win = outcome === 'win';
   return (
-    <motion.div data-result-overlay className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div data-result-overlay className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {win && <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">{CONFETTI.map((c, i) => (
         <span key={i} className="confetti" style={{ left: `${c.left}%`, background: c.color, ['--dx' as string]: `${c.dx}px`, ['--rot' as string]: `${c.rot}deg`, ['--dur' as string]: `${c.dur}s`, ['--delay' as string]: `${c.delay}s` }} />
       ))}</div>}

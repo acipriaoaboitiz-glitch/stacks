@@ -1,3 +1,4 @@
+import { Portal } from './Portal.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Copy, Search, UserMinus, UserPlus, Users, X } from 'lucide-react';
@@ -43,9 +44,9 @@ export function FriendsDrawer({ open, onClose, onInvite }: { open: boolean; onCl
   const isPending = (uid: string) => s.outgoing.some((o) => o.uid === uid);
 
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('soc.title')}
             className="border border-white/[0.08] bg-[#091511] shadow-2xl w-full max-w-md overflow-y-auto rounded-t-2xl p-4 sm:rounded-2xl" style={{ maxHeight: '92dvh', paddingBottom: 'calc(16px + var(--safe-b))' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', stiffness: 320, damping: 32 }} onClick={(e) => e.stopPropagation()}>
@@ -134,6 +135,6 @@ export function FriendsDrawer({ open, onClose, onInvite }: { open: boolean; onCl
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }

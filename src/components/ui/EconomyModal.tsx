@@ -1,3 +1,4 @@
+import { Portal } from './Portal.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Gift, LifeBuoy, Target, X } from 'lucide-react';
 import { useT } from '../../i18n/index.ts';
@@ -17,9 +18,9 @@ export function EconomyModal({ open, onClose }: { open: boolean; onClose: () => 
   const rescue = canRescue(w);
   const missions = useMissions();
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-40 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FAST_EASE} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('eco.title')}
             className="border border-white/[0.08] bg-[#091511] shadow-2xl max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-3xl p-4" initial={{ scale: 0.94, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} transition={FAST_EASE}
             onClick={(e) => e.stopPropagation()}>
@@ -81,6 +82,6 @@ export function EconomyModal({ open, onClose }: { open: boolean; onClose: () => 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }

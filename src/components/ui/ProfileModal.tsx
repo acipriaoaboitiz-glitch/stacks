@@ -1,3 +1,4 @@
+import { Portal } from './Portal.tsx';
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Trophy, X } from 'lucide-react';
@@ -23,9 +24,9 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   const totalWins = Object.values(w.wins).reduce((a, b) => a + b, 0);
   if (!prof) return null;
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label="Perfil"
             className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#091511] shadow-2xl p-4"
             initial={{ y: 24, scale: 0.96 }} animate={{ y: 0, scale: 1 }} exit={{ y: 24, opacity: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }} onClick={(e) => e.stopPropagation()}>
@@ -50,7 +51,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }
 

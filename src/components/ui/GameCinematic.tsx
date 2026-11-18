@@ -32,7 +32,7 @@ export function GameCinematic({ title, sub, tone = 'gold' }: { title: string; su
   const W = Math.max(360, Math.min(900, chars * 46 + 80));
   const fontSize = chars > 14 ? 40 : 52;
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center overflow-hidden" aria-live="assertive">
+    <div className="pointer-events-none fixed inset-0 z-[70] grid place-items-center overflow-hidden" aria-live="assertive">
       {/* enfoque: oscurece y difumina el fondo (entrada 140 ms, salida 220 ms) */}
       <motion.div className="cine-focus absolute inset-0 bg-[#05140E]/95 max-md:backdrop-blur-none md:bg-[#030D09]/75 md:backdrop-blur-md"
         initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: 1.15, times: [0, 0.122, 0.808, 1], ease: 'linear' }} />

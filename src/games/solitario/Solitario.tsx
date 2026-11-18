@@ -100,11 +100,20 @@ export default function Solitario() {
   const layout = useMemo(() => {
     const { w, h } = dim;
     if (!w || !h) return null;
-    const pad = Math.max(4, w * 0.014); const gap = Math.max(3, w * 0.012);
-    const cw = (w - pad * 2 - gap * 6) / 7; const ch = cw / FRENCH_ASPECT;
-    const tabY = pad + ch + gap * 3;
+    const pad = Math.max(4, Math.min(w, h) * 0.02);
+    // Tamaño de carta: 44 / 64 / 86 / 96 px físicos según pantalla (se divide entre el zoom de escritorio) y fila superior compacta
+    const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
+    const vw = window.innerWidth;
+    const maxPhysical = vw >= 1280 ? 96 : vw >= 1024 ? 86 : vw >= 640 ? 64 : 44;
+    const byWidth = (w - pad * 2) / (7 + 6 * 0.1);
+    const cw = Math.min(byWidth, maxPhysical / z, (h * 0.24) / (1 / FRENCH_ASPECT));
+    const ch = cw / FRENCH_ASPECT;
+    // el resto del ancho se reparte entre columnas (máximo 0,3 de carta) y el conjunto se centra
+    const gap = Math.max(3, Math.min((w - pad * 2 - 7 * cw) / 6, cw * 0.3));
+    const left = (w - (7 * cw + 6 * gap)) / 2;
+    const tabY = pad + ch + Math.max(8, ch * 0.12);
     const avail = h - tabY - pad;
-    const colX = (c: number): number => pad + c * (cw + gap);
+    const colX = (c: number): number => left + c * (cw + gap);
     const placed: Placed[] = [];
     // mazo y descarte
     s.stock.forEach((c, i) => placed.push({ card: c, x: colX(0), y: pad, z: 1 + i * 0.01, up: false, src: i === s.stock.length - 1 ? 'stock' : null }));
@@ -116,9 +125,10 @@ export default function Solitario() {
     s.found.forEach((f, fi) => f.forEach((c, i) => placed.push({ card: c, x: colX(3 + fi), y: pad, z: 1 + i * 0.01, up: true, src: i === f.length - 1 ? { kind: 'found', f: fi } : null })));
     s.tab.forEach((col, c) => {
       const down = col.filter((x) => !x.up).length; const up = col.length - down;
-      const dDown = ch * 0.17; const dUp = ch * 0.3;
+      // separación según la carta: ~10 px boca abajo y ~26 px boca arriba (en cartas de 86 px), comprimida si la columna no cabe
+      const dDown = Math.max(5, ch * 0.08); const dUp = Math.max(14, ch * 0.21);
       const need = ch + down * dDown + Math.max(0, up - 1) * dUp;
-      const k = need > avail ? Math.max(0.3, (avail - ch) / (need - ch)) : 1;
+      const k = need > avail ? Math.max(0.14, (avail - ch) / (need - ch)) : 1;
       let y = tabY;
       col.forEach((slot, j) => {
         placed.push({ card: slot.card, x: colX(c), y, z: 10 + j, up: slot.up, src: slot.up ? { kind: 'tab', col: c, idx: j } : null });
@@ -165,7 +175,7 @@ export default function Solitario() {
       header={<p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300">{t('g.solitario.name')}</p>}
       strip={<HudPills items={[{ label: t('g8.moves'), value: s.moves }, { label: t('g8.time'), value: mmss(secs) }, { label: t('g8.best'), value: best === null ? '—' : mmss(best) }]} />}
       felt={(
-        <div ref={wrap} className="relative h-full w-full overflow-hidden">
+        <div ref={wrap} className="relative h-full w-full">
           {layout && (
             <>
               {/* huecos vacíos: mazo, bases y columnas */}

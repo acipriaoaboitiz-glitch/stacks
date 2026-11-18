@@ -1,3 +1,4 @@
+import { Portal } from './Portal.tsx';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useT } from '../../i18n/index.ts';
@@ -31,9 +32,9 @@ export function ExitConfirm({ onExit }: { onExit: () => void }) {
   useBackClose(true, () => { if (finished()) onExit(); else setOpen(true); });
   useBackClose(open, () => setOpen(false));
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[95] grid place-items-center bg-black/75 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} onClick={() => setOpen(false)}>
+        <motion.div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} onClick={() => setOpen(false)}>
           <motion.div role="alertdialog" aria-modal="true" aria-label={t('exit.title')}
             className="w-full max-w-xs rounded-3xl border border-amber-500/30 bg-[#05140E] p-5 text-center shadow-[0_24px_70px_rgba(0,0,0,.65)]"
             initial={{ scale: 0.94, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} transition={{ duration: 0.16 }} onClick={(e) => e.stopPropagation()}>
@@ -46,6 +47,6 @@ export function ExitConfirm({ onExit }: { onExit: () => void }) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }

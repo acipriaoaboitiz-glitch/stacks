@@ -96,7 +96,7 @@ export default function Game2048() {
           <div className="h-full w-full [container-type:size]">
             <div className="mx-auto grid h-full place-items-center">
               <div className="relative touch-none select-none rounded-[18px] p-[2.2%]" onPointerDown={onDown} onPointerUp={onUp} onPointerCancel={() => { touch.current = null; }}
-                style={{ width: 'min(100cqw, 100cqh, 680px)', aspectRatio: '1', background: 'linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,0) 30%), linear-gradient(145deg,#10201a,#08110E)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 1px rgba(255,255,255,.07), inset 0 8px 16px rgba(0,0,0,.65), 0 10px 22px rgba(0,0,0,.5)' }}>
+                style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', aspectRatio: '1', background: 'linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,0) 30%), linear-gradient(145deg,#10201a,#08110E)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 1px rgba(255,255,255,.07), inset 0 8px 16px rgba(0,0,0,.65), 0 10px 22px rgba(0,0,0,.5)' }}>
                 <div className="relative h-full w-full">
                   {Array.from({ length: N * N }, (_, i) => (
                     <div key={i} aria-hidden className="absolute" style={{ left: `${((i % N) / N) * 100}%`, top: `${(Math.floor(i / N) / N) * 100}%`, width: `${100 / N}%`, height: `${100 / N}%`, padding: '1.1%' }}>
@@ -111,7 +111,7 @@ export default function Game2048() {
                         animate={{ x: `${tile.c * 100}%`, y: `${tile.r * 100}%`, scale: tile.merged ? [1, 1.16, 1] : 1, opacity: 1 }}
                         transition={{ x: { type: 'spring', stiffness: 620, damping: 38 }, y: { type: 'spring', stiffness: 620, damping: 38 }, scale: { duration: 0.2 }, opacity: { duration: 0.12 } }}>
                         <div className="grid h-full w-full place-items-center rounded-[12%] font-extrabold tabular-nums" style={{ background: l.bg, color: l.fg, boxShadow: `inset 0 2px 1px rgba(255,255,255,.65), inset 0 -3px 5px rgba(0,0,0,.32), 0 3px 6px rgba(0,0,0,.5)${l.glow ? `, ${l.glow}` : ''}`}}>
-                          <span className="leading-none" style={{ fontSize: `calc(min(100cqw, 100cqh, 680px) / ${N} * ${tile.v >= 1000 ? 0.27 : tile.v >= 100 ? 0.33 : 0.42})` }}>{tile.v}</span>
+                          <span className="leading-none" style={{ fontSize: `calc(min(100cqw, 100cqh, calc(740px / var(--z, 1))) / ${N} * ${tile.v >= 1000 ? 0.27 : tile.v >= 100 ? 0.33 : 0.42})` }}>{tile.v}</span>
                         </div>
                       </motion.div>
                     );

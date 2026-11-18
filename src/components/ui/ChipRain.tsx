@@ -11,7 +11,7 @@ function Burst({ n }: { n: number }) {
   const W = window.innerWidth, H = window.innerHeight;
   const tx = W / 2 - 70, ty = -H / 2 + 34; // destino relativo al centro: el saldo de la cabecera
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-[80] grid place-items-center">
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[65] grid place-items-center">
       {chips.map((c, i) => (
         <motion.span key={i} className="absolute block size-6 rounded-full"
           style={{ background: 'radial-gradient(circle at 35% 30%, #FFF3B0, #F5D061 45%, #B8860B 100%)', boxShadow: 'inset 0 0 0 2px #9A7018, inset 0 0 0 4px rgba(255,243,176,.55), 0 3px 6px rgba(0,0,0,.5)' }}

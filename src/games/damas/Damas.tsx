@@ -18,6 +18,8 @@ import { useDuel } from '../shared/duel.ts';
 import { applyDamas, botMove, legalMoves, newDamas, type DAction, type DState, type Piece, type Side } from './engine.ts';
 
 const WIN_BONUS = 100;
+/** Duración de cada salto (vuelo + pausa para ver la captura). */
+const HOP = 300;
 const info = (i: number, name: string, human: boolean): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: !human, online: true });
 
 const LOOK: Record<Side, { bg: string; ring: string; crown: string }> = {
@@ -83,10 +85,12 @@ export default function Damas() {
   const lastMove = s?.last ?? null;
   useEffect(() => {
     if (!seq || !lastMove) return;
-    const id = gameTimeout(() => feedback(lastMove.captured.length ? 'capture' : 'wood'), 90 + (lastMove.path.length - 1) * 220);
-    const id2 = gameTimeout(() => setDoneSeq(seq), 260 * lastMove.path.length + 60);
+    // un sonido por salto (300 ms cada uno) y, al aterrizar el último, el golpe final
+    const hops = lastMove.path.length;
+    const ids = lastMove.path.map((_, k) => gameTimeout(() => feedback(lastMove.captured[k] !== undefined ? 'capture' : 'wood'), HOP * k + HOP * 0.72));
+    ids.push(gameTimeout(() => setDoneSeq(seq), HOP * hops + 120));
     setSel(null);
-    return () => { window.clearTimeout(id); window.clearTimeout(id2); };
+    return () => ids.forEach((id) => window.clearTimeout(id));
   }, [seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const winner = s?.winner ?? null;
@@ -132,23 +136,42 @@ export default function Damas() {
           <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, s.players[oppIdx]!.name, s.players[oppIdx]!.human)} tone="them" mano={false} turn={s.winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
           <div className="min-h-0 w-full flex-1 [container-type:size]">
             <div className="grid h-full place-items-center">
-              <div className="rounded-[14px] p-[1.8%]" style={{ width: 'min(100cqw, 100cqh, 680px)', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
+              <div className="rounded-[14px] p-[1.8%]" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
                 <div className="relative aspect-square overflow-hidden rounded-[6px]">
                   <Squares />
                   {/* destinos válidos */}
                   {targets.map((m) => { const v = view(m.to); return <span key={m.to} className="pointer-events-none absolute grid place-items-center" style={{ left: `${v.c * 12.5}%`, top: `${v.r * 12.5}%`, width: '12.5%', height: '12.5%' }}><span className="size-[34%] rounded-full bg-[#FCE38A]/85 shadow-[0_0_8px_rgba(252,227,138,.8)]" /></span>; })}
+                  {lastMove && doneSeq !== s.seq && lastMove.captured.map((ci, k) => {
+                    const v = view(ci);
+                    const foe: Piece = { side: (1 - s.board[lastMove.to]!.side) as Side, king: false };
+                    return (
+                      <motion.div key={`cap-${s.seq}-${ci}`} className="pointer-events-none absolute left-0 top-0" style={{ width: '12.5%', height: '12.5%', transform: `translate(${v.c * 100}%, ${v.r * 100}%)`, zIndex: 2 }}
+                        initial={{ opacity: 1, scale: 1 }} animate={{ opacity: 0, scale: 0.4 }} transition={{ delay: (HOP * k + HOP * 0.72) / 1000, duration: 0.16 }}>
+                        <Disc p={foe} />
+                      </motion.div>
+                    );
+                  })}
                   {s.board.map((p, i) => {
                     if (!p) return null;
                     const v = view(i);
                     const fresh = lastMove !== null && lastMove.to === i && doneSeq !== s.seq;
                     const pts = fresh ? [lastMove.from, ...lastMove.path].map(view) : [v];
+                    const n = pts.length - 1;
+                    // fotogramas: despegue, vuelo parabólico (escala) y aterrizaje con pausa antes del siguiente salto
+                    const xs: string[] = [`${pts[0]!.c * 100}%`]; const ys: string[] = [`${pts[0]!.r * 100}%`]; const tm: number[] = [0];
+                    const sc: number[] = [1]; const tsc: number[] = [0];
+                    for (let k = 1; k <= n; k++) {
+                      xs.push(`${pts[k]!.c * 100}%`, `${pts[k]!.c * 100}%`); ys.push(`${pts[k]!.r * 100}%`, `${pts[k]!.r * 100}%`);
+                      tm.push((k - 1 + 0.72) / Math.max(1, n), k / Math.max(1, n));
+                      sc.push(1.32, 1, 1); tsc.push((k - 1 + 0.36) / Math.max(1, n), (k - 1 + 0.72) / Math.max(1, n), k / Math.max(1, n));
+                    }
                     return (
                       <motion.div key={`${i}-${p.side}-${p.king}`} className="absolute left-0 top-0" style={{ width: '12.5%', height: '12.5%', willChange: 'transform', zIndex: fresh ? 3 : 1 }}
                         initial={{ x: `${pts[0]!.c * 100}%`, y: `${pts[0]!.r * 100}%` }}
-                        animate={fresh && pts.length > 1
-                          ? { x: pts.map((q) => `${q.c * 100}%`), y: pts.map((q) => `${q.r * 100}%`), scale: pts.flatMap((_, k) => (k === 0 ? [1] : [1.28, 1])) }
-                          : { x: `${v.c * 100}%`, y: `${v.r * 100}%`, scale: 1 }}
-                        transition={{ duration: Math.max(0.01, 0.24 * (pts.length - 1)), ease: 'easeInOut' }}>
+                        animate={fresh && n > 0 ? { x: xs, y: ys, scale: sc } : { x: `${v.c * 100}%`, y: `${v.r * 100}%`, scale: 1 }}
+                        transition={fresh && n > 0
+                          ? { x: { duration: (HOP * n) / 1000, times: tm, ease: 'easeInOut' }, y: { duration: (HOP * n) / 1000, times: tm, ease: 'easeInOut' }, scale: { duration: (HOP * n) / 1000, times: tsc, ease: 'easeInOut' } }
+                          : { duration: 0.01 }}>
                         <button type="button" disabled={!movable.has(i)} onClick={() => tap(i)} aria-label={`${v.r + 1}-${v.c + 1}`} className="relative block h-full w-full touch-manipulation">
                           <Disc p={p} />
                           {sel === i && <span className="absolute inset-[7%] rounded-full ring-[3px] ring-[#FCE38A] shadow-[0_0_12px_rgba(252,227,138,.9)]" />}

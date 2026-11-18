@@ -56,7 +56,7 @@ function Board({ s, canPlay, onCell }: { s: TState; canPlay: boolean; onCell: (i
   const dx = x2 - x1; const dy = y2 - y1; const len = Math.hypot(dx, dy) || 1;
   const ext = 34;
   return (
-    <div className="relative aspect-square" style={{ width: 'min(100cqw, 100cqh, 680px)' }}>
+    <div className="relative aspect-square" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))' }}>
       <svg viewBox="0 0 300 300" className="absolute inset-0 h-full w-full" shapeRendering="geometricPrecision" aria-hidden="true">
         <defs>
           <linearGradient id="tr-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#4a2e1a" /><stop offset=".5" stopColor="#32200f" /><stop offset="1" stopColor="#21140a" /></linearGradient>
@@ -173,7 +173,7 @@ export default function TresEnRaya() {
       felt={(
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
           <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, opp.name, opp.human)} tone="them" mano={false} turn={winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
-          <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, 680px)', height: 'min(100cqw, 100cqh, 680px)' }}><Board s={s} canPlay={myTurn} onCell={place} /></div></div>
+          <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', height: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))' }}><Board s={s} canPlay={myTurn} onCell={place} /></div></div>
         </div>
       )}
       bottom={(

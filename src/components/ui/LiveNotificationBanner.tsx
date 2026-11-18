@@ -58,7 +58,7 @@ function Pill({ n }: { n: Notice }) {
 export function LiveNotificationBanner() {
   const { notices } = useSocial();
   return (
-    <div className="pointer-events-none fixed left-1/2 z-[70] flex w-full -translate-x-1/2 flex-col items-center gap-1.5 px-2" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }} aria-live="polite">
+    <div className="pointer-events-none fixed left-1/2 z-[60] flex w-full -translate-x-1/2 flex-col items-center gap-1.5 px-2" style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }} aria-live="polite">
       <AnimatePresence initial={false}>
         {notices.map((n) => <Pill key={n.id} n={n} />)}
       </AnimatePresence>

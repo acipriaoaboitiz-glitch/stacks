@@ -134,7 +134,7 @@ export default function Ajedrez() {
           <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, s.players[oppIdx]!.name, s.players[oppIdx]!.human)} tone="them" mano={false} turn={s.winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
           <div className="min-h-0 w-full flex-1 [container-type:size]">
             <div className="grid h-full place-items-center">
-              <div className="relative rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, 680px)', padding: '4.6%', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
+              <div className="relative rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', padding: '4.6%', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
                 {/* coordenadas discretas en el marco */}
                 {Array.from({ length: 8 }, (_, k) => {
                   const file = flip ? 7 - k : k; const rank = flip ? k + 1 : 8 - k;
@@ -148,7 +148,7 @@ export default function Ajedrez() {
                 <div className="relative aspect-square overflow-hidden rounded-[4px]">
                   <Squares />
                   {last && [last.from, last.to].map((q) => { const v = view(q); return <span key={q} className="pointer-events-none absolute bg-[#FCE38A]/25" style={{ left: `${v.c * 12.5}%`, top: `${v.r * 12.5}%`, width: '12.5%', height: '12.5%' }} />; })}
-                  {kingIdx >= 0 && (() => { const v = view(kingIdx); return <span className="pointer-events-none absolute" style={{ left: `${v.c * 12.5}%`, top: `${v.r * 12.5}%`, width: '12.5%', height: '12.5%', background: 'radial-gradient(circle, rgba(220,38,38,.75) 0%, rgba(220,38,38,.25) 55%, transparent 72%)' }} />; })()}
+                  {kingIdx >= 0 && (() => { const v = view(kingIdx); return <motion.span className="pointer-events-none absolute" animate={{ opacity: [0.55, 1, 0.55] }} transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }} style={{ left: `${v.c * 12.5}%`, top: `${v.r * 12.5}%`, width: '12.5%', height: '12.5%', background: 'radial-gradient(circle, rgba(220,38,38,.8) 0%, rgba(220,38,38,.3) 55%, transparent 72%)' }} />; })()}
                   {sel !== null && (() => { const v = view(sel); return <span className="pointer-events-none absolute ring-[3px] ring-inset ring-[#FCE38A]" style={{ left: `${v.c * 12.5}%`, top: `${v.r * 12.5}%`, width: '12.5%', height: '12.5%' }} />; })()}
                   {s.board.map((p, i) => {
                     if (!p) return null;
@@ -157,8 +157,8 @@ export default function Ajedrez() {
                     const from = fresh ? view(last.from) : v;
                     return (
                       <motion.div key={`${i}-${p}`} className="pointer-events-none absolute left-0 top-0" style={{ width: '12.5%', height: '12.5%', willChange: 'transform', zIndex: fresh ? 3 : 1 }}
-                        initial={{ x: `${from.c * 100}%`, y: `${from.r * 100}%` }} animate={{ x: `${v.c * 100}%`, y: `${v.r * 100}%`, scale: fresh ? [1, 1.12, 1] : 1 }}
-                        transition={{ duration: fresh ? 0.26 : 0.01, ease: 'easeInOut' }}>
+                        initial={{ x: `${from.c * 100}%`, y: `${from.r * 100}%` }} animate={{ x: `${v.c * 100}%`, y: `${v.r * 100}%`, scale: fresh ? [1, 1.12, 1] : sel === i ? 1.12 : 1 }}
+                        transition={{ x: { type: 'spring', stiffness: 300, damping: 30 }, y: { type: 'spring', stiffness: 300, damping: 30 }, scale: { duration: fresh ? 0.28 : 0.14 } }}>
                         <span className="absolute inset-[4%] block"><ChessPiece kind={kindOf(p)} side={sideOf(p)} /></span>
                       </motion.div>
                     );

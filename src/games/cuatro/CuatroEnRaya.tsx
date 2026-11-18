@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { botName, useT } from '../../i18n/index.ts';
@@ -43,9 +43,12 @@ const Face = memo(function Face() {
   );
 });
 
-function Board({ s, canPlay, onCol }: { s: CState; canPlay: boolean; onCol: (c: number) => void }) {
+function Board({ s, canPlay, onCol, mine }: { s: CState; canPlay: boolean; onCol: (c: number) => void; mine: Disc }) {
+  // ficha fantasma (solo con ratón): marca arriba y en la casilla donde caerá
+  const [hover, setHover] = useState<number | null>(null);
+  const landing = hover !== null && canPlay ? dropRow(s.board, hover) : -1;
   return (
-    <div className="rounded-[18px] p-[2.4%]" style={{ background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d 60%,#1c1008)', boxShadow: 'inset 0 1.5px 0 rgba(252,227,138,.35), inset 0 -3px 6px rgba(0,0,0,.6), 0 10px 20px rgba(0,0,0,.5)', width: 'min(100cqw, calc(100cqh * 7 / 6), 680px)' }}>
+    <div className="rounded-[18px] p-[2.4%]" style={{ background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d 60%,#1c1008)', boxShadow: 'inset 0 1.5px 0 rgba(252,227,138,.35), inset 0 -3px 6px rgba(0,0,0,.6), 0 10px 20px rgba(0,0,0,.5)', width: 'min(100cqw, calc(100cqh * 7 / 6), calc(740px / var(--z, 1)))' }}>
       <div className="relative" style={{ aspectRatio: `${COLS} / ${ROWS}` }}>
         {/* fondo del tablero (se ve por los huecos) y fichas que caen por detrás */}
         <div className="absolute inset-0 overflow-hidden rounded-[10px] bg-[#04110b]">
@@ -61,7 +64,17 @@ function Board({ s, canPlay, onCol }: { s: CState; canPlay: boolean; onCol: (c: 
             );
           })}
         </div>
+        {landing >= 0 && hover !== null && (
+          <span aria-hidden className="pointer-events-none absolute" style={{ left: `${(hover / COLS) * 100}%`, top: `${(landing / ROWS) * 100}%`, width: `${100 / COLS}%`, height: `${100 / ROWS}%`, zIndex: 0 }}>
+            <span className="absolute inset-[7%] rounded-full" style={{ background: DISC[mine].bg, opacity: 0.32 }} />
+          </span>
+        )}
         <Face />
+        {landing >= 0 && hover !== null && (
+          <span aria-hidden className="pointer-events-none absolute" style={{ left: `${(hover / COLS) * 100}%`, top: `${-(100 / ROWS) * 0.95}%`, width: `${100 / COLS}%`, height: `${100 / ROWS}%` }}>
+            <span className="absolute inset-[10%] rounded-full" style={{ background: DISC[mine].bg, boxShadow: DISC[mine].ring, opacity: 0.85 }} />
+          </span>
+        )}
         {/* halo dorado sobre las 4 fichas conectadas */}
         {s.line && (
           <svg viewBox={`0 0 ${COLS * 100} ${ROWS * 100}`} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
@@ -73,7 +86,7 @@ function Board({ s, canPlay, onCol }: { s: CState; canPlay: boolean; onCol: (c: 
         )}
         <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }} role="group" aria-label="4 en Raya">
           {Array.from({ length: COLS }, (_, c) => (
-            <button key={c} type="button" aria-label={String(c + 1)} disabled={!canPlay || dropRow(s.board, c) < 0} onClick={() => onCol(c)} className="touch-manipulation" />
+            <button key={c} type="button" aria-label={String(c + 1)} disabled={!canPlay || dropRow(s.board, c) < 0} onClick={() => onCol(c)} onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHover(c); }} onPointerLeave={() => setHover(null)} className="touch-manipulation" />
           ))}
         </div>
       </div>
@@ -147,7 +160,7 @@ export default function CuatroEnRaya() {
       felt={(
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
           <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, opp.name, opp.human)} tone="them" mano={false} turn={winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
-          <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="grid h-full place-items-center"><Board s={s} canPlay={myTurn} onCol={drop} /></div></div>
+          <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="grid h-full place-items-center"><Board s={s} canPlay={myTurn} onCol={drop} mine={myIdx} /></div></div>
         </div>
       )}
       bottom={(

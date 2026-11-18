@@ -1,3 +1,4 @@
+import { Portal } from './Portal.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useId, useState } from 'react';
@@ -68,9 +69,9 @@ export function Group({ title, children }: { title?: string; children: ReactNode
 /** Panel oscuro centrado (estilo Apple Arcade): fondo sólido sin desenfoque, para mantener los 60 FPS en móvil. */
 export function Sheet({ open, onClose, title, label, children, max = 'max-w-md' }: { open: boolean; onClose: () => void; title: string; label: string; children: ReactNode; max?: string }) {
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-black/70 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={label}
             className={`max-h-[92dvh] w-full ${max} overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#091511] p-4 shadow-2xl`}
             initial={{ y: 22, scale: 0.97, opacity: 0 }} animate={{ y: 0, scale: 1, opacity: 1 }} exit={{ y: 22, opacity: 0 }}
@@ -83,7 +84,7 @@ export function Sheet({ open, onClose, title, label, children, max = 'max-w-md' 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }
 

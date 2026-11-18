@@ -1,3 +1,4 @@
+import { Portal } from './Portal.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import type { GameInfo } from '../../games/registry.ts';
@@ -9,9 +10,9 @@ export function RulesModal({ game, onClose }: { game: GameInfo | null; onClose: 
   useBackClose(Boolean(game), onClose);
   const t = useT();
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {game && (
-        <motion.div className="fixed inset-0 z-40 flex items-end justify-center" style={{ background: '#000a' }}
+        <motion.div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: '#000a' }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={`${t('lobby.rulesPick')} · ${t(`g.${game.id}.name`)}`}
             className="w-full max-w-md rounded-t-2xl border border-white/[0.08] bg-[#091511] shadow-2xl p-5"
@@ -42,6 +43,6 @@ export function RulesModal({ game, onClose }: { game: GameInfo | null; onClose: 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }

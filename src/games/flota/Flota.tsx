@@ -182,13 +182,13 @@ export default function Flota() {
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
           <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(foeIdx, foe.name, foe.human)} tone="them" mano={false} turn={s.phase === 'battle' && s.turn === foeIdx} deadline={null} cards={0} /></div>
           {placing ? (
-            <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, 680px)', height: 'min(100cqw, 100cqh, 680px)' }}><Radar fleet={s.fleets[myIdx]} shots={s.shots[myIdx]} reveal pulse={null} dim={iAmReady} /></div></div>
+            <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', height: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))' }}><Radar fleet={s.fleets[myIdx]} shots={s.shots[myIdx]} reveal pulse={null} dim={iAmReady} /></div></div>
           ) : (
             <>
-              <div className="min-h-0 w-full flex-[1.5] [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, 680px)', height: 'min(100cqw, 100cqh, 680px)' }}>
+              <div className="min-h-0 w-full flex-[1.5] [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', height: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))' }}>
                 <Radar fleet={s.fleets[foeIdx]} shots={s.shots[foeIdx]} reveal={s.phase === 'over'} sweep={s.phase === 'battle'} onCell={myTurn ? fire : undefined} pulse={pulseOn(foeIdx)} />
               </div></div>
-              <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, 680px)', height: 'min(100cqw, 100cqh, 680px)' }}>
+              <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', height: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))' }}>
                 <Radar fleet={s.fleets[myIdx]} shots={s.shots[myIdx]} reveal pulse={pulseOn(myIdx)} />
               </div></div>
             </>

@@ -1,3 +1,4 @@
+import { Portal } from './Portal.tsx';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Medal, Trophy, X } from 'lucide-react';
@@ -44,9 +45,9 @@ export function LeaderboardModal({ open, onClose }: { open: boolean; onClose: ()
   const MEDAL = ['#FCE38A', '#CBD5E1', '#D58A4F'];
   const medal = (i: number): ReactNode => (i < 3 ? <Medal size={16} strokeWidth={1.75} className="mx-auto" style={{ color: MEDAL[i] }} aria-label={String(i + 1)} /> : String(i + 1));
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('lb.title')}
             className="border border-white/[0.08] bg-[#091511] shadow-2xl w-full max-w-md overflow-y-auto rounded-t-2xl p-4 sm:rounded-2xl" style={{ maxHeight: '92dvh', paddingBottom: 'calc(16px + var(--safe-b))' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', stiffness: 320, damping: 32 }} onClick={(e) => e.stopPropagation()}>
@@ -92,6 +93,6 @@ export function LeaderboardModal({ open, onClose }: { open: boolean; onClose: ()
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }

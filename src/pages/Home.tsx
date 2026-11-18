@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Gem, Globe, Play, Trophy, Users, X } from 'lucide-react';
+import { Portal } from '../components/ui/Portal.tsx';
 import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
 import { IconBtn, QuickButtons } from '../components/ui/QuickButtons.tsx';
@@ -45,7 +46,7 @@ const Slide = memo(function Slide({ game }: { game: GameInfo; active: boolean })
       <span className="font-mono relative z-10 flex w-fit items-center gap-1 rounded-full px-2.5 py-[3px] text-[11px]" style={{ background: '#000a', color: game.accent, border: `1px solid ${game.accent}55` }}>
         <Users size={11} aria-hidden /> {t(`g.${game.id}.pl`)}
       </span>
-      <div className="relative z-10 grid place-items-center">
+      <div className="relative z-10 grid origin-center place-items-center lg:scale-[1.08] xl:scale-[1.2]">
         <svg aria-hidden viewBox="0 0 200 200" shapeRendering="geometricPrecision" className="absolute size-[214px]" style={{ opacity: 0.9 }}>
           <defs><linearGradient id={`mg-${game.id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff3b0" /><stop offset=".5" stopColor={game.accent} /><stop offset="1" stopColor="#7a4a06" /></linearGradient></defs>
           <circle cx="100" cy="100" r="92" fill="rgba(0,0,0,.34)" stroke={`url(#mg-${game.id})`} strokeWidth="3" />
@@ -66,9 +67,9 @@ function RulesPicker({ open, onClose, onPick }: { open: boolean; onClose: () => 
   const t = useT();
   useBackClose(open, onClose);
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('lobby.rulesPick')} className="glass-panel w-full max-w-md rounded-t-3xl p-5"
             style={{ paddingBottom: 'calc(20px + var(--safe-b))' }} initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }} onClick={(e) => e.stopPropagation()}>
@@ -87,7 +88,7 @@ function RulesPicker({ open, onClose, onPick }: { open: boolean; onClose: () => 
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }
 
@@ -249,15 +250,15 @@ export default function Home() {
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
         {/* Barra de secciones con selector deslizante */}
-        <div role="tablist" aria-label="Secciones" className="no-scrollbar relative z-20 flex w-full max-w-full gap-0.5 overflow-x-auto rounded-2xl border border-white/[0.08] bg-white/[0.035] p-1">
+        <div className="relative z-20 flex w-full justify-center"><div role="tablist" aria-label="Secciones" className="no-scrollbar inline-flex max-w-[95vw] items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-[#081711] p-1.5">
           {CATS.map((c) => (
             <button key={c.id} type="button" role="tab" aria-selected={cat === c.id} onClick={() => { if (cat !== c.id) { feedback('tap'); setCat(c.id); } }}
-              className={`relative shrink-0 touch-manipulation whitespace-nowrap rounded-xl px-2.5 py-2 text-[11px] font-bold transition-colors ${cat === c.id ? 'text-[#2a1d02]' : 'text-white/55 active:text-white'}`}>
-              {cat === c.id && <motion.span layoutId="lobby-category" aria-hidden className="absolute inset-0 rounded-xl bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] shadow-[0_2px_10px_rgba(212,175,55,.35)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+              className={`relative shrink-0 touch-manipulation whitespace-nowrap rounded-full px-3.5 py-2 text-[11.5px] font-bold transition-colors lg:px-5 lg:text-[13px] ${cat === c.id ? 'text-[#2a1d02]' : 'text-white/55 active:text-white'}`}>
+              {cat === c.id && <motion.span layoutId="lobby-category" aria-hidden className="absolute inset-0 rounded-full bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] shadow-[0_2px_10px_rgba(212,175,55,.35)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
               <span className="relative">{t(c.key)}</span>
             </button>
           ))}
-        </div>
+        </div></div>
 
         {/* polvo dorado flotando muy despacio */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -267,12 +268,12 @@ export default function Home() {
         <div aria-hidden />
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
-        <motion.div key={cat} className="relative z-10 w-full" style={{ height: 'min(40dvh, 360px)' }} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
+        <motion.div key={cat} className="relative z-10 h-[min(40dvh,360px)] w-full lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
           <div ref={scroller} onScroll={onScroll} onPointerMove={tilt} onPointerLeave={untilt} role="group" aria-label="Juegos"
-            className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain]">
+            className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain] lg:gap-3 lg:px-[calc(50%-calc(190px/var(--z,1)))] xl:px-[calc(50%-calc(210px/var(--z,1)))]">
             {LIST.map((g, i) => (
               <div key={g.id} ref={(n) => { cards.current[i] = n; }}
-                className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform"
+                className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform lg:h-[calc(min(430px,50dvh)/var(--z,1))] lg:w-[calc(380px/var(--z,1))] xl:h-[calc(min(470px,54dvh)/var(--z,1))] xl:w-[calc(420px/var(--z,1))]"
                 role="group" aria-label={t(`g.${g.id}.name`)} aria-current={i === cur} onClick={() => { if (i !== cur) { feedback('tap'); goTo(i); } }}>
                 <div ref={(n) => { inner.current[i] = n; }} className="h-full w-full rounded-[28px] transition-[box-shadow,transform] duration-200 ease-out"
                   style={{ boxShadow: i === cur ? `0 0 0 1px ${g.accent}aa, 0 14px 34px rgba(0,0,0,.55), 0 0 30px ${g.accent}44` : '0 8px 18px rgba(0,0,0,.5)' }}>
@@ -288,7 +289,7 @@ export default function Home() {
         </motion.div>
 
         {/* Acciones del juego elegido: multijugador (IA o sala) o individual (modo + Jugar ahora) */}
-        <div className="relative z-10 grid w-full max-w-sm gap-2">
+        <div className="relative z-10 grid w-full max-w-sm gap-2 lg:max-w-[calc(380px/var(--z,1))] xl:max-w-[calc(420px/var(--z,1))]">
           {game.solo ? (
             <>
               <Segmented value={modes[game.id] && game.solo.modes.includes(modes[game.id]!) ? modes[game.id]! : game.solo.def}

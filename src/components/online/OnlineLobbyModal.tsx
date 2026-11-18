@@ -1,3 +1,4 @@
+import { Portal } from '../ui/Portal.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Copy, Crown, Link2, Loader2, LogOut, UserPlus, Wifi, WifiOff, X } from 'lucide-react';
@@ -304,9 +305,9 @@ export function OnlineLobbyModal({ game, existing, initialCode, onClose, onStart
   const close = () => { if (!started.current) leave(); onClose(); };
 
   return (
-    <AnimatePresence>
+    <Portal><AnimatePresence>
       {game && (
-        <motion.div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center" style={{ background: '#000c' }}
+        <motion.div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" style={{ background: '#000c' }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={close}>
           <motion.div role="dialog" aria-modal="true" aria-label={`${t('lobby.online')} · ${t(`g.${game.id}.name`)}`}
             className="glass-panel w-full max-w-md overflow-y-auto rounded-t-3xl p-4 sm:rounded-3xl"
@@ -348,6 +349,6 @@ export function OnlineLobbyModal({ game, existing, initialCode, onClose, onStart
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Portal>
   );
 }
