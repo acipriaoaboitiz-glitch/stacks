@@ -17,7 +17,7 @@ const LOOK: Record<CasinoValue, { base: string; stripe: string; ink: string; rin
 export function CasinoChip({ value, size = 40, onClick, disabled, label }: { value: CasinoValue; size?: number; onClick?: () => void; disabled?: boolean; label?: string }) {
   const c = LOOK[value];
   const svg = (
-    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" width={size} height={size} viewBox="0 0 100 100" aria-hidden style={{ display: 'block' }}>
       <circle cx="50" cy="50" r="48" fill={c.base} stroke="#000" strokeOpacity=".45" strokeWidth="2" />
       {Array.from({ length: 12 }, (_, i) => <rect key={i} x="43" y="2" width="14" height="13" rx="2" fill={c.stripe} transform={`rotate(${i * 30} 50 50)`} />)}
       <circle cx="50" cy="50" r="33" fill="none" stroke={c.ring} strokeWidth="3" strokeDasharray="4 3" />

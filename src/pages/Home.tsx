@@ -35,18 +35,18 @@ const Slide = memo(function Slide({ game, active }: { game: GameInfo; active: bo
   const [c1, c2] = game.tint;
   return (
     <div className="relative grid h-full w-full content-between overflow-hidden rounded-[28px] p-4"
-      style={{ background: `radial-gradient(ellipse at 50% 36%, ${game.accent}33, transparent 60%), linear-gradient(160deg, ${c1}, ${c2} 85%)`, border: `1.5px solid ${game.accent}${active ? 'cc' : '66'}` }}>
+      style={{ background: `radial-gradient(ellipse at 50% -4%, rgba(255,236,190,.24), transparent 52%), radial-gradient(ellipse at 50% 40%, ${game.accent}40, transparent 62%), linear-gradient(160deg, ${c1}, ${c2} 85%)`, border: `1.5px solid ${game.accent}${active ? 'cc' : '66'}` }}>
       <span className="font-mono relative z-10 flex w-fit items-center gap-1 rounded-full px-2.5 py-[3px] text-[11px]" style={{ background: '#000a', color: game.accent, border: `1px solid ${game.accent}55` }}>
         <Users size={11} aria-hidden /> {t(`g.${game.id}.pl`)}
       </span>
       <div className="relative z-10 grid place-items-center">
-        <svg aria-hidden viewBox="0 0 200 200" className="absolute size-[200px]" style={{ opacity: 0.9 }}>
+        <svg aria-hidden viewBox="0 0 200 200" shapeRendering="geometricPrecision" className="absolute size-[214px]" style={{ opacity: 0.9 }}>
           <defs><linearGradient id={`mg-${game.id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff3b0" /><stop offset=".5" stopColor={game.accent} /><stop offset="1" stopColor="#7a4a06" /></linearGradient></defs>
-          <circle cx="100" cy="100" r="92" fill="rgba(0,0,0,.28)" stroke={`url(#mg-${game.id})`} strokeWidth="3" />
+          <circle cx="100" cy="100" r="92" fill="rgba(0,0,0,.34)" stroke={`url(#mg-${game.id})`} strokeWidth="3" />
           <circle cx="100" cy="100" r="82" fill="none" stroke={`url(#mg-${game.id})`} strokeWidth="1.5" strokeDasharray="2 7" />
           <circle cx="100" cy="100" r="72" fill="none" stroke={game.accent} strokeWidth=".8" opacity=".5" />
         </svg>
-        <GameArt id={game.id} size={138} />
+        <GameArt id={game.id} size={176} />
       </div>
       <div className="relative z-10">
         <h3 className="gold-text font-[var(--font-display)] text-[28px] font-bold leading-none">{t(`g.${game.id}.name`)}</h3>

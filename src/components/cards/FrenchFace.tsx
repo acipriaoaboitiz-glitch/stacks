@@ -73,7 +73,7 @@ function FrenchFaceDrawn({ card }: { card: FrenchCard }) {
   const isFace = rank >= 11;
   const px = { x0: 150, x1: 330, y0: 175, y1: 585 };
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" aria-hidden="true" preserveAspectRatio="none" style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" aria-hidden="true" preserveAspectRatio="none" style={{ display: 'block' }}>
       <SvgDefs />
       <Frame accent={suit === 'corazones' || suit === 'diamantes' ? '#7a1f2b' : '#26303f'} />
       {[false, true].map((inv) => (
@@ -119,7 +119,7 @@ export function CardBackArt({ variant: forced, seal = APP_NAME }: { variant?: Ba
   const id = `bk-${variant}`;
   const cx = W / 2, cy = H / 2;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" aria-hidden="true" preserveAspectRatio="xMidYMid slice" style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" aria-hidden="true" preserveAspectRatio="xMidYMid slice" style={{ display: 'block' }}>
       <SvgDefs />
       <defs>
         <pattern id={id} width="56" height="56" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">

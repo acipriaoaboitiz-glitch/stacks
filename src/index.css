@@ -276,3 +276,22 @@ html.is-standalone .cine-focus { background: rgba(4, 18, 12, .92); -webkit-backd
 
 /* App instalada: en una mesa el lienzo queda clavado a la pantalla (100dvh), sin scroll ni rebote. */
 html.is-standalone.table-lock body { position: fixed; inset: 0; width: 100%; height: 100dvh; overflow: hidden; }
+
+/* ── Mesa: marco de cuero oscuro cosido + fieltro con sombra interior profunda ── */
+.table-leather {
+  --lw: clamp(7px, 1.9vw, 13px);
+  padding: var(--lw);
+  border-radius: clamp(26px, 5.8vw, 44px);
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 28%),
+    linear-gradient(145deg, #1f1a16 0%, #14110F 48%, #0b0908 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.08), inset 0 -3px 8px rgba(0,0,0,.65), 0 12px 28px rgba(0,0,0,.55), 0 2px 0 rgba(0,0,0,.8);
+}
+/* doble costura dorada sutil */
+.table-leather::before, .table-leather::after { content: ''; position: absolute; pointer-events: none; z-index: 2; border-radius: inherit; }
+.table-leather::before { inset: 2.5px; border: 1.5px dashed rgba(212,175,55,.42); }
+.table-leather::after { inset: calc(var(--lw) - 3px); border: 1px dashed rgba(212,175,55,.26); border-radius: calc(clamp(26px, 5.8vw, 44px) - var(--lw) + 3px); }
+.table-felt {
+  border-radius: calc(clamp(26px, 5.8vw, 44px) - var(--lw));
+  box-shadow: inset 0 0 48px rgba(0,0,0,.42), inset 0 3px 10px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.7);
+}

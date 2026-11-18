@@ -20,7 +20,7 @@ export function Chip({
 }: { value: ChipValue; size?: number; onClick?: () => void; disabled?: boolean; label?: string }) {
   const c = COLORS[value];
   const svg = (
-    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" style={{ display: 'block' }}>
       <defs>
         <radialGradient id={`chip-${value}`} cx="35%" cy="30%" r="80%">
           <stop offset="0" stopColor="#fff" stopOpacity=".35" />

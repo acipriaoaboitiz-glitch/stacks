@@ -42,7 +42,7 @@ function CupBox({ dice, covered, hits, unit, shakeKey, onTap, label, dir = 1 }: 
     <motion.div key={shakeKey} initial={{ x: 0, y: 0, rotate: 0 }} animate={{ x: [0, -7, 7, -6, 6, -3, 0], y: [0, -4, 2, -3, 1, 0, 0], rotate: [0, -6, 6, -5, 5, -2, 0] }} transition={{ duration: shakeKey ? 0.7 : 0 }}
       className="relative" style={{ width: `calc(${unit} * 3.9)`, height: `calc(${unit} * 3)`, willChange: 'transform' }}>
       <div className="absolute inset-0 flex flex-wrap content-center items-center justify-center" style={{ gap: `calc(${unit} * 0.14)`, padding: `calc(${unit} * 0.3) calc(${unit} * 0.2) 0` }}>
-        {dice.map((d, i) => <Die key={i} face={d} size={covered ? `calc(${unit} * 0.62)` : unit} hit={hits?.[i]} dim={hits !== undefined && !hits[i]} />)}
+        {dice.map((d, i) => <Die key={i} face={d} size={covered ? `calc(${unit} * 0.5)` : unit} hit={hits?.[i]} dim={hits !== undefined && !hits[i]} />)}
       </div>
       <motion.button type="button" aria-label={label} onClick={onTap} disabled={!onTap}
         initial={false} animate={covered ? { x: 0, y: 0, rotate: 0, scale: 1 } : { x: `${78 * dir}%`, y: '-58%', rotate: 28 * dir, scale: 0.55 }} transition={{ type: 'spring', stiffness: 320, damping: 24 }}

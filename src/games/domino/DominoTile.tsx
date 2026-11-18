@@ -6,13 +6,15 @@ const PIPS: Record<number, (keyof typeof P)[]> = {
   0: [], 1: ['c'], 2: ['tl', 'br'], 3: ['tl', 'c', 'br'], 4: ['tl', 'tr', 'bl', 'br'], 5: ['tl', 'tr', 'c', 'bl', 'br'], 6: ['tl', 'tr', 'ml', 'mr', 'bl', 'br'],
 };
 
+/** Punto hundido: aro de luz abajo-derecha, pozo negro con degradado y reflejo mínimo. */
 function Face({ n, x }: { n: number; x: number }) {
   return (
     <g transform={`translate(${x} 0)`}>
       {PIPS[n]!.map((k) => (
         <g key={k}>
-          <circle cx={P[k][0]} cy={P[k][1]} r="5.6" fill="#B8860B" opacity=".55" />
-          <circle cx={P[k][0]} cy={P[k][1]} r="4.6" fill="#16120a" />
+          <circle cx={P[k][0] + 0.5} cy={P[k][1] + 0.8} r="5.4" fill="#fff" opacity=".85" />
+          <circle cx={P[k][0]} cy={P[k][1]} r="5" fill="url(#dm-pip)" />
+          <circle cx={P[k][0] - 1.3} cy={P[k][1] - 1.5} r="1.1" fill="#fff" opacity=".28" />
         </g>
       ))}
     </g>
@@ -34,25 +36,44 @@ interface Props {
   className?: string;
 }
 
-/** Ficha de dominó de marfil satinado con línea divisoria dorada y puntos grabados en negro y oro (vectorial, nítida a cualquier tamaño). */
+/**
+ * Ficha de dominó de marfil con grosor real (canto inferior y derecho en sombra de marfil), barra divisoria de oro metálico,
+ * remache central de latón y puntos hundidos con aro de luz. Vectorial: nítida a cualquier tamaño.
+ */
 export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selected, dim, glow, faceDown, onClick, className = '' }: Props) {
   const long = `calc(${size} * 2)`;
+  const edge = `calc(${size} * .09)`;
+  const lift = selected ? `0 0 0 2px #f0c35f, ` : glow ? `0 0 0 2.5px #FCE38A, 0 0 14px rgba(252,227,138,.7), ` : '';
+  const body = faceDown ? '#0a2a1e' : '#c9b987';
   return (
     <button type="button" disabled={!onClick} onClick={onClick} aria-label={faceDown ? undefined : `${a}-${b}`}
       className={`relative block shrink-0 touch-manipulation select-none rounded-[14%/28%] will-change-transform ${selected ? '-translate-y-2' : ''} ${className}`}
-      style={{ width: vertical ? size : long, height: vertical ? long : size, boxShadow: glow ? '0 0 0 2.5px #FCE38A, 0 0 14px rgba(252,227,138,.7)' : selected ? '0 0 0 2px #f0c35f' : '0 3px 6px rgba(0,0,0,.5)', transition: 'transform .16s ease-out' }}>
-      <svg viewBox="0 0 100 50" aria-hidden="true"
+      style={{
+        width: vertical ? size : long, height: vertical ? long : size,
+        // grosor: canto inferior (y derecho) del marfil + sombra de contacto sobre el fieltro
+        boxShadow: `${lift}${edge} ${edge} 0 ${body}, 0 calc(${edge} * 1.8) calc(${edge} * 1.4) rgba(0,0,0,.55)`,
+        transition: 'transform .16s ease-out',
+      }}>
+      <svg viewBox="0 0 100 50" aria-hidden="true" shapeRendering="geometricPrecision"
         style={vertical ? { position: 'absolute', display: 'block', width: long, height: size, left: `calc(50% - ${long} / 2)`, top: `calc(50% - ${size} / 2)`, transform: 'rotate(90deg)' } : { display: 'block', width: '100%', height: '100%' }}>
         <defs>
-          <linearGradient id="dm-ivory" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FFFBEA" /><stop offset=".6" stopColor="#F1E7C6" /><stop offset="1" stopColor="#D9CBA0" /></linearGradient>
-          <linearGradient id="dm-back" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#0F3A2A" /><stop offset="1" stopColor="#061810" /></linearGradient>
+          <linearGradient id="dm-ivory" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FFFDF2" /><stop offset=".55" stopColor="#F3E9C8" /><stop offset="1" stopColor="#DCCDA0" /></linearGradient>
+          <linearGradient id="dm-back" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#14503a" /><stop offset="1" stopColor="#061810" /></linearGradient>
+          <linearGradient id="dm-gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8B6914" /><stop offset=".45" stopColor="#FCE38A" /><stop offset="1" stopColor="#A57A12" /></linearGradient>
+          <radialGradient id="dm-pip" cx=".38" cy=".34" r=".8"><stop offset="0" stopColor="#3a342a" /><stop offset=".6" stopColor="#0f0c07" /><stop offset="1" stopColor="#000" /></radialGradient>
+          <radialGradient id="dm-rivet" cx=".35" cy=".3" r=".8"><stop offset="0" stopColor="#FFF6C6" /><stop offset=".4" stopColor="#D4AF37" /><stop offset="1" stopColor="#6b4a08" /></radialGradient>
+          <linearGradient id="dm-gloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".55" /><stop offset=".5" stopColor="#fff" stopOpacity="0" /></linearGradient>
         </defs>
-        <rect x="1" y="1" width="98" height="48" rx="7" fill={faceDown ? 'url(#dm-back)' : 'url(#dm-ivory)'} stroke={faceDown ? '#D4AF37' : '#8B7A45'} strokeWidth="1.2" />
+        <rect x=".6" y=".6" width="98.8" height="48.8" rx="7.5" fill={faceDown ? 'url(#dm-back)' : 'url(#dm-ivory)'} stroke={faceDown ? '#D4AF37' : '#a8975f'} strokeWidth="1.1" />
         {faceDown ? <rect x="8" y="8" width="84" height="34" rx="4" fill="none" stroke="#D4AF37" strokeWidth="1" opacity=".5" />
           : (<>
-            <rect x="2.5" y="2.5" width="95" height="45" rx="5.5" fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth=".8" />
-            <line x1="50" y1="7" x2="50" y2="43" stroke="#D4AF37" strokeWidth="2" />
-            <circle cx="50" cy="25" r="2.4" fill="#B8860B" />
+            <rect x="2" y="2" width="96" height="46" rx="6.4" fill="none" stroke="#fff" strokeOpacity=".7" strokeWidth=".9" />
+            <rect x="3" y="3" width="94" height="20" rx="5.5" fill="url(#dm-gloss)" opacity=".5" />
+            {/* barra divisoria de oro metálico + remache central */}
+            <rect x="48.7" y="6" width="2.6" height="38" rx="1.3" fill="url(#dm-gold)" />
+            <rect x="49.4" y="6" width=".8" height="38" fill="#fff" opacity=".35" />
+            <circle cx="50" cy="25" r="3.4" fill="url(#dm-rivet)" stroke="#6b4a08" strokeWidth=".5" />
+            <circle cx="49" cy="24" r=".9" fill="#fff" opacity=".85" />
             <Face n={a} x={0} />
             <Face n={b} x={50} />
           </>)}

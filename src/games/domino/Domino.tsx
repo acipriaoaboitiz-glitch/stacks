@@ -205,7 +205,7 @@ export default function Domino() {
     if (k === -1) return null;
     const i = (myIdx + k) % n;
     const p = s.players[i]!;
-    return <SeatBadge info={info(i, `${p.name} · ${s.hands[p.id]!.length}`)} tone="them" mano={false} turn={s.turn === i && s.phase === 'play'} deadline={null} cards={s.hands[p.id]!.length} />;
+    return <SeatBadge info={info(i, p.name)} tone="them" mano={false} turn={s.turn === i && s.phase === 'play'} deadline={null} cards={s.hands[p.id]!.length} />;
   };
   const e = ends(s);
   const status = s.phase !== 'play' ? '' : myTurn ? (s.mustStart && !s.chain.length ? t('dm.mustStart') : t('dm.yourTurn')) : t('dm.wait', { n: s.players[s.turn]!.name });

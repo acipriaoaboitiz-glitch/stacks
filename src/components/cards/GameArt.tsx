@@ -35,7 +35,7 @@ export function GameArt({ id, size = 150 }: { id: string; size?: number }) {
   const card = (p: Piece, i: number) => {
     const style: CSSProperties = {
       position: 'absolute', left: '50%', top: '42%', width: w, height: p.uno ? w * 1.5 : h, marginLeft: -w / 2, marginTop: -h / 2,
-      transform: `translate(${p.x * k}px, ${p.y * k}px) rotate(${p.r}deg)`, transformOrigin: '50% 120%', borderRadius: 0, overflow: 'hidden', background: '#fdfbf7',
+      transform: `translate(${p.x * k * 0.8}px, ${p.y * k}px) rotate(${p.r}deg)`, transformOrigin: '50% 120%', borderRadius: 0, overflow: 'hidden', background: '#fdfbf7',
       boxShadow: `0 ${10 * k}px ${16 * k}px rgba(0,0,0,.55), 0 ${2 * k}px ${3 * k}px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.25)`, zIndex: i,
     };
     return (
@@ -50,7 +50,7 @@ export function GameArt({ id, size = 150 }: { id: string; size?: number }) {
       <div style={{ position: 'absolute', left: '50%', bottom: size * 0.04, width: size * 0.82, height: size * 0.12, marginLeft: -size * 0.41, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,0,0,.6), transparent 70%)' }} />
       {art.cards.map(card)}
       {art.chips?.map((c, i) => (
-        <div key={i} style={{ position: 'absolute', left: '50%', top: '42%', transform: `translate(${c.x * k - 18 * k}px, ${c.y * k - 18 * k}px)`, zIndex: 20 + i, borderRadius: '50%', boxShadow: '0 4px 6px rgba(0,0,0,.55)' }}>
+        <div key={i} style={{ position: 'absolute', left: '50%', top: '42%', transform: `translate(${c.x * k * 0.8 - 18 * k}px, ${c.y * k - 18 * k}px)`, zIndex: 20 + i, borderRadius: '50%', boxShadow: '0 4px 6px rgba(0,0,0,.55)' }}>
           <Chip value={c.v} size={36 * k} />
         </div>
       ))}

@@ -126,7 +126,7 @@ export function UnoFace({ card }: { card: UnoCardData }) {
   const [c1, c2] = SATIN[card.color];
   const wild = card.color === 'wild';
   return (
-    <svg viewBox="0 0 200 300" width="100%" height="100%" aria-hidden="true" style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" viewBox="0 0 200 300" width="100%" height="100%" aria-hidden="true" style={{ display: 'block' }}>
       <defs><linearGradient id={`sat-${card.color}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={c1} /><stop offset="1" stopColor={c2} /></linearGradient></defs>
       <rect width="200" height="300" fill={`url(#sat-${card.color})`} />
       <rect width="200" height="130" fill="#fff" opacity=".07" />
@@ -143,7 +143,7 @@ export function UnoFace({ card }: { card: UnoCardData }) {
 /** Reverso: negro con óvalo rojo y rótulo UNO. */
 export function UnoBack() {
   return (
-    <svg viewBox="0 0 200 300" width="100%" height="100%" aria-hidden="true" style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" viewBox="0 0 200 300" width="100%" height="100%" aria-hidden="true" style={{ display: 'block' }}>
       <rect width="200" height="300" fill="#fff" />
       <rect x="11" y="11" width="178" height="278" rx="12" fill="#15151a" />
       <ellipse cx="100" cy="150" rx="72" ry="114" fill={HEX.red} transform="rotate(30 100 150)" />

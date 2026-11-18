@@ -49,7 +49,7 @@ export function SpanishFace({ card }: { card: SpanishCard }) {
   const pips = PIPS[rank] ?? [];
   const size = rank >= 6 ? 106 : 124;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" aria-hidden="true" preserveAspectRatio="none" style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" aria-hidden="true" preserveAspectRatio="none" style={{ display: 'block' }}>
       <SvgDefs />
       <Frame accent={col} />
       {[0, 1].map((side) => Array.from({ length: PINTAS[suit] ?? 0 }, (_, i) => (

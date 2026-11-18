@@ -7,7 +7,7 @@ export const IVORY = '#FAF6EE';
 export const BURGUNDY = '#7a1f2b';
 export const GOLD = '#b8861b';
 
-/** Degradados reutilizables (ids `st-*`). Se incluyen una vez dentro de cada <svg>. */
+/** Degradados reutilizables (ids `st-*`). Se incluyen una vez dentro de cada <svg shapeRendering="geometricPrecision">. */
 export function SvgDefs() {
   return (
     <defs>

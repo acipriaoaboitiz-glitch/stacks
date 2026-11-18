@@ -98,9 +98,9 @@ function SeatBadgeView({ info, tone, mano, turn, bubble, deadline, cards, signal
           ))}
         </span>
       )}
-      {/* Máximo 4 dorsos: el resto se resume con ×N, así nunca se sale del hueco de su asiento */}
+      {/* Hasta 4 dorsos; con más cartas, 2 dorsos y ×N, así nunca se sale del hueco de su asiento */}
       <span className="flex items-center gap-[2px]" aria-label={`${cards} cartas`}>
-        {Array.from({ length: Math.min(cards, 4) }, (_, i) => (
+        {Array.from({ length: cards > 4 ? 2 : cards }, (_, i) => (
           <span key={i} className="relative block aspect-[12/19] h-[min(3.3dvh,22px)]"><CardBack /></span>
         ))}
         {cards > 4 && <b className="ml-0.5 text-[10px] tabular-nums text-amber-200/90">×{cards}</b>}

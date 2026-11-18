@@ -111,7 +111,7 @@ function Body({ id }: { id: string }) {
 
 export function GameEmblem({ id, size = 84 }: { id: string; size?: number }) {
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" style={{ display: 'block' }}>
+    <svg shapeRendering="geometricPrecision" viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" style={{ display: 'block' }}>
       <SvgDefs />
       <Body id={id} />
     </svg>

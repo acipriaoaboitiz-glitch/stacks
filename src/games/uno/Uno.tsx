@@ -61,14 +61,14 @@ function OrbitRing({ color, ccw }: { color: string; ccw: boolean }) {
   useEffect(() => { mounted.current = true; }, []);
   return (
     <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: 'calc(var(--card-w) * 2.5)', aspectRatio: '1' }}>
-      <svg viewBox="-100 -100 200 200" className="absolute inset-0 size-full" style={{ overflow: 'visible' }}>
+      <svg shapeRendering="geometricPrecision" viewBox="-100 -100 200 200" className="absolute inset-0 size-full" style={{ overflow: 'visible' }}>
         <circle r="92" fill="none" stroke={color} strokeWidth="9" opacity=".12" style={{ transition: 'stroke .3s' }} />
         <circle r="92" fill="none" stroke={color} strokeWidth="1.6" opacity=".5" style={{ transition: 'stroke .3s' }} />
       </svg>
       <AnimatePresence initial={false}>
         <motion.div key={ccw ? 'ccw' : 'cw'} className="absolute inset-0" initial={{ opacity: 0, scale: 0.82, rotate: ccw ? 40 : -40 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ type: 'spring', stiffness: 240, damping: 10 }}>
           <div className={`orbit-spin size-full ${ccw ? 'ccw' : ''}`}>
-            <svg viewBox="-100 -100 200 200" className="size-full" style={{ overflow: 'visible', transform: ccw ? 'scaleX(-1)' : undefined }}>
+            <svg shapeRendering="geometricPrecision" viewBox="-100 -100 200 200" className="size-full" style={{ overflow: 'visible', transform: ccw ? 'scaleX(-1)' : undefined }}>
               <circle r="92" fill="none" stroke={color} strokeWidth="4.5" strokeLinecap="round" pathLength="360" strokeDasharray="38 82" style={{ transition: 'stroke .3s' }} />
               {[40, 160, 280].map((a) => (
                 <polygon key={a} points="-9,-8 4,0 -9,8" fill="#FFF8DC" transform={`rotate(${a}) translate(92 0) rotate(90)`} />
