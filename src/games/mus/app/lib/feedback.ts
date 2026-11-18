@@ -1,4 +1,5 @@
-import { isNative, nativeVibrate } from './native.ts';
+import { getAudioContext } from '../../../../services/audioCore.ts';
+import { triggerHaptic } from '../../../../services/haptics.ts';
 import { store } from './storage.ts';
 
 export const PREFS = { sound: 'mus.sound', haptic: 'mus.haptic', volume: 'mus.volume' } as const;
@@ -27,24 +28,10 @@ export function setVolumeLevel(level: number): void {
 
 export function haptic(pattern: number | number[] = 10): void {
   if (!prefOn(PREFS.haptic)) return;
-  if (isNative()) {
-    const ms = Array.isArray(pattern) ? Math.max(...pattern) : pattern;
-    void nativeVibrate(Math.min(60, Math.max(10, ms)));
-    return;
-  }
-  try { navigator.vibrate?.(pattern); } catch { /* sin soporte */ }
+  triggerHaptic(pattern);
 }
 
-let ctx: AudioContext | null = null;
-
-function audio(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctor) return null;
-  ctx ??= new Ctor();
-  if (ctx.state === 'suspended') void ctx.resume();
-  return ctx;
-}
+const audio = (): AudioContext | null => getAudioContext(); // un único AudioContext compartido con el resto de la app
 
 function tone(c: AudioContext, freq: number, at: number, dur: number, gain = 0.04, type: OscillatorType = 'sine'): void {
   const o = c.createOscillator();

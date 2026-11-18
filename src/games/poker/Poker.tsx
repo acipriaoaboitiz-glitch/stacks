@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
 import { juice } from '../../services/juice.ts';
+import { progression } from '../../store/progression.ts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CASINO_VALUES, CasinoChip, ChipPile } from '../../components/cards/CasinoChip.tsx';
 import { OvalTable } from './TableArt.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
@@ -15,7 +16,7 @@ import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScoreStrip, u
 import { BB, START_STACK, act, applyPokerAction, bestScore, botAct, handName, legal, newPoker, pot, type PAction, type PPlayer, type PokerAction, type PokerState } from './engine.ts';
 
 const WIN_BONUS = 200;
-const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor', 'Maite', 'Unai'];
+const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3), botName(4), botName(5)];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 
 function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
@@ -74,7 +75,7 @@ export default function Poker() {
   const hostLike = !online || seating.isHost;
   const myIdx = online ? Math.max(0, s?.players.findIndex((p) => p.peerId === seating.myPeerId) ?? 0) : 0;
   const meId = s?.players[myIdx]?.id ?? 'p0';
-  const local = (size: number): PokerState => newPoker(NAMES.slice(0, size).map((name, i) => ({ id: `p${i}`, name, human: i === 0 })));
+  const local = (size: number): PokerState => newPoker(names().slice(0, size).map((name, i) => ({ id: `p${i}`, name, human: i === 0 })));
 
   // Online: el anfitrión reparte con los humanos de la sala (2–4) y rellena con bots si está activado.
   const hostStart = () => {
@@ -82,7 +83,7 @@ export default function Poker() {
     const size = Math.min(4, Math.max(2, seating.fillBots ? 4 : humans.length));
     const players: PPlayer[] = Array.from({ length: size }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
-      : { id: `p${i}`, name: NAMES[i - humans.length + 1] ?? `Bot ${i}`, human: false });
+      : { id: `p${i}`, name: names()[i - humans.length + 1] ?? botName(i), human: false });
     setS(newPoker(players));
   };
   const noS = s === null;
@@ -151,6 +152,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   }, [s.community.length]);
   // ¡ALL-IN!: cinemática cuando alguien se queda sin fichas por apostarlas todas.
   const prevAllIn = useRef<boolean[]>([]);
+  const trackedHand = useRef<unknown>(null); // una mano cuenta una sola vez para las misiones
   useEffect(() => {
     const now = s.seats.map((x) => x.allIn && !x.out && !x.folded);
     now.forEach((v, i) => { if (v && !prevAllIn.current[i]) showCine('¡ALL-IN!', `${s.players[i]!.name} lo apuesta todo`); });
@@ -164,12 +166,20 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   }, [s]);
   useEffect(() => {
     if (s.phase === 'handOver' && s.result) {
+      if (trackedHand.current !== s.result) { trackedHand.current = s.result; progression.track('hand', 'poker'); }
       const mine = s.result.wins.find((w) => w.seat === myIdx);
       if (mine) {
         const big = ({ 'Escalera': '¡ESCALERA!', 'Color': '¡COLOR!', 'Full': '¡FULL HOUSE!', 'Póker': '¡PÓKER!', 'Escalera de color': '¡ESCALERA DE COLOR!' } as Record<string, string>)[mine.hand];
         if (big) showCine(big, `+${mine.amount} fichas`); else juice.points(`+${mine.amount}`, 'gold');
         juice.chips('me');
         show(`+${mine.amount} ${mine.hand ? `· ${mine.hand}` : ''}`);
+      }
+      else {
+        // Gana un rival: la jugada grande también se celebra (cinemática) y las fichas vuelan hacia él.
+        const w = s.result.wins[0];
+        const big = w && ({ 'Escalera': '¡ESCALERA!', 'Color': '¡COLOR!', 'Full': '¡FULL HOUSE!', 'Póker': '¡PÓKER!', 'Escalera de color': '¡ESCALERA DE COLOR!' } as Record<string, string>)[w.hand];
+        if (w && big) showCine(big, `${s.players[w.seat]!.name} gana ${w.amount}`);
+        if (w) juice.chips('top');
       }
     }
     if (s.phase === 'betting') paid.current = false;
@@ -301,6 +311,13 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   return (
     <GameFrame
       gameId="poker" feltTone="emerald"
+      strip={(
+        <div className="flex items-center justify-between gap-2 px-1 text-[11px] font-bold tabular-nums text-stone-300" role="group" aria-label={t('sc.pot')}>
+          <span className="text-amber-200">{t('sc.pot')} {pot(s)}</span>
+          <span>{t('sc.blinds')} SB/BB {BB / 2}/{BB}</span>
+          <span>{t('sc.toCall')} {lg ? lg.callAmount : s.currentBet}</span>
+        </div>
+      )}
       onExit={online ? exit : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
       header={<ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} />}

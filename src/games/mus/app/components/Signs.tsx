@@ -283,7 +283,7 @@ export function CatchEyeButton({ cooldownMs, disabled, windowOpen, onClick }: {
       onClick={onClick}
       title="¡Pillada! Sospecho de una seña rival"
       aria-label="¡Pillada! Sospecho que un rival ha pasado una seña"
-      animate={windowOpen ? { boxShadow: ['0 0 0 rgba(255,77,94,0)', '0 0 16px rgba(255,77,94,.6)', '0 0 0 rgba(255,77,94,0)'] } : { boxShadow: '0 0 0 rgba(255,77,94,0)' }}
+      animate={windowOpen ? { scale: [1, 1.12, 1] } : { scale: 1 }}
       transition={windowOpen ? { duration: 1.1, repeat: Infinity } : { duration: 0.2 }}
       whileTap={{ scale: 0.9 }}
     >

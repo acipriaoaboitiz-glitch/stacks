@@ -9,9 +9,10 @@ import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
+import { SeriesGems, useSeries } from '../shared/series.tsx';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
@@ -19,9 +20,9 @@ import {
   type DeckKind, type PresAction, type PresPlayer, type PresState, type Role,
 } from './engine.ts';
 
-const BOT_NAMES = ['Jon', 'Nerea', 'Aitor', 'Maite', 'Unai'];
+const botNames = (): string[] => [1, 2, 3, 4, 5].map(botName);
 const makePlayers = (n: number): PresPlayer[] =>
-  Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: i === 0 ? 'Tú' : BOT_NAMES[i - 1]!, human: i === 0 }));
+  Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: i === 0 ? tr('g.you') : botNames()[i - 1]!, human: i === 0 }));
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
 const MARK: Record<Role, string> = { presidente: '👑', vicepresidente: '🥈', pueblo: '', subalterno: '🥉', mendigo: '💩' };
 
@@ -50,7 +51,7 @@ export default function Presidente() {
     const n = seating.fillBots ? 4 : Math.min(4, Math.max(2, humans.length));
     const players: PresPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
-      : { id: `p${i}`, name: BOT_NAMES[i - humans.length] ?? `Bot ${i}`, human: false });
+      : { id: `p${i}`, name: botNames()[i - humans.length] ?? botName(i), human: false });
     setStarted(true); setS(newRound(players, 'es')); setSel([]); setBubbles({}); lastSeq.current = ''; paidRound.current = 0;
   };
   const noS = s === null;
@@ -90,10 +91,17 @@ export default function Presidente() {
     window.setTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 1500);
   }, [s, show, me]);
 
+  // Serie de 3 rondas: cada ronda la gana quien sale primero (Rey); gana la serie quien más rondas sume.
+  const series = useSeries(2, 3);
+  const { record: recordRound, roundStarted } = series;
+  const champion = series.champion;
+  useEffect(() => { if (s && s.round === 1 && s.phase !== 'done') roundStarted(); }, [s, roundStarted]);
+
   // Fin de ronda: premio según el rol.
   useEffect(() => {
     if (!s || s.phase !== 'done' || paidRound.current === s.round) return;
     paidRound.current = s.round;
+    recordRound(s.finished[0] ?? null);
     const r = roleOf(s, me);
     if (!r) return;
     if (ROLE_PRIZE[r] > 0) wallet.add(ROLE_PRIZE[r]);
@@ -209,9 +217,7 @@ export default function Presidente() {
                 <span className="rounded-full bg-black/35 px-3 py-0.5 text-[11px] font-bold text-amber-200/90">{s.players.find((p) => p.id === s.table!.by)!.name}</span>
               </motion.div>
             ) : (
-              <motion.p key="free" className="text-center font-[var(--font-display)] text-lg font-bold text-amber-200/60" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {s.phase === 'play' ? 'Mesa libre' : ''}
-              </motion.p>
+              <motion.span key="free" aria-label="Mesa libre" />
             )}
           </AnimatePresence>
         </div>
@@ -266,6 +272,7 @@ export default function Presidente() {
           </div>
         </div>
       }
+      strip={<SeriesGems need={3} entries={s.players.map((p) => ({ key: p.id, label: p.id === me ? t('ser.you') : p.name, wins: series.wins[p.id] ?? 0 }))} />}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -279,7 +286,7 @@ export default function Presidente() {
                 taunt="Te ha tocado COME💩"
                 title={myRole === 'presidente' ? '¡Eres el Rey! 👑' : myRole === 'mendigo' ? '¡Eres COME💩!' : `Has quedado ${ROLE_NAME[myRole ?? 'pueblo']}`}
                 actions={[
-                  ...(hostLike ? [{ label: 'Siguiente ronda', primary: true, onClick: nextRound }] : []),
+                  ...(hostLike ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: champion !== null ? (online ? hostStart : start) : nextRound }] : []),
                   ...(online ? [] : [{ label: 'Cambiar mesa', onClick: () => { setStarted(false); setS(null); } }]),
                   { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
                 ]}

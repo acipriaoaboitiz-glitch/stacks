@@ -1,4 +1,8 @@
 import { getSettings, useSettings, type Lang } from '../store/settings.ts';
+import { coreDe, coreFr } from './core2.ts';
+import { olDe, olEn, olEs, olFr } from './ol.ts';
+import { RULES } from './rules.ts';
+import { uiDe, uiEn, uiEs, uiFr } from './ui.ts';
 
 /** i18n sin recargar: español (fuente), euskera e inglés. Lo que falta en un idioma cae al español. */
 type Dict = Record<string, string>;
@@ -93,15 +97,30 @@ const eu: Dict = {
   'g.you': 'Zu', 'g.yourTurn': 'Zure txanda', 'g.thinking': 'Pentsatzen…', 'g.win': 'Irabazi duzu!', 'g.lose': 'Galdu duzu', 'g.points': 'Puntuak', 'g.chips': 'Fitxak', 'g.bet': 'Apustua',
 };
 
-const DICTS: Record<Lang, Dict> = { es, en, eu };
+const DICTS: Record<Lang, Dict> = {
+  es: { ...es, ...uiEs, ...olEs },
+  en: { ...en, ...uiEn, ...olEn },
+  eu: { ...eu },
+  fr: { ...coreFr, ...uiFr, ...olFr },
+  de: { ...coreDe, ...uiDe, ...olDe },
+};
+
+/** Sustituye `{n}`, `{h}`… en una traducción. */
+export const fmt = (text: string, vars: Record<string, string | number>): string => text.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`));
+/** Traducción con variables: `trf('lb.pos', { a: 1, b: 4 })`. */
+export const trf = (key: string, vars: Record<string, string | number>, lang: Lang = getSettings().lang): string => fmt(tr(key, lang), vars);
+/** Nombre de un bot en el idioma activo: «Jugador 1», «Player 1», «Joueur 1», «Spieler 1». */
+export const botName = (i: number): string => `${tr('bot.name')} ${i}`;
+/** Reglas de un juego en el idioma activo (cae al texto español del registro). */
+export const rulesFor = (id: string, fallback: string[], lang: Lang = getSettings().lang): string[] => RULES[lang]?.[id] ?? fallback;
 
 /** Traducción puntual (fuera de componentes). */
 export function tr(key: string, lang: Lang = getSettings().lang): string {
-  return DICTS[lang][key] ?? es[key] ?? key;
+  return DICTS[lang][key] ?? DICTS.es[key] ?? key;
 }
 
 /** Hook: `const t = useT(); t('a.pass')`. Re-renderiza al cambiar de idioma. */
-export function useT(): (key: string) => string {
+export function useT(): (key: string, vars?: Record<string, string | number>) => string {
   const { lang } = useSettings();
-  return (key: string) => tr(key, lang);
+  return (key: string, vars?: Record<string, string | number>) => (vars ? fmt(tr(key, lang), vars) : tr(key, lang));
 }

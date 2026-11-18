@@ -12,8 +12,9 @@ import { Toaster } from '../mus/app/components/ui.tsx';
 import { GameSettingsProvider } from '../mus/app/lib/settings.tsx';
 import { ProfileCard } from "../../components/ui/ProfileModal.tsx";
 import { ExitButton, QuickButtons } from '../../components/ui/QuickButtons.tsx';
-import { TurnTimer, type TurnTimerSpec } from '../../components/ui/TurnTimer.tsx';
+import { TurnTimerBar, type TurnTimerSpec } from '../../components/ui/TurnTimer.tsx';
 import { EmoteBubble, ReactionButton } from '../../components/ui/Reactions.tsx';
+import { ExitConfirm } from '../../components/ui/ExitConfirm.tsx';
 import { RulesModal } from '../../components/ui/RulesModal.tsx';
 import { SettingsModal } from '../../components/ui/SettingsModal.tsx';
 import { findGame } from '../registry.ts';
@@ -109,15 +110,15 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
     <div className="musapp">
       <div className="app">
         <main
-          className={`relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden ${shaking ? 'animate-shake' : ''} pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100 [--card-w:min(21.8vw,11.7dvh,136px)] lg:[--card-w:min(19vw,13dvh,151px)]`}
+          className={`relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden ${shaking ? 'animate-shake' : ''} pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100 [--card-w:min(21.8vw,11.7dvh,136px)] lg:[--card-w:calc(min(125px,11.5dvh)/var(--z,1))]`}
         >
-          <div className="mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
+          <div className="desk-zoom mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
             <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
               <div className="flex items-center gap-1.5"><ExitButton onClick={exit} /><ProfileCard compact /></div>
               <div className="min-w-0">{header}</div>
               <QuickButtons onRules={() => setRules(true)} onSettings={() => setSettings(true)} />
             </header>
-            {timer && <TurnTimer spec={timer} />}
+            {timer && <TurnTimerBar spec={timer} />}
             {strip && <section aria-label="Estado">{strip}</section>}
             <section
               ref={feltRef}
@@ -155,6 +156,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
           {overlays}
         </main>
 
+        <ExitConfirm onExit={exit} />
         <SettingsModal open={settings} onClose={() => setSettings(false)} />
         <RulesModal game={rules ? game : null} onClose={() => setRules(false)} />
         <Toaster />

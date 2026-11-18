@@ -1,5 +1,6 @@
 import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { CAN_HOVER } from '../../store/settings.ts';
 
 export interface HoloCardProps {
   children: ReactNode;
@@ -60,7 +61,7 @@ export function HoloCard({
         onPointerMove={move} onPointerLeave={leave} onPointerCancel={leave}
         animate={idle && !hover && !disabled ? { rotateX: [0, 5, 0, -5, 0], rotateY: [0, -7, 0, 7, 0] } : undefined}
         transition={idle && !hover ? { duration: 7, repeat: Infinity, ease: 'easeInOut' } : undefined}
-        whileHover={disabled ? undefined : { scale: hoverScale }}
+        whileHover={disabled || !CAN_HOVER ? undefined : { scale: hoverScale }}
         style={{
           ...box, width: '100%', height: '100%', scale, position: 'relative', transformStyle: 'preserve-3d',
           rotateX: hover ? rotX : undefined, rotateY: hover ? rotY : undefined,

@@ -10,7 +10,7 @@ import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import type { SpanishCard } from '../../engine/deck.ts';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
@@ -20,10 +20,10 @@ import {
 } from './engine.ts';
 
 const WIN_BONUS = 100;
-const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor'];
+const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 const SLOT: Record<2 | 3 | 4, Slot[]> = { 2: ['bottom', 'top'], 3: ['bottom', 'right', 'left'], 4: ['bottom', 'right', 'top', 'left'] };
-const nameOf = (n: number, i: number): string => (n === 2 && i === 1 ? 'Bot' : NAMES[i]!);
+const nameOf = (_n: number, i: number): string => names()[i]!;
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
 const makePlayers = (n: number): ChPlayer[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: nameOf(n, i), human: i === 0 }));
 
@@ -54,7 +54,7 @@ export default function Chinchon() {
     const n = Math.min(4, Math.max(2, seating.fillBots ? 4 : humans.length));
     const players: ChPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
-      : { id: `p${i}`, name: NAMES[i - humans.length + 1] ?? `Bot ${i}`, human: false });
+      : { id: `p${i}`, name: names()[i - humans.length + 1] ?? botName(i), human: false });
     setS(newGame(players)); setSel(null); paid.current = false; lastSeq.current = '';
   };
   const noS = s === null;
@@ -172,7 +172,7 @@ export default function Chinchon() {
                 disabled={!(myTurn && s.phase === 'draw')} aria-label={t('a.deck')}
                 className="relative aspect-[12/19] overflow-hidden rounded-[8px] shadow-[0_8px_16px_rgba(0,0,0,.45)]"
                 style={{ width: pileW, outline: myTurn && s.phase === 'draw' ? '2px solid #f0c35f' : undefined }}><CardBack /></motion.button>
-              <span className="font-mono text-[10px] text-amber-200/80">{t('a.deck')} · {s.stock.length}</span>
+              <span className="font-mono text-[10px] text-amber-200/80">{s.stock.length}</span>
             </div>
             <div className="grid justify-items-center gap-1">
               <AnimatePresence mode="popLayout">
@@ -180,7 +180,6 @@ export default function Chinchon() {
                   <FaceCard card={top} scale={0.8} glow={myTurn && s.phase === 'draw'} onClick={myTurn && s.phase === 'draw' ? () => draw('discard') : undefined} />
                 </motion.div> : <span key="empty" className="block aspect-[12/19] rounded-[8px] border border-dashed border-white/20" style={{ width: pileW }} />}
               </AnimatePresence>
-              <span className="font-mono text-[10px] text-amber-200/80">{t('a.discardPile')}</span>
             </div>
           </div>
         </div>

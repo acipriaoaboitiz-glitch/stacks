@@ -1,5 +1,6 @@
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
+import { localForced, shareBase } from './env.ts';
 
 /**
  * Multijugador en tiempo real para cualquier juego de STACKS.
@@ -46,8 +47,8 @@ export function generateRoomCode(): string {
 }
 
 export function inviteLink(code: string, gameId: string): string {
-  const base = `${location.origin}${location.pathname}`;
-  return `${base}#/?sala=${code}&game=${gameId}`;
+  // Enlace viral: al abrirlo (WhatsApp…) la app entra directa en la sala.
+  return `${shareBase()}#/?join=${code}&game=${gameId}`;
 }
 
 // ─── Tipos públicos ──────────────────────────────────────────────────────────────────────
@@ -101,7 +102,7 @@ interface Transport {
 // ─── Transporte Supabase (Presence + Broadcast) ──────────────────────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
+export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY) && !localForced;
 
 class SupabaseTransport implements Transport {
   private ch: RealtimeChannel | null = null;

@@ -8,18 +8,20 @@ import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import type { SeatInfo } from '../mus/app/game/types.ts';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { juice } from '../../services/juice.ts';
+import { progression } from '../../store/progression.ts';
+import { SeriesGems } from '../shared/series.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, ScoreStrip, escobaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
   TARGET_SCORE, applyEscobaAction, botMove, escobaValue, findCaptures, isValidCapture, newMatch, play, type EscobaAction, type EscobaState,
 } from './engine.ts';
 
 const WIN_BONUS = 100;
-const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor'];
+const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 const SLOT: Record<2 | 3 | 4, Slot[]> = { 2: ['bottom', 'top'], 3: ['bottom', 'right', 'left'], 4: ['bottom', 'right', 'top', 'left'] };
 
@@ -28,9 +30,9 @@ const takeVariants: Variants = {
   exit: (dy: number) => ({ y: dy, scale: 0.35, opacity: 0, transition: { duration: 0.55, ease: [0.4, 0, 0.9, 0.4] } }),
 };
 
-const nameOf = (n: number, i: number): string => (n === 2 && i === 1 ? 'Bot' : NAMES[i]!);
+const nameOf = (_n: number, i: number): string => names()[i]!;
 const makePlayers = (n: number): NonNullable<EscobaState['players']> => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: nameOf(n, i), human: i === 0 }));
-const fresh = (n: number): EscobaState => ({ ...newMatch(n), players: makePlayers(n) });
+const fresh = (n: number, bo3 = false): EscobaState => ({ ...newMatch(n, bo3), players: makePlayers(n) });
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
 
 export default function Escoba() {
@@ -42,6 +44,7 @@ export default function Escoba() {
   const preset = Number(params.get('players'));
   const [count, setCount] = useState<2 | 3 | 4 | null>(preset >= 2 && preset <= 4 ? (preset as 2 | 3 | 4) : null);
   const [s, setS] = useState<EscobaState | null>(() => (preset >= 2 && preset <= 4 ? fresh(preset) : null));
+  const [bo3, setBo3] = useState(false); // formato: meta de 15 puntos o al mejor de 3 rondas
   const [selCard, setSelCard] = useState<string | null>(null);
   const [selTable, setSelTable] = useState<number[]>([]);
   const { banner, show } = useBanner();
@@ -54,7 +57,7 @@ export default function Escoba() {
   const nm = (i: number): string => s?.players?.[i]?.name ?? nameOf(s?.n ?? 2, i);
 
   const resetLocal = () => { prevRef.current = null; paid.current = false; setSelCard(null); setSelTable([]); };
-  const start = (n: 2 | 3 | 4) => { resetLocal(); setCount(n); setS(fresh(n)); };
+  const start = (n: 2 | 3 | 4) => { resetLocal(); setCount(n); setS(fresh(n, bo3)); };
 
   // Online: el anfitrión reparte con los humanos de la sala (2–4) y rellena con bots si está activado.
   const hostStart = () => {
@@ -62,9 +65,9 @@ export default function Escoba() {
     const n = Math.min(4, Math.max(2, seating.fillBots ? 4 : humans.length));
     const players = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
-      : { id: `p${i}`, name: NAMES[i - humans.length + 1] ?? `Bot ${i}`, human: false });
+      : { id: `p${i}`, name: names()[i - humans.length + 1] ?? botName(i), human: false });
     resetLocal();
-    setS({ ...newMatch(n), players });
+    setS({ ...newMatch(n, bo3), players });
   };
   const noS = s === null;
   useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
@@ -80,6 +83,7 @@ export default function Escoba() {
       feedback(lp.taken.length ? 'trick' : 'deal');
       if (lp.taken.length) show(`${lp.by === myIdx ? 'Te llevas' : `${nm(lp.by)} se lleva`} ${lp.taken.length + 1} cartas`);
       if (lp.escoba) {
+        if (lp.by === myIdx) progression.track('escoba', 'escoba');
         const real = lp.card.suit === 'oros' && lp.card.rank === 7;
         showCine(real ? '¡ESCOBA REAL!' : '¡ESCOBA!', real ? `${lp.by === myIdx ? 'Barres' : `${nm(lp.by)} barre`} con el 7 de oros` : `${lp.by === myIdx ? 'Barres' : `${nm(lp.by)} barre`} la mesa · +1 punto`);
       }
@@ -87,7 +91,7 @@ export default function Escoba() {
     if (s.phase === 'playing') paid.current = false;
     if (s.phase === 'matchOver' && !paid.current) {
       paid.current = true;
-      if (s.scores[myIdx] === Math.max(...s.scores)) { wallet.add(WIN_BONUS); wallet.recordWin('escoba'); juice.chips('me'); }
+      if ((s.bo3 ? s.roundWins![myIdx] : s.scores[myIdx]) === Math.max(...(s.bo3 ? s.roundWins! : s.scores))) { wallet.add(WIN_BONUS); wallet.recordWin('escoba'); juice.chips('me'); }
     }
     // eslint-disable-next-line
   }, [s]);
@@ -122,6 +126,10 @@ export default function Escoba() {
           <div className="grid h-full place-items-center p-6">
             <div className="grid w-full max-w-xs gap-3 text-center">
               <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">{t('a.format')}</h2>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('sc.format')}>
+                <Button variant={bo3 ? 'secondary' : 'primary'} onClick={() => setBo3(false)}>{t('sc.goal15')}</Button>
+                <Button variant={bo3 ? 'primary' : 'secondary'} onClick={() => setBo3(true)}>{t('ser.bo3')}</Button>
+              </div>
               <Button variant="primary" block onClick={() => start(2)}>1 vs 1</Button>
               <Button variant="secondary" block onClick={() => start(3)}>3 · tú + 2 IA</Button>
               <Button variant="secondary" block onClick={() => start(4)}>4 · tú + 3 IA</Button>
@@ -165,8 +173,10 @@ export default function Escoba() {
   };
 
   const over = s.phase !== 'playing';
-  const best = Math.max(...s.scores);
-  const iWon = s.phase === 'matchOver' && s.scores[myIdx] === best;
+  const standing = s.bo3 ? s.roundWins! : s.scores;
+  const best = Math.max(...standing);
+  const iWon = s.phase === 'matchOver' && standing[myIdx] === best;
+  const roundPts = s.summary ? s.scores.map((_, i) => s.summary!.reduce((a, l) => a + l.points[i]!, 0)) : [];
   const lp = s.lastPlay;
   const status = over ? '' : !myTurn ? `Juega ${nm(s.turn)}…` : card
     ? (caps.length ? `Suma ${sum}/15 · elige las cartas de la mesa` : 'Sin captura: tírala a la mesa')
@@ -249,8 +259,9 @@ export default function Escoba() {
       onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.hands[myIdx]!.length}:${s.deck.length}`, onTimeout: () => { const m = botMove(s); clear(); dispatch(me, { k: 'play', cardId: m.cardId, take: m.take }); } }}
       header={n === 2
-        ? <ScorePair labels={['Tú', online ? nm(1 - myIdx) : 'Bot']} values={[s.scores[myIdx]!, s.scores[1 - myIdx]!]} target={TARGET_SCORE} />
-        : <ScoreStrip items={s.scores.map((v, i) => ({ name: nm(i), value: v, us: i === myIdx }))} target={TARGET_SCORE} />}
+        ? <ScorePair labels={[t('ser.you'), online ? nm(1 - myIdx) : botName(1)]} values={[s.scores[myIdx]!, s.scores[1 - myIdx]!]} target={s.bo3 ? undefined : TARGET_SCORE} />
+        : <ScoreStrip items={s.scores.map((v, i) => ({ name: nm(i), value: v, us: i === myIdx }))} target={s.bo3 ? undefined : TARGET_SCORE} />}
+      strip={s.bo3 ? <SeriesGems entries={s.scores.map((_, i) => ({ key: String(i), label: i === myIdx ? t('ser.you') : nm(i), wins: s.roundWins![i]! }))} /> : undefined}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -262,7 +273,7 @@ export default function Escoba() {
                 outcome={s.phase === 'matchOver' ? (iWon ? 'win' : 'lose') : undefined}
                 prize={WIN_BONUS}
                 taunt="La escoba barrió contigo"
-                title={s.phase === 'matchOver' ? (iWon ? t('g.win') : t('g.lose')) : 'Fin de la ronda'}
+                title={s.phase === 'matchOver' ? (iWon ? t('ser.champion') : t('ser.lost')) : t('ser.summary')}
                 actions={s.phase === 'matchOver'
                   ? [...(online ? (hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []) : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }]), { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } }]
                   : hostLike ? [{ label: t('a.next'), primary: true, onClick: () => { clear(); setS((cur) => (cur ? applyEscobaAction(cur, me, { k: 'next' }) ?? cur : cur)); } }] : []}
@@ -277,13 +288,17 @@ export default function Escoba() {
                   <tbody>
                     {s.summary.map((l) => (
                       <tr key={l.label} className="border-b border-white/10">
-                        <td className="py-1.5 text-[12px]">{l.label}</td>
+                        <td className="py-1.5 text-[12px]">{l.key ? t(`sc.${l.key}`) : l.label}{l.detail ? <span className="text-stone-400"> ({l.detail})</span> : null}</td>
                         {l.points.map((p, i) => <td key={i} className="text-right font-bold tabular-nums">{p}</td>)}
                       </tr>
                     ))}
                     <tr>
-                      <td className="py-2 font-extrabold">Total (a {TARGET_SCORE})</td>
-                      {s.scores.map((v, i) => <td key={i} className={`text-right font-[var(--font-display)] text-lg font-bold tabular-nums ${v === best ? 'text-amber-300' : ''}`}>{v}</td>)}
+                      <td className="py-2 font-extrabold">{s.bo3 ? `${t('ser.round', { n: s.roundNo })} · ${t('sc.total')}` : `${t('sc.total')} (${TARGET_SCORE})`}</td>
+                      {(s.bo3 ? roundPts : s.scores).map((v, i) => <td key={i} className={`text-right font-[var(--font-display)] text-lg font-bold tabular-nums ${(s.bo3 ? roundPts[i] === Math.max(...roundPts) : v === best) ? 'text-amber-300' : ''}`}>{v}</td>)}
+                    </tr>
+                    <tr className={s.bo3 ? '' : 'hidden'}>
+                      <td className="py-1 text-[12px] font-bold text-stone-300">{t('ser.score')}</td>
+                      {(s.roundWins ?? []).map((v, i) => <td key={i} className="text-right font-bold tabular-nums">{v}</td>)}
                     </tr>
                   </tbody>
                 </table>

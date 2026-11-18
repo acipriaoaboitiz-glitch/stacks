@@ -4,14 +4,13 @@ import { Smile, X } from 'lucide-react';
 import { emoteSound, FAST_EASE, type EmoteId } from '../../store/settings.ts';
 
 export const EMOTES: { id: EmoteId; icon: string; label: string; text: string }[] = [
-  { id: 'clap', icon: '👏', label: 'Aplauso', text: '👏' },
-  { id: 'laugh', icon: '😂', label: 'Risa', text: '😂' },
-  { id: 'fire', icon: '🔥', label: 'Fuego', text: '🔥' },
-  { id: 'turn', icon: '⏳', label: '¡Te toca!', text: '⏳ ¡Te toca!' },
-  { id: 'hit', icon: '🎯', label: '¡Toma esa!', text: '🎯 ¡Toma esa!' },
+  { id: 'clap', icon: '👏', label: '¡Buena jugada!', text: '👏 ¡Buena jugada!' },
+  { id: 'hit', icon: '🎯', label: '¡Órdago!', text: '🎯 ¡Órdago!' },
+  { id: 'laugh', icon: '🍀', label: '¡Qué suerte!', text: '🍀 ¡Qué suerte!' },
+  { id: 'turn', icon: '🤝', label: 'GG', text: '🤝 GG' },
 ];
 
-/** Botón flotante con 5 reacciones rápidas. `onSend` recibe el texto que se muestra en el bocadillo del avatar. */
+/** Botón flotante con 4 reacciones rápidas. `onSend` recibe el texto que se muestra en el bocadillo del avatar. */
 export function ReactionButton({ onSend }: { onSend: (text: string) => void }) {
   const [open, setOpen] = useState(false);
   return (

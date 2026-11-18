@@ -1,10 +1,17 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Globe, Play, Users, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gem, Globe, Play, Trophy, Users, X } from 'lucide-react';
 import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
-import { QuickButtons } from '../components/ui/QuickButtons.tsx';
+import { IconBtn, QuickButtons } from '../components/ui/QuickButtons.tsx';
+import { FriendsDrawer } from '../components/ui/FriendsDrawer.tsx';
+import { LeaderboardModal } from '../components/ui/LeaderboardModal.tsx';
+import { VipShopModal } from '../components/ui/VipShopModal.tsx';
+import { createRoom, getActiveRoom, setActiveRoom } from '../services/multiplayer.ts';
+import { social, useSocial, type Friend } from '../store/social.ts';
+import { canClaimDaily, useWallet } from '../store/wallet.ts';
+import { claimableMissions, useMissions } from '../store/progression.ts';
 import { ChipBalance } from '../components/ui/Hud.tsx';
 import { Wordmark } from '../components/ui/Logo.tsx';
 import { EconomyModal } from '../components/ui/EconomyModal.tsx';
@@ -15,6 +22,7 @@ import { GAMES, findGame, type GameInfo } from '../games/registry.ts';
 import { useT } from '../i18n/index.ts';
 import type { Room } from '../services/multiplayer.ts';
 import { feedback } from '../store/settings.ts';
+import { useBackClose } from '../services/backStack.ts';
 
 /** Polvo dorado del fondo: posiciones fijas, animación CSS (transform/opacity), sin JS por fotograma. */
 const DUST = Array.from({ length: 16 }, (_, i) => ({
@@ -50,6 +58,7 @@ const Slide = memo(function Slide({ game, active }: { game: GameInfo; active: bo
 
 function RulesPicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (g: GameInfo) => void }) {
   const t = useT();
+  useBackClose(open, onClose);
   return (
     <AnimatePresence>
       {open && (
@@ -80,13 +89,46 @@ export default function Home() {
   const nav = useNavigate();
   const t = useT();
   const [params, setParams] = useSearchParams();
-  const linkCode = params.get('sala') ?? params.get('room');
+  const linkCode = params.get('join') ?? params.get('sala') ?? params.get('room');
   const [online, setOnline] = useState<GameInfo | null>(() => (linkCode ? findGame(params.get('game') ?? 'mus') ?? null : null));
   const [inviteCode, setInviteCode] = useState<string | undefined>(() => linkCode ?? undefined);
   const [settings, setSettings] = useState(false);
   const [showRefill, setShowRefill] = useState(false);
   const [picker, setPicker] = useState(false);
   const [rules, setRules] = useState<GameInfo | null>(null);
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [hostRoom, setHostRoom] = useState<Room | null>(null);
+  const soc = useSocial();
+  const wal = useWallet();
+  const missions = useMissions();
+  const online$ = soc.peers.length;
+  const friendsOnline = soc.friends.filter((f) => soc.peers.some((p) => p.uid === f.uid)).length;
+  const chestReady = canClaimDaily(wal) || claimableMissions(missions) > 0;
+
+  // Un enlace `?join=CODIGO` (o una invitación aceptada con la app ya abierta) abre la sala sin pasos intermedios.
+  useEffect(() => {
+    if (!linkCode) return;
+    const g = findGame(params.get('game') ?? 'mus');
+    if (g) { setOnline(g); setInviteCode(linkCode); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkCode]);
+  // Cofre diario: la primera vez que entras cada día se abre solo (una vez por sesión).
+  useEffect(() => {
+    try { if (canClaimDaily() && !sessionStorage.getItem('stacks.chestShown')) { sessionStorage.setItem('stacks.chestShown', '1'); setShowRefill(true); } } catch { /* sin sessionStorage */ }
+  }, []);
+  // Invitar a un amigo: usa la sala activa o crea una privada del juego seleccionado y te lleva a ella.
+  const inviteFriend = async (f: Friend) => {
+    const g = GAMES[curRef.current]!;
+    let room = getActiveRoom();
+    if (!room) {
+      try { room = await createRoom(g.id, wal.name); setActiveRoom(room); } catch { return; }
+    }
+    social.invite(f.uid, room.gameId, room.code);
+    const rg = findGame(room.gameId) ?? g;
+    setHostRoom(room); setOnline(rg); setFriendsOpen(false);
+  };
 
   const startOnline = (room: Room) => {
     const g = findGame(room.gameId)!;
@@ -96,7 +138,7 @@ export default function Home() {
   const closeOnline = () => {
     setOnline(null);
     setInviteCode(undefined);
-    if (params.has('room') || params.has('sala')) { params.delete('room'); params.delete('sala'); params.delete('game'); setParams(params, { replace: true }); }
+    if (params.has('room') || params.has('sala') || params.has('join')) { params.delete('room'); params.delete('sala'); params.delete('join'); params.delete('game'); setParams(params, { replace: true }); }
   };
 
   const N = GAMES.length;
@@ -154,19 +196,40 @@ export default function Home() {
     const k = ((i % N) + N) % N;
     el.scrollTo({ left: k * stepOf(el), behavior: 'smooth' });
   }, [N]);
+  const badge = (n: number, tone: string) => (n > 0 ? <span className={`pointer-events-none absolute -right-1 -top-1 grid min-w-[16px] place-items-center rounded-full px-1 text-[10px] font-extrabold leading-4 tabular-nums text-white ${tone}`}>{n}</span> : null);
+  const friendsBtn = (
+    <span className="relative">
+      <IconBtn label={t('soc.title')} onClick={() => setFriendsOpen(true)}><Users size={17} /></IconBtn>
+      {badge(soc.incoming.length, 'bg-red-600')}
+      {soc.incoming.length === 0 && friendsOnline > 0 && badge(friendsOnline, 'bg-emerald-600')}
+    </span>
+  );
+  const boardBtn = <IconBtn label={t('lb.title')} onClick={() => setBoardOpen(true)}><Trophy size={17} /></IconBtn>;
+  const shopBtn = <IconBtn label={t('vip.title')} onClick={() => setShopOpen(true)}><Gem size={17} /></IconBtn>;
+  void online$;
+
   return (
     <div className="screen obsidian">
-      <header className="glass-panel relative z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_auto_1fr]" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
+      <header className="desk-zoom glass-panel relative z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_auto_1fr]" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
         <div className="col-start-1 row-start-1 min-w-0 justify-self-start"><ProfileCard /></div>
-        <div className="col-span-2 row-start-2 flex justify-center sm:col-span-1 sm:col-start-2 sm:row-start-1"><h1 aria-label="STACKS"><Wordmark size={20} /></h1></div>
+        {/* Fila central: STACKS siempre en el centro exacto (columnas 1fr · auto · 1fr); en móvil, a sus lados van Amigos/Ranking y Club VIP */}
+        <div className="col-span-2 row-start-2 grid grid-cols-[1fr_auto_1fr] items-center sm:col-span-1 sm:col-start-2 sm:row-start-1">
+          <div className="flex items-center justify-start gap-1.5 sm:hidden">{friendsBtn}{boardBtn}</div>
+          <h1 aria-label="STACKS"><Wordmark size={20} /></h1>
+          <div className="flex items-center justify-end gap-1.5 sm:hidden">{shopBtn}</div>
+        </div>
         <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-2 justify-self-end sm:col-start-3">
-          <ChipBalance onPlus={() => setShowRefill(true)} />
+          <span className="hidden items-center gap-1.5 sm:flex">{friendsBtn}{boardBtn}{shopBtn}</span>
+          <ChipBalance onPlus={() => setShowRefill(true)} alert={chestReady} />
           <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />
         </div>
       </header>
       <EconomyModal open={showRefill} onClose={() => setShowRefill(false)} />
+      <FriendsDrawer open={friendsOpen} onClose={() => setFriendsOpen(false)} onInvite={(f) => { void inviteFriend(f); }} />
+      <LeaderboardModal open={boardOpen} onClose={() => setBoardOpen(false)} />
+      <VipShopModal open={shopOpen} onClose={() => setShopOpen(false)} />
 
-      <div className="relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between overflow-hidden px-4 pt-3" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
+      <div className="desk-zoom relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between overflow-hidden px-4 pt-3" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
         {/* polvo dorado flotando muy despacio */}
@@ -222,7 +285,7 @@ export default function Home() {
         </nav>
       </div>
 
-      <OnlineLobbyModal game={online} initialCode={inviteCode} onClose={closeOnline} onStart={startOnline} />
+      <OnlineLobbyModal game={online} initialCode={inviteCode} existing={hostRoom} onClose={() => { setHostRoom(null); closeOnline(); }} onStart={startOnline} />
       <RulesPicker open={picker} onClose={() => setPicker(false)} onPick={(g) => { setPicker(false); setRules(g); }} />
       <RulesModal game={rules} onClose={() => setRules(null)} />
       <SettingsModal open={settings} onClose={() => setSettings(false)} />

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import type { Card } from '@mus/engine';
 import { haptic } from '../lib/feedback.ts';
 import { CardFace } from './CardFace.tsx';
+import { CAN_HOVER } from '../../../../store/settings.ts';
 
 interface HandProps {
   cards: Card[];
@@ -82,7 +83,7 @@ function SwipeCard({ card, index, interactive, selected, onSet, eightKings }: {
             : { type: 'spring', stiffness: 130, damping: 17, delay: 0.25 + index * 0.16 }
       }
       onAnimationComplete={() => setDealt(true)}
-      whileHover={interactive && !dragging ? { y: lift - 6 } : undefined}
+      whileHover={interactive && !dragging && CAN_HOVER ? { y: lift - 6 } : undefined}
       disabled={!interactive}
       aria-pressed={selected}
       onPointerDown={down}

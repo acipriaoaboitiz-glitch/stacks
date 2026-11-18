@@ -25,7 +25,7 @@ function Real({ x, y, r = 0, w = 34, file }: { x: number; y: number; r?: number;
   const h = (w * 760) / 480;
   const id = `rc-${file.replace(/\W/g, '')}`;
   return (
-    <g transform={`translate(${x} ${y}) rotate(${r})`} style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.5))' }}>
+    <g transform={`translate(${x} ${y}) rotate(${r})`} >
       <clipPath id={id}><rect x={-w / 2} y={-h / 2} width={w} height={h} rx={w * 0.07} /></clipPath>
       <image href={`${BASE}cards/${file}.webp`} x={-w / 2} y={-h / 2} width={w} height={h} clipPath={`url(#${id})`} preserveAspectRatio="none" />
       <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={w * 0.07} fill="none" stroke="#6b4306" strokeWidth=".8" />
@@ -78,7 +78,7 @@ function Body({ id }: { id: string }) {
       return (
         <g>
           {[['ace_of_spades', 36, -12], ['king_of_hearts', 64, 12]].map(([f, x, r]) => (
-            <g key={f as string} transform={`translate(${x} 54) rotate(${r})`} style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.5))' }}>
+            <g key={f as string} transform={`translate(${x} 54) rotate(${r})`} >
               <image href={`${BASE}cards/french/${f}.svg`} x="-20" y="-29" width="40" height="58" preserveAspectRatio="xMidYMid meet" />
             </g>
           ))}
@@ -90,7 +90,7 @@ function Body({ id }: { id: string }) {
       return (
         <g>
           {[['ace_of_spades', -24], ['king_of_hearts', -12], ['queen_of_clubs', 0], ['jack_of_diamonds', 12], ['10_of_spades', 24]].map(([f, r]) => (
-            <g key={f as string} transform={`translate(${50 + (r as number) * 1.15} ${56 - Math.abs(r as number) * 0.25}) rotate(${r})`} style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.5))' }}>
+            <g key={f as string} transform={`translate(${50 + (r as number) * 1.15} ${56 - Math.abs(r as number) * 0.25}) rotate(${r})`} >
               <image href={`${BASE}cards/french/${f}.svg`} x="-15" y="-22" width="30" height="44" preserveAspectRatio="xMidYMid meet" />
             </g>
           ))}
@@ -108,7 +108,7 @@ function Body({ id }: { id: string }) {
 
 export function GameEmblem({ id, size = 84 }: { id: string; size?: number }) {
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" style={{ display: 'block', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,.5))' }}>
+    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" style={{ display: 'block' }}>
       <SvgDefs />
       <Body id={id} />
     </svg>

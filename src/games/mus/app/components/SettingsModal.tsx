@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useGameSettings, TABLE_COLORS } from '../lib/settings.tsx';
 import { IconClose, IconGear } from './icons.tsx';
+import { CAN_HOVER } from '../../../../store/settings.ts';
 
 /** Modal central de cristal oscuro: silencio global y color del tapete (se previsualiza al instante en la mesa de detrás). */
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -111,7 +112,7 @@ function ColorDot({ label, swatch, selected, onPick }: { label: string; swatch: 
         className="block h-14 w-14 rounded-full border border-white/25 shadow-lg shadow-black/50"
         style={{ background: swatch }}
         animate={{ scale: selected ? 1.12 : 1, boxShadow: selected ? '0 0 0 3px rgba(240,195,95,.95), 0 8px 22px rgba(0,0,0,.5)' : '0 6px 16px rgba(0,0,0,.45)' }}
-        whileHover={{ scale: selected ? 1.12 : 1.06 }}
+        whileHover={CAN_HOVER ? { scale: selected ? 1.12 : 1.06 } : undefined}
         transition={{ duration: 0.15 }}
       />
       <span className={`text-xs ${selected ? 'text-amber-300' : 'text-stone-400'}`}>{label}</span>

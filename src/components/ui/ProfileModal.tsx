@@ -7,9 +7,11 @@ import { saveProfile, useProfile } from '../../store/profile.ts';
 import { useWallet } from '../../store/wallet.ts';
 import { PlayerAvatar, RANKS, rankFor } from './Hud.tsx';
 import { ProfileEditor } from './ProfileEditor.tsx';
+import { useBackClose } from '../../services/backStack.ts';
 
 /** Modal de edición del perfil (nombre, título, foto/avatar) con rango y victorias. */
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  useBackClose(open, onClose);
   const w = useWallet();
   const prof = useProfile();
   const t = useT();

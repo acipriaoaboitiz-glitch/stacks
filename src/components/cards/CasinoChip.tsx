@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { CAN_HOVER } from '../../store/settings.ts';
 
 /** Fichas numeradas de póker: blanca 1, roja 5, azul 10, verde 25 y negra 100. */
 export const CASINO_VALUES = [1, 5, 10, 25, 100] as const;
@@ -28,7 +29,7 @@ export function CasinoChip({ value, size = 40, onClick, disabled, label }: { val
   );
   if (!onClick) return svg;
   return (
-    <motion.button type="button" onClick={onClick} disabled={disabled} aria-label={label ?? `Ficha de ${value}`} whileTap={{ scale: 0.88, y: 2 }} whileHover={{ y: -3 }}
+    <motion.button type="button" onClick={onClick} disabled={disabled} aria-label={label ?? `Ficha de ${value}`} whileTap={{ scale: 0.88, y: 2 }} whileHover={CAN_HOVER ? { y: -3 } : undefined}
       className="rounded-full disabled:opacity-35" style={{ background: 'none', border: 0, padding: 0, borderRadius: '50%', boxShadow: '0 3px 5px rgba(0,0,0,.45)' }}>
       {svg}
     </motion.button>

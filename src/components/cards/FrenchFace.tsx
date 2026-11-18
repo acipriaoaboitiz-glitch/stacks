@@ -3,6 +3,7 @@ import type { FrenchCard, FrenchRank, FrenchSuit } from '../../engine/deck.ts';
 import { FRENCH_RANK_LABEL, frenchFileName } from '../../engine/deck.ts';
 import { APP_NAME } from '../../config.ts';
 import { Bust, Frame, GOLD, H, SvgDefs, W } from './art.tsx';
+import { useCardBack, type BackVariant } from '../../store/cosmetics.ts';
 
 const RED = '#b3141c';
 const INK = '#0f1218';
@@ -110,9 +111,11 @@ function FrenchFaceDrawn({ card }: { card: FrenchCard }) {
 }
 
 /** Reverso Art Déco: filigrana dorada sobre esmeralda oscuro con el emblema central de STACKS. */
-export function CardBackArt({ variant = 'emerald', seal = APP_NAME }: { variant?: 'emerald' | 'crimson' | 'midnight'; seal?: string }) {
-  const base = { emerald: '#06281e', crimson: '#3a0f14', midnight: '#0B1528' }[variant];
-  const mid = { emerald: '#0c4333', crimson: '#6b1c24', midnight: '#16305a' }[variant];
+export function CardBackArt({ variant: forced, seal = APP_NAME }: { variant?: BackVariant; seal?: string }) {
+  const equipped = useCardBack();
+  const variant = forced ?? equipped; // por defecto, el dorso que el jugador tiene equipado en la tienda
+  const base = { emerald: '#06281e', crimson: '#3a0f14', midnight: '#0B1528', gold: '#2b1f05' }[variant];
+  const mid = { emerald: '#0c4333', crimson: '#6b1c24', midnight: '#16305a', gold: '#6e5012' }[variant];
   const id = `bk-${variant}`;
   const cx = W / 2, cy = H / 2;
   return (

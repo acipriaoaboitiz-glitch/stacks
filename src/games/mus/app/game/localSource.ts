@@ -1,6 +1,7 @@
 import { act, autoAction, botAction, legalActions, newMatch, publicView, signIsTruthful, teamOf } from '@mus/engine';
 import type { Action, GameEvent, MusState, RoomConfig, Seat, SignId } from '@mus/engine';
 import type { GameSource, IncomingSign, SeatInfo, Snapshot } from './types.ts';
+import { botName } from '../../../../i18n/index.ts';
 
 export interface LocalOptions {
   name: string;
@@ -29,7 +30,7 @@ export interface LocalOptions {
 }
 
 /** Asientos 1..3; el 2 es tu pareja. */
-const BOT_NAMES = ['Jon', 'Nerea', 'Aitor'];
+const botNames = (): string[] => [botName(1), botName(2), botName(3)];
 
 /** De más a menos interesante para chivar: la pareja bot avisa de lo mejor que lleva. */
 const PARTNER_SIGNS: SignId[] = [
@@ -47,7 +48,7 @@ export function createLocalSource(opts: LocalOptions): GameSource {
   const fast = typeof location !== 'undefined' && new URLSearchParams(location.search).has('fast');
   const [dMin, dMax] = opts.botDelay ?? (fast ? [15, 30] : [1500, 2400]);
   const seed = opts.seed ?? randomSeed();
-  const names = [opts.name || 'Tú', ...BOT_NAMES];
+  const names = [opts.name || 'Tú', ...botNames()];
 
   let state: MusState = newMatch(opts.config ?? {}, seed, (seed % 4) as Seat);
   const listeners = new Set<() => void>();

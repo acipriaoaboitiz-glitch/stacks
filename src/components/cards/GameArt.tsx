@@ -48,7 +48,7 @@ export function GameArt({ id, size = 150 }: { id: string; size?: number }) {
       <div style={{ position: 'absolute', left: '50%', bottom: size * 0.04, width: size * 0.82, height: size * 0.12, marginLeft: -size * 0.41, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,0,0,.6), transparent 70%)' }} />
       {art.cards.map(card)}
       {art.chips?.map((c, i) => (
-        <div key={i} style={{ position: 'absolute', left: '50%', top: '42%', transform: `translate(${c.x * k - 18 * k}px, ${c.y * k - 18 * k}px)`, zIndex: 20 + i, filter: 'drop-shadow(0 4px 4px rgba(0,0,0,.6))' }}>
+        <div key={i} style={{ position: 'absolute', left: '50%', top: '42%', transform: `translate(${c.x * k - 18 * k}px, ${c.y * k - 18 * k}px)`, zIndex: 20 + i, borderRadius: '50%', boxShadow: '0 4px 6px rgba(0,0,0,.55)' }}>
           <Chip value={c.v} size={36 * k} />
         </div>
       ))}

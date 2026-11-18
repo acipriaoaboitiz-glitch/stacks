@@ -29,7 +29,7 @@ export const GAMES: GameInfo[] = [
       'Se juega por parejas (2 contra 2) con 40 cartas; los 3 cuentan como reyes y los 2 como ases (ocho reyes).',
       'Cada jugador recibe 4 cartas y puede pedir mus (descartar y recibir otras) hasta que alguien corte.',
       'Se apuesta en cuatro lances: Grande, Chica, Pares y Juego (o Punto si nadie tiene 31+).',
-      '«Órdago» es apostar toda la partida a un solo lance. Gana la pareja que primero llegue a 40 piedras.',
+      '«Órdago» es apostar toda la partida a un solo lance. Gana el chico la pareja que primero llegue a 40 piedras; quien gane 2 chicos gana la partida.',
     ],
   },
   {
@@ -39,7 +39,7 @@ export const GAMES: GameInfo[] = [
       'Se reparten 3 cartas; la carta que queda al fondo del mazo marca el palo de triunfo.',
       'Se gana la baza con el triunfo más alto o, si no hay, con la carta más alta del palo de salida.',
       'Fuerza: As > 3 > Rey > Caballo > Sota > 7 > 6 > 5 > 4 > 2. Valores: As 11, Tres 10, Rey 4, Caballo 3, Sota 2 (120 en total).',
-      'Tras cada baza se roba del mazo; con más de 60 puntos ganas.',
+      'Tras cada baza se roba del mazo. Al acabar las cartas, quien tenga más puntos gana la ronda; gana la partida quien gane 2 rondas (al mejor de 3).',
     ],
   },
   {
@@ -49,7 +49,7 @@ export const GAMES: GameInfo[] = [
       'Valores: 1–7 su número, Sota 8, Caballo 9, Rey 10. Se reparten 3 cartas y 4 quedan en la mesa.',
       'Juegas una carta y te llevas cualquier grupo de cartas de la mesa con las que sume exactamente 15.',
       'Si te llevas todas las cartas de la mesa haces «escoba» y sumas 1 punto.',
-      'Al final de la ronda: más cartas, más oros, el 7 de oros (el velo) y más sietes (1 punto cada uno).',
+      'Al final de la ronda: más cartas, más oros, el 7 de oros (el velo), el setenta (mejor carta de cada palo: 7 = 21, 6 = 18, As = 16, 5 = 15…) y cada escoba (1 punto cada uno). Se juega a 15 puntos o al mejor de 3 rondas.',
     ],
   },
   {
@@ -69,7 +69,7 @@ export const GAMES: GameInfo[] = [
       'Se reparten 8 cartas; la última del mazo es el triunfo. Hay que asistir al palo, montar y, si no tienes, fallar con triunfo.',
       'Fuerza y valores como en la Brisca (120 puntos) y +10 por la última baza.',
       'Tras ganar una baza puedes cantar «las 20» (Rey y Caballo del mismo palo) o «las 40» (si es el palo de triunfo).',
-      'Cuatro reyes o cuatro caballos en la mano son «Tute» y ganan la partida.',
+      'Cuatro reyes o cuatro caballos en la mano son «Tute» y ganan la ronda. Gana la partida quien gane 2 rondas (al mejor de 3).',
     ],
   },
   {
@@ -100,7 +100,7 @@ export const GAMES: GameInfo[] = [
       'Se reparten 7 cartas. En tu turno juegas una carta del mismo color, número o símbolo que la de arriba.',
       '«Salta» quita el turno al siguiente, «+2» y «+4» le hacen robar y perder el turno, y el sentido se invierte con «Cambio».',
       'El comodín elige color; el «+4» solo se puede jugar si no tienes cartas del color en juego. Sin jugada, robas una.',
-      'Gana quien se queda sin cartas. Al quedarte con una, se canta «¡UNO!».',
+      'Gana la ronda quien se queda sin cartas; al quedarte con una, se canta «¡UNO!». Gana la partida quien gane 2 rondas (al mejor de 3).',
     ],
   },
   {
@@ -111,7 +111,7 @@ export const GAMES: GameInfo[] = [
       'Primera ronda: empieza obligado quien tenga el 3 de oros y sale soltando ese 3 (solo, o junto a todos los demás treses que tenga: pareja, trío o póker). Se juega siempre una carta, una pareja, un trío o un póker del mismo valor.',
       'El siguiente jugador debe superar el valor con la misma cantidad de cartas, o pasar. Un 2 corta la mesa al instante: se limpia el centro y vuelve a salir quien lo tiró.',
       'Si todos pasan o alguien corta con un 2, se limpia la mesa y vuelve a salir quien ganó la baza.',
-      'Según el orden en que te quedas sin cartas: 1º Rey 👑, 2º, 3º y 4º COME💩 💩. En la ronda siguiente COME💩 entrega sus 2 mejores cartas al Rey, y el Rey le da sus 2 peores. Después sale COME💩, con libertad para tirar cualquier carta o combinación.',
+      'Según el orden en que te quedas sin cartas: 1º Rey 👑, 2º, 3º y 4º COME💩. En la ronda siguiente COME💩 entrega sus 2 mejores cartas al Rey, y el Rey le da sus 2 peores. Después sale COME💩, con libertad para tirar cualquier carta o combinación. La serie dura 3 rondas.',
     ],
   },
   {

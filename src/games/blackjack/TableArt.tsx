@@ -9,7 +9,7 @@ export function SemiTable({ children }: { children: ReactNode }) {
   const RADIUS = '4% 4% 50% 50% / 3% 3% 46% 46%';
   return (
     <div className="grid h-full w-full place-items-center">
-    <div className="relative h-full w-full lg:h-auto lg:w-[min(100%,calc((100dvh-330px)*1.3333))] lg:aspect-[4/3]">
+    <div className="relative h-full w-full lg:h-auto lg:w-[min(100%,calc((100dvh/var(--z,1)-330px)*1.3333))] lg:aspect-[4/3]">
       <div aria-hidden className="absolute inset-[1%_1.2%]" style={{ borderRadius: RADIUS, background: 'linear-gradient(180deg,#1b1f1d 0%,#121514 45%,#0b0d0c 100%)', boxShadow: 'inset 0 5px 12px rgba(255,255,255,.09), inset 0 -12px 24px rgba(0,0,0,.85), 0 14px 28px rgba(0,0,0,.55)' }} />
       <div aria-hidden className="absolute inset-[6%_5.6%_5%]" style={{ borderRadius: RADIUS, border: '2px solid rgba(212,175,55,.32)', boxShadow: '0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(251,224,138,.35)' }} />
       <div aria-hidden className="absolute inset-[6.8%_6.3%_5.8%] overflow-hidden" style={{ borderRadius: RADIUS, background: 'radial-gradient(ellipse at 50% 30%, #0B2E20 0%, #0A2819 55%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55)' }}>
@@ -40,7 +40,6 @@ export function DiscardSlot() {
   return (
     <div className="grid justify-items-center gap-0.5" aria-hidden>
       <span className="block h-[calc(var(--card-w)*.14)] w-[calc(var(--card-w)*.72)] rounded-full" style={{ background: '#050807', border: '1px solid rgba(255,255,255,.2)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,.9)' }} />
-      <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-200/50">Descarte</span>
     </div>
   );
 }

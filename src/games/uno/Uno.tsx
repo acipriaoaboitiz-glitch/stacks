@@ -10,8 +10,9 @@ import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import { CARD_EASE, botDelay, feedback } from '../../store/settings.ts';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { wallet } from '../../store/wallet.ts';
+import { SeriesGems, useSeries } from '../shared/series.tsx';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, PhaseCinematic, PillBar, ResultOverlay, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
@@ -25,10 +26,10 @@ const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
 const WIN_BONUS = 100;
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 const SLOT: Record<2 | 3 | 4, Slot[]> = { 2: ['bottom', 'top'], 3: ['bottom', 'right', 'left'], 4: ['bottom', 'right', 'top', 'left'] };
-const BOT_NAMES = ['Jon', 'Nerea', 'Aitor'];
+const botNames = (): string[] => [botName(1), botName(2), botName(3)];
 
 const makePlayers = (n: 2 | 3 | 4): UnoPlayer[] =>
-  Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: i === 0 ? 'Tú' : BOT_NAMES[i - 1]!, human: i === 0 }));
+  Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: i === 0 ? tr('g.you') : botNames()[i - 1]!, human: i === 0 }));
 
 const colorOrder = (c: UnoCard['color']): number => (c === 'wild' ? 9 : COLORS.indexOf(c));
 const sortHand = (h: UnoCard[]): UnoCard[] =>
@@ -114,7 +115,7 @@ export default function Uno() {
     const n = Math.min(4, Math.max(2, seating.fillBots ? 4 : humans.length)) as 2 | 3 | 4;
     const players: UnoPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
-      : { id: `p${i}`, name: BOT_NAMES[i - humans.length] ?? `Bot ${i}`, human: false });
+      : { id: `p${i}`, name: botNames()[i - humans.length] ?? botName(i), human: false });
     setS(newGame(players)); setMarks({}); setPickFor(null); paid.current = false; lastSeq.current = '';
   };
   const noS = s === null;
@@ -221,13 +222,20 @@ export default function Uno() {
     if (who.id === me) show(e.text);
   }, [s, show, me]);
 
+  // Al mejor de 3 rondas: gana la ronda quien se queda sin cartas; la serie, quien llegue a 2 estrellas.
+  const series = useSeries();
+  const { record: recordRound, roundStarted } = series;
   useEffect(() => {
-    if (s && !s.winner) paid.current = false;
+    if (s && !s.winner) { paid.current = false; roundStarted(); }
     if (!s?.winner || paid.current) return;
     paid.current = true;
     juice.chips(slotOfPlayer(s, me, s.winner) === 'bottom' ? 'me' : (slotOfPlayer(s, me, s.winner) as 'top' | 'left' | 'right'));
-    if (s.winner === me) { wallet.add(WIN_BONUS); wallet.recordWin('uno'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
-  }, [s, showCine, me]);
+    recordRound(s.winner);
+  }, [s, me, recordRound, roundStarted]);
+  const champion = series.champion;
+  useEffect(() => {
+    if (champion === me) { wallet.add(WIN_BONUS); wallet.recordWin('uno'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+  }, [champion, me, showCine]);
 
   const myHand = s?.hands[me] ?? [];
   const sorted = useMemo(() => sortHand(myHand), [myHand]);
@@ -469,6 +477,7 @@ export default function Uno() {
       gameId="uno" feltTone="emerald"
       timer={{ active: myTurn, id: `${s.turn}:${myHand.length}:${s.drawn?.id ?? ''}:${s.drawPile.length}`, onTimeout: () => { setPickFor(null); const m = botMove(s); act(m.type === 'play' ? { k: 'play', cardId: m.cardId, color: m.color } : { k: m.type }); } }}
       onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
+      strip={<SeriesGems entries={s.players.map((p) => ({ key: p.id, label: p.id === me ? t('ser.you') : p.name, wins: series.wins[p.id] ?? 0 }))} />}
       header={
         <div className="grid grid-cols-2 gap-[min(1.8vw,8px)]" role="group" aria-label="Estado">
           <div className="min-w-0 rounded-[13px] border border-white/10 bg-gradient-to-br from-teal-400/10 to-black/30 px-3 py-1.5">
@@ -489,14 +498,14 @@ export default function Uno() {
           <AnimatePresence>
             {winner && (
               <ResultOverlay
-                outcome={winner.id === me ? 'win' : 'lose'}
-                prize={WIN_BONUS}
+                outcome={champion === null ? undefined : champion === me ? 'win' : 'lose'}
+                prize={champion === me ? WIN_BONUS : 0}
                 taunt={myHand.length <= 2 ? 'Por los pelos' : 'Te comiste el +4'}
-                title={winner.id === me ? '¡Has ganado!' : `Gana ${winner.name}`}
+                title={champion !== null ? (champion === me ? t('ser.champion') : t('ser.lost')) : t('ser.roundWin', { w: winner.id === me ? t('ser.you') : winner.name })}
                 actions={[
                   ...(online
-                    ? seating.isHost ? [{ label: 'Otra partida', primary: true, onClick: hostStart }] : []
-                    : [{ label: 'Otra partida', primary: true, onClick: () => start(count!) }, { label: 'Cambiar jugadores', onClick: () => { setCount(null); setS(null); } }]),
+                    ? seating.isHost ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: hostStart }] : []
+                    : [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: () => start(count!) }, { label: 'Cambiar jugadores', onClick: () => { setCount(null); setS(null); } }]),
                   { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
                 ]}
               >
@@ -508,7 +517,8 @@ export default function Uno() {
                     </li>
                   ))}
                 </ul>
-                {winner.id === me && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                {champion === me && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                <p className="mt-2 text-center text-[11px] text-stone-400">{t('ser.round', { n: series.played })}</p>
               </ResultOverlay>
             )}
           </AnimatePresence>

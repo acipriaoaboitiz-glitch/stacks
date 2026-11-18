@@ -49,6 +49,9 @@ function load(): WalletState {
 
 let state: WalletState = load();
 const listeners = new Set<() => void>();
+const winListeners = new Set<(gameId: string) => void>();
+/** Avisa de cada victoria de partida (la usan las misiones diarias). */
+export const onWin = (fn: (gameId: string) => void): (() => void) => { winListeners.add(fn); return () => { winListeners.delete(fn); }; };
 
 function set(next: WalletState): void {
   state = next;
@@ -106,7 +109,7 @@ export const wallet = {
   setAvatar(avatar: number): void { set({ ...state, avatar }); },
   /** Fin de partida: suma o corta la racha de victorias. */
   recordResult(won: boolean): void { set({ ...state, winStreak: won ? state.winStreak + 1 : 0 }); },
-  recordWin(gameId: string): void { set({ ...state, wins: { ...state.wins, [gameId]: (state.wins[gameId] ?? 0) + 1 } }); },
+  recordWin(gameId: string): void { set({ ...state, wins: { ...state.wins, [gameId]: (state.wins[gameId] ?? 0) + 1 } }); winListeners.forEach((f) => f(gameId)); },
   setName(name: string): void {
     set({ ...state, name: name.trim().slice(0, 16) || 'Jugador' });
   },

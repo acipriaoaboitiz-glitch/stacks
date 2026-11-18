@@ -79,7 +79,7 @@ export function TableCenter({ view, mySeat, names, banner }: { view: PublicState
                     ? 'border-rose-500 bg-rose-950/70 shadow-[0_0_22px_rgba(255,77,94,.25)]'
                     : hot ? 'border-amber-300/60 bg-black/35' : 'border-white/10 bg-black/25'
                 }`}
-                animate={ordago ? { boxShadow: ['0 0 12px rgba(255,77,94,.15)', '0 0 28px rgba(255,77,94,.4)', '0 0 12px rgba(255,77,94,.15)'] } : undefined}
+                animate={ordago ? { scale: [1, 1.04, 1] } : undefined}
                 transition={ordago ? { duration: 1.5, repeat: Infinity } : undefined}
               >
                 <b className="text-[clamp(12px,3.6vw,16px)]">{bet.head}</b>

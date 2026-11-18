@@ -4,6 +4,7 @@ import type { AnyCard } from '../../engine/deck.ts';
 import { FRENCH_ASPECT, cardLabel } from '../../engine/deck.ts';
 import { CardBackArt, FrenchFace } from './FrenchFace.tsx';
 import { SpanishFace } from './SpanishFace.tsx';
+import { CAN_HOVER } from '../../store/settings.ts';
 
 const ASPECT = 480 / 760; // proporción real de las cartas Fournier
 const ASSET = `${import.meta.env.BASE_URL}cards/`;
@@ -83,7 +84,7 @@ export function PlayingCard({
   if (!onClick) return <motion.div {...common} className={cls}>{inner}</motion.div>;
   return (
     <motion.button type="button" className={`card-btn ${cls ?? ''}`} whileTap={{ scale: 0.95 }} onClick={onClick}
-      whileHover={lift ? { y: -22, scale: 1.08, rotate: 0, zIndex: 30 } : undefined} {...common}
+      whileHover={lift && CAN_HOVER ? { y: -22, scale: 1.08, rotate: 0, zIndex: 30 } : undefined} {...common}
       aria-pressed={selected} aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
       style={{
         ...common.style, background: 'none', border: 0, padding: 0, borderRadius: radius,

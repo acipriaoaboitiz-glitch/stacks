@@ -1,9 +1,14 @@
 import { useSyncExternalStore } from 'react';
 import { PREFS, setPref } from '../games/mus/app/lib/feedback.ts';
+import { getAudioContext } from '../services/audioCore.ts';
+import { triggerHaptic } from '../services/haptics.ts';
+
+/** El «hover» se queda pegado en pantallas táctiles: los efectos de ratón solo se usan con puntero fino. */
+export const CAN_HOVER: boolean = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches === true;
 
 export type AnimSpeed = 'normal' | 'rapida';
 export const SPEED_FACTOR: Record<AnimSpeed, number> = { normal: 1, rapida: 1.8 };
-export type Lang = 'es' | 'eu' | 'en';
+export type Lang = 'es' | 'eu' | 'en' | 'fr' | 'de';
 export type ThemeId = 'esmeralda' | 'royal' | 'burdeos' | 'obsidiana' | 'purpura';
 
 /** Cinco tapetes: variables CSS del paño (las usan lobby, mesas y la mesa de Mus). */
@@ -30,7 +35,7 @@ function load(): Settings {
       vibration: p.vibration !== false,
       speed: p.speed === 'rapida' ? 'rapida' : 'normal',
       theme: p.theme && p.theme in THEMES ? p.theme : 'esmeralda',
-      lang: p.lang === 'eu' || p.lang === 'en' ? p.lang : 'es',
+      lang: p.lang === 'eu' || p.lang === 'en' || p.lang === 'fr' || p.lang === 'de' ? p.lang : 'es',
       help: p.help !== false,
     };
   } catch {
@@ -78,18 +83,11 @@ export const FAST_EASE = { duration: 0.22, ease: 'easeOut' } as const;
 /** Cartas en movimiento: solo transform/opacity y como máximo 0,18 s. */
 export const CARD_EASE = { duration: 0.18, ease: 'easeOut' } as const;
 
-let ctx: AudioContext | null = null;
 let noiseBuf: AudioBuffer | null = null;
 
 export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn' | 'draw' | 'impact' | 'defeat' | 'tick' | 'whoosh';
 
-function audio(): AudioContext | null {
-  try {
-    ctx ??= new AudioContext();
-    if (ctx.state === 'suspended') void ctx.resume();
-    return ctx;
-  } catch { return null; }
-}
+const audio = (): AudioContext | null => getAudioContext();
 
 /** Ráfaga de ruido filtrada (reparto de naipes, roce sobre el paño). */
 function noise(c: AudioContext, at: number, dur: number, freq: number, gain: number): void {
@@ -127,7 +125,7 @@ function tone(c: AudioContext, at: number, freq: number, dur: number, gain: numb
 // ─── Game Feel: efectos procedurales (Web Audio, sin archivos, latencia ~0) ─────────────────────
 const buzz = (pattern: number | number[]): void => {
   if (!state.vibration || !('vibrate' in navigator)) return;
-  try { navigator.vibrate(pattern); } catch { /* iOS / sin soporte */ }
+  triggerHaptic(pattern);
 };
 /** Ejecuta `fn` con el contexto de audio solo si el sonido global está activo. */
 const withAudio = (fn: (c: AudioContext, t: number) => void): void => {

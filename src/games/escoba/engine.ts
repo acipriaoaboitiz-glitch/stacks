@@ -19,7 +19,7 @@ export interface PlayEvent {
   escoba: boolean;
 }
 
-export interface ScoreLine { label: string; points: number[] }
+export interface ScoreLine { label: string; points: number[]; /** Clave del concepto (cartas, oros, setenta, sevenGolds, sweeps) para traducirlo. */ key?: string; /** Detalle, p. ej. «12–8». */ detail?: string }
 
 export interface EscobaState {
   n: number;
@@ -38,23 +38,28 @@ export interface EscobaState {
   /** Desglose de la última ronda (solo en roundOver / matchOver). */
   summary: ScoreLine[] | null;
   roundNo: number;
+  /** Formato «al mejor de 3 rondas»: gana la partida quien gane 2 rondas (la ronda la gana quien más puntos sume en ella). */
+  bo3?: boolean;
+  /** Rondas ganadas por jugador (solo con `bo3`). */
+  roundWins?: number[];
   /** Jugadores de la mesa (índice = asiento en la partida). Los rellena la mesa. */
   players?: { id: string; name: string; human: boolean; peerId?: string }[];
 }
 
 const zeros = (n: number): number[] => Array.from({ length: n }, () => 0);
 
-export function newRound(n: number, dealer: number, scores: number[], roundNo: number): EscobaState {
+export function newRound(n: number, dealer: number, scores: number[], roundNo: number, bo3 = false, roundWins?: number[]): EscobaState {
   const deck = shuffle(spanishDeck());
   const hands = Array.from({ length: n }, () => deck.splice(0, 3));
   const table = deck.splice(0, 4);
   return {
     n, deck, table, hands, captured: Array.from({ length: n }, () => []), escobas: zeros(n), scores,
     turn: (dealer + 1) % n, dealer, lastCapturer: null, phase: 'playing', lastPlay: null, summary: null, roundNo,
+    ...(bo3 ? { bo3: true, roundWins: roundWins ?? zeros(n) } : {}),
   };
 }
 
-export const newMatch = (n: number): EscobaState => newRound(n, n - 1, zeros(n), 1);
+export const newMatch = (n: number, bo3 = false): EscobaState => newRound(n, n - 1, zeros(n), 1, bo3);
 
 /** Todos los subconjuntos de la mesa (por índice) que sumados a la carta jugada dan 15. */
 export function findCaptures(table: readonly SpanishCard[], card: SpanishCard): number[][] {
@@ -113,6 +118,14 @@ export function play(s: EscobaState, cardId: string, take: readonly number[]): E
 }
 
 const count = (cards: readonly SpanishCard[], f: (c: SpanishCard) => boolean): number => cards.filter(f).length;
+const PRIMERA: Record<number, number> = { 7: 21, 6: 18, 1: 16, 5: 15, 4: 14, 3: 13, 2: 12, 10: 10, 11: 10, 12: 10 };
+/** Valor de «setenta»: suma de la mejor carta de cada palo (0 si falta algún palo). */
+function seventy(cards: readonly SpanishCard[]): number {
+  const best: Record<string, number> = {};
+  for (const c of cards) best[c.suit] = Math.max(best[c.suit] ?? 0, PRIMERA[c.rank] ?? 0);
+  const suits = Object.keys(best);
+  return suits.length === 4 ? suits.reduce((n, k) => n + best[k]!, 0) : 0;
+}
 
 function finishRound(s: EscobaState): EscobaState {
   const captured = s.captured.map((c) => c.slice());
@@ -120,24 +133,35 @@ function finishRound(s: EscobaState): EscobaState {
 
   const lines: ScoreLine[] = [];
   /** Un punto para quien tiene estrictamente más; los empates no puntúan. */
-  const majority = (label: string, vals: number[]): void => {
+  const majority = (key: string, label: string, vals: number[]): void => {
     const max = Math.max(...vals);
     const leaders = vals.filter((v) => v === max).length;
-    lines.push({ label: `${label} (${vals.join('–')})`, points: vals.map((v) => (v === max && leaders === 1 ? 1 : 0)) });
+    lines.push({ key, label, detail: vals.join('–'), points: vals.map((v) => (v === max && leaders === 1 ? 1 : 0)) });
   };
-  majority('Más cartas', captured.map((c) => c.length));
-  majority('Más oros', captured.map((c) => count(c, (x) => x.suit === 'oros')));
-  majority('Más sietes', captured.map((c) => count(c, (x) => x.rank === 7)));
-  lines.push({ label: 'Siete de oros', points: captured.map((c) => (c.some((x) => x.suit === 'oros' && x.rank === 7) ? 1 : 0)) });
-  lines.push({ label: 'Escobas', points: s.escobas.slice() });
+  majority('cards', 'Cartas', captured.map((c) => c.length));
+  majority('golds', 'Oros', captured.map((c) => count(c, (x) => x.suit === 'oros')));
+  // Setenta (primera): mejor carta de cada palo con 7 = 21, 6 = 18, As = 16, 5 = 15, 4 = 14, 3 = 13, 2 = 12 y figuras = 10; hacen falta los 4 palos.
+  majority('seventy', 'Setenta', captured.map((c) => seventy(c)));
+  lines.push({ key: 'sevenGolds', label: 'Siete de oros', points: captured.map((c) => (c.some((x) => x.suit === 'oros' && x.rank === 7) ? 1 : 0)) });
+  lines.push({ key: 'sweeps', label: 'Escobas', points: s.escobas.slice() });
 
-  const scores = s.scores.map((sc, i) => sc + lines.reduce((n, l) => n + l.points[i]!, 0));
+  const roundPts = s.scores.map((_, i) => lines.reduce((n, l) => n + l.points[i]!, 0));
+  const scores = s.scores.map((sc, i) => sc + roundPts[i]!);
+  if (s.bo3) {
+    // Al mejor de 3: la ronda la gana quien más puntos sume en ella (los empates no cuentan); 2 rondas ganadas = partida.
+    const top = Math.max(...roundPts);
+    const winners = roundPts.map((v, i) => (v === top ? i : -1)).filter((i) => i >= 0);
+    const roundWins = (s.roundWins ?? s.scores.map(() => 0)).slice();
+    if (winners.length === 1) roundWins[winners[0]!]!++;
+    const over = Math.max(...roundWins) >= 2;
+    return { ...s, captured, table: [], scores, roundWins, summary: lines, phase: over ? 'matchOver' : 'roundOver' };
+  }
   const max = Math.max(...scores);
   const over = max >= TARGET_SCORE && scores.filter((v) => v === max).length === 1;
   return { ...s, captured, table: [], scores, summary: lines, phase: over ? 'matchOver' : 'roundOver' };
 }
 
-export const nextRound = (s: EscobaState): EscobaState => ({ ...newRound(s.n, (s.dealer + 1) % s.n, s.scores, s.roundNo + 1), players: s.players });
+export const nextRound = (s: EscobaState): EscobaState => ({ ...newRound(s.n, (s.dealer + 1) % s.n, s.scores, s.roundNo + 1, s.bo3, s.roundWins), players: s.players });
 
 export type EscobaAction = { k: 'play'; cardId: string; take: number[] } | { k: 'next' };
 /** Reductor para partidas en sala (solo mueve quien tiene el turno). */

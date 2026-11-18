@@ -1,8 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
-import { Check, Gauge, HelpCircle, Languages, Palette, Smartphone, Volume2, X } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Gauge, HelpCircle, Languages, Lock, Palette, ScrollText, Smartphone, Trash2, Volume2, X } from 'lucide-react';
+import { themeUnlocked, useCosmetics } from '../../store/cosmetics.ts';
 import { useT } from '../../i18n/index.ts';
 import { feedback, setSettings, THEMES, useSettings, type AnimSpeed, type Lang, type ThemeId } from '../../store/settings.ts';
+import { CAN_HOVER } from '../../store/settings.ts';
+import { useBackClose } from '../../services/backStack.ts';
 
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -26,13 +30,17 @@ function Section({ icon, title, children }: { icon: ReactNode; title: string; ch
 }
 
 const LANGS: { id: Lang; label: string; name: string }[] = [
-  { id: 'es', label: 'ES', name: 'Español' }, { id: 'eu', label: 'EU', name: 'Euskara' }, { id: 'en', label: 'EN', name: 'English' },
+  { id: 'es', label: 'ES', name: 'Español' }, { id: 'en', label: 'EN', name: 'English' }, { id: 'fr', label: 'FR', name: 'Français' }, { id: 'de', label: 'DE', name: 'Deutsch' }, { id: 'eu', label: 'EU', name: 'Euskara' },
 ];
 const SPEEDS: AnimSpeed[] = ['normal', 'rapida'];
 
 /** Ajustes globales (engranaje): tapete, idioma y experiencia de juego, con efecto en tiempo real. */
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useSettings();
+  useBackClose(open, onClose);
+  useCosmetics(); // se repinta al comprar un tapete
+  const [legal, setLegal] = useState<'privacidad' | 'terminos' | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const t = useT();
   return (
     <AnimatePresence>
@@ -45,7 +53,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
             transition={{ type: 'spring', stiffness: 320, damping: 30 }} onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center">
               <h2 className="flex-1 font-[var(--font-display)] text-xl font-bold text-amber-300">{t('set.title')}</h2>
-              <motion.button type="button" onClick={onClose} aria-label={t('set.close')} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+              <motion.button type="button" onClick={onClose} aria-label={t('set.close')} whileHover={CAN_HOVER ? { scale: 1.08 } : undefined} whileTap={{ scale: 0.9 }}
                 className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/10"><X size={18} /></motion.button>
             </div>
 
@@ -54,10 +62,11 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label={t('set.table')}>
                   {(Object.keys(THEMES) as ThemeId[]).map((id) => (
                     <motion.button key={id} type="button" role="radio" aria-checked={s.theme === id} aria-label={t(`th.${id}`)} title={t(`th.${id}`)}
-                      whileHover={{ y: -2 }} whileTap={{ scale: 0.9 }} onClick={() => { setSettings({ theme: id }); feedback('tap'); }}
+                      whileHover={CAN_HOVER && themeUnlocked(id) ? { y: -2 } : undefined} whileTap={{ scale: 0.9 }} disabled={!themeUnlocked(id)} onClick={() => { if (!themeUnlocked(id)) return; setSettings({ theme: id }); feedback('tap'); }}
                       className="grid justify-items-center gap-1">
                       <span className={`relative grid size-12 place-items-center rounded-full bg-gradient-to-br ${THEMES[id].swatch} border-2 shadow-[inset_0_2px_6px_rgba(255,255,255,.12),0_4px_10px_rgba(0,0,0,.4)] ${s.theme === id ? 'border-amber-300' : 'border-white/15'}`}>
                         {s.theme === id && <Check size={18} className="text-amber-300" />}
+                        {!themeUnlocked(id) && <span className="absolute inset-0 grid place-items-center rounded-full bg-black/60"><Lock size={16} className="text-amber-200" aria-label="Bloqueado: cómpralo en Club VIP" /></span>}
                       </span>
                     </motion.button>
                   ))}
@@ -66,9 +75,9 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
               </Section>
 
               <Section icon={<Languages size={14} />} title={t('set.lang')}>
-                <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('set.lang')}>
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('set.lang')}>
                   {LANGS.map((l) => (
-                    <motion.button key={l.id} type="button" role="radio" aria-checked={s.lang === l.id} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}
+                    <motion.button key={l.id} type="button" role="radio" aria-checked={s.lang === l.id} whileHover={CAN_HOVER ? { scale: 1.03 } : undefined} whileTap={{ scale: 0.95 }}
                       onClick={() => { setSettings({ lang: l.id }); feedback('tap'); }}
                       className={`h-11 rounded-xl border text-[13px] font-bold ${s.lang === l.id ? 'border-amber-200 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950' : 'border-white/10 bg-white/5 text-stone-200'}`}>
                       <span className="font-mono">{l.label}</span> <span className="text-[11px] opacity-80">{l.name}</span>
@@ -89,7 +98,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   <p className="mb-1.5 text-sm font-bold">{t('set.speed')}</p>
                   <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('set.speed')}>
                     {SPEEDS.map((sp) => (
-                      <motion.button key={sp} type="button" role="radio" aria-checked={s.speed === sp} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}
+                      <motion.button key={sp} type="button" role="radio" aria-checked={s.speed === sp} whileHover={CAN_HOVER ? { scale: 1.03 } : undefined} whileTap={{ scale: 0.95 }}
                         onClick={() => { setSettings({ speed: sp }); feedback('tap'); }}
                         className={`h-11 rounded-xl border text-[13px] font-bold ${s.speed === sp ? 'border-amber-200 bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950' : 'border-white/10 bg-white/5 text-stone-200'}`}>
                         {sp === 'normal' ? t('set.normal') : t('set.fast')}
@@ -97,6 +106,24 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                     ))}
                   </div>
                 </div>
+              </Section>
+
+              <Section icon={<ScrollText size={14} />} title={t('lg.title')}>
+                <p className="rounded-xl border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-[12px] font-semibold text-amber-100">{t('lg.notice')}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setLegal(legal === 'privacidad' ? null : 'privacidad')} className="h-11 touch-manipulation rounded-xl border border-white/10 bg-white/5 text-[13px] font-bold text-stone-200">{t('lg.privacy')}</button>
+                  <button type="button" onClick={() => setLegal(legal === 'terminos' ? null : 'terminos')} className="h-11 touch-manipulation rounded-xl border border-white/10 bg-white/5 text-[13px] font-bold text-stone-200">{t('lg.terms')}</button>
+                </div>
+                {legal && (
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-3 text-[11px] leading-relaxed text-stone-300">
+                    <p className="mb-1 font-bold text-amber-200">{t('lg.template')}</p>
+                    <p>{legal === 'privacidad' ? t('lg.privacyText') : t('lg.termsText')}</p>
+                  </div>
+                )}
+                <button type="button" onClick={() => { if (!confirmReset) { setConfirmReset(true); window.setTimeout(() => setConfirmReset(false), 4000); return; } try { localStorage.clear(); sessionStorage.clear(); } catch { /* sin almacenamiento */ } window.location.reload(); }}
+                  className={`flex h-11 touch-manipulation items-center justify-center gap-2 rounded-xl border text-[13px] font-bold ${confirmReset ? 'border-red-400 bg-red-600 text-white' : 'border-red-400/30 bg-red-950/30 text-red-200'}`}>
+                  <Trash2 size={15} aria-hidden /> {confirmReset ? t('lg.resetConfirm') : t('lg.reset')}
+                </button>
               </Section>
             </div>
           </motion.div>

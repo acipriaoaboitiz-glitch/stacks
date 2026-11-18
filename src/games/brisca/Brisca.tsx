@@ -12,8 +12,9 @@ import type { SeatInfo } from '../mus/app/game/types.ts';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SUIT_LABEL, type AnyCard } from '../../engine/deck.ts';
 import { botDelay, aiDelay, feedback } from '../../store/settings.ts';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { wallet } from '../../store/wallet.ts';
+import { SeriesGems, useSeries } from '../shared/series.tsx';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, briscaDeco, PhaseCinematic, PillBar, ResultOverlay, ScorePair, tilt, useBanner, useCine } from '../shared/kit.tsx';
 import {
@@ -21,12 +22,12 @@ import {
 } from './engine.ts';
 
 const WIN_BONUS = 100;
-const SEAT_NAMES = ['Tú', 'Rival 1', 'Tu pareja', 'Rival 2'];
+const seatNames = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 
 function makePlayers(count: 2 | 4): BPlayer[] {
   return Array.from({ length: count }, (_, i) => ({
-    id: `p${i}`, human: i === 0, name: count === 2 ? (i === 0 ? 'Tú' : 'Bot') : SEAT_NAMES[i]!,
+    id: `p${i}`, human: i === 0, name: count === 2 ? (i === 0 ? 'Tú' : botName(1)) : seatNames()[i]!,
   }));
 }
 /** Sentido de juego antihorario: abajo → derecha → arriba → izquierda. */
@@ -64,7 +65,7 @@ export default function Brisca() {
   // Online: el anfitrión reparte según los asientos de la sala (parejas 0+2 contra 1+3).
   const hostStart = () => {
     const n = teamTableSize(seating);
-    setS(initBriscaGame(playersBySeat(seating, n, (i) => (n === 2 ? 'Bot' : `Bot ${i}`)) as BPlayer[])); setBubbles({}); paidRef.current = false; lastShown.current = '';
+    setS(initBriscaGame(playersBySeat(seating, n, (i) => (n === 2 ? botName(1) : botName(i))) as BPlayer[])); setBubbles({}); paidRef.current = false; lastShown.current = '';
   };
   const noS = s === null;
   useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
@@ -83,7 +84,7 @@ export default function Brisca() {
         feedback('trick');
         const winCard = s.currentTrick.find((c) => c.playerId === ev.winnerId)?.card;
         if (winCard?.rank === 1 && ev.points > 20) juice.cinematic({ title: '¡ARRASTRE DE AS!', sub: `${winner.name} · +${ev.points} puntos`, tone: 'gold', good: true });
-        else if (ev.points >= 10) { juice.points(`+${ev.points}`, 'gold'); if (winner.id === me) juice.chips('me'); }
+        else if (ev.points >= 10) { juice.points(`+${ev.points}`, 'gold'); if (winCard?.suit === s.trumpSuit) juice.slam(); if (winner.id === me) juice.chips('me'); }
         if (ev.points > 0) {
           show(`+${ev.points} PUNTOS`);
           const at = Date.now();
@@ -105,13 +106,20 @@ export default function Brisca() {
     return () => window.clearTimeout(t);
   }, [s, show, hostLike]);
 
+  // Al mejor de 3 rondas: cada partida del motor es una ronda; gana la serie quien gane 2.
+  const series = useSeries();
+  const { record: recordRound, roundStarted } = series;
   useEffect(() => {
-    if (s?.phase === 'playing') paidRef.current = false;
+    if (s?.phase === 'playing') { paidRef.current = false; roundStarted(); }
     if (s?.phase !== 'finished' || paidRef.current) return;
     paidRef.current = true;
     const { mine, theirs } = sidesFor(s, me);
-    if (mine > theirs) { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); juice.chips('me'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
-  }, [s, showCine, me]);
+    recordRound(mine > theirs ? 'me' : mine < theirs ? 'them' : null);
+  }, [s, me, recordRound, roundStarted]);
+  const champion = series.champion;
+  useEffect(() => {
+    if (champion === 'me') { wallet.add(WIN_BONUS); wallet.recordWin('brisca'); juice.chips('me'); showCine('¡VICTORIA!', `+${WIN_BONUS} fichas`); }
+  }, [champion, showCine]);
 
   const played = s?.currentTrick.length ?? 0;
   useEffect(() => { if (played > 0) feedback('deal'); }, [played]);
@@ -253,7 +261,10 @@ export default function Brisca() {
       gameId="brisca"
       onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
       timer={{ active: myTurn, id: `${s.currentTrick.length}:${s.deck.length}`, onTimeout: () => { const h = s.hands[me]!; const c = h[Math.floor(Math.random() * h.length)]; if (c) play(c); } }}
-      header={<ScorePair labels={n === 4 ? ['Nosotros', 'Ellos'] : ['Tú', online ? 'Rival' : 'Bot']} values={[mine, theirs]} target={120} />}
+      header={<ScorePair labels={n === 4 ? [t('ser.us'), t('ser.them')] : [t('ser.you'), online ? t('ser.rival') : botName(1)]} values={[mine, theirs]} target={120} />}
+      strip={(
+          <SeriesGems entries={[{ key: 'me', label: n === 4 ? t('ser.us') : t('ser.you'), wins: series.wins.me ?? 0 }, { key: 'them', label: n === 4 ? t('ser.them') : online ? t('ser.rival') : botName(1), wins: series.wins.them ?? 0 }]} />
+      )}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -262,19 +273,20 @@ export default function Brisca() {
           <AnimatePresence>
             {done && (
               <ResultOverlay
-                outcome={mine === theirs ? undefined : mine > theirs ? 'win' : 'lose'}
-                prize={WIN_BONUS}
+                outcome={champion === null ? undefined : champion === 'me' ? 'win' : 'lose'}
+                prize={champion === 'me' ? WIN_BONUS : 0}
                 taunt={Math.abs(mine - theirs) < 10 ? 'Por los pelos' : 'Te arrastraron las bazas'}
-                title={mine > theirs ? '¡Ganas la partida!' : mine < theirs ? 'Pierdes la partida' : 'Empate a 60'}
+                title={champion !== null ? (champion === 'me' ? t('ser.champion') : t('ser.lost')) : mine === theirs ? '60 – 60' : t('ser.roundWin', { w: mine > theirs ? (n === 4 ? t('ser.us') : t('ser.you')) : (n === 4 ? t('ser.them') : t('ser.rival')) })}
                 actions={[
                   ...(online
-                    ? hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []
-                    : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }, { label: 'Cambiar formato', onClick: () => { setCount(null); setS(null); } }]),
+                    ? hostLike ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: hostStart }] : []
+                    : [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: () => start(count!) }, { label: 'Cambiar formato', onClick: () => { setCount(null); setS(null); } }]),
                   { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
                 ]}
               >
-                <ScorePair labels={sc.mode === 'teams' ? [sc.teamA.label, sc.teamB.label] : ['Tú', 'Bot']} values={[mine, theirs]} target={120} />
-                {mine > theirs && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                <ScorePair labels={sc.mode === 'teams' ? [sc.teamA.label, sc.teamB.label] : ['Tú', botName(1)]} values={[mine, theirs]} target={120} />
+                {champion === 'me' && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                <p className="mt-2 text-center text-[11px] text-stone-400">{t('ser.round', { n: series.played })} · {t('ser.score')}: {series.wins.me ?? 0} – {series.wins.them ?? 0}</p>
               </ResultOverlay>
             )}
           </AnimatePresence>

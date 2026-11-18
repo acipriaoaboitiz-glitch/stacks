@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { playersBySeat, teamTableSize, useReplica, useSeating } from '../../services/onlineGame.ts';
 import { juice } from '../../services/juice.ts';
+import { progression } from '../../store/progression.ts';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
@@ -11,10 +12,11 @@ import { Button } from '../mus/app/components/ui.tsx';
 import type { Bubble } from '../mus/app/game/describe.ts';
 import type { SeatInfo } from '../mus/app/game/types.ts';
 import { SUIT_LABEL, type AnyCard, type SpanishSuit } from '../../engine/deck.ts';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { aiDelay, botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { points as briscaPts } from '../brisca/engine.ts';
+import { SeriesGems, useSeries } from '../shared/series.tsx';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, briscaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
 import {
@@ -22,7 +24,7 @@ import {
 } from './engine.ts';
 
 const WIN_BONUS = 100;
-const NAMES = ['Tú', 'Rival 1', 'Tu pareja', 'Rival 2'];
+const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 const SLOT: Record<2 | 4, Slot[]> = { 2: ['bottom', 'top'], 4: ['bottom', 'right', 'top', 'left'] };
 const DIR: Record<Slot, { x: number; y: number }> = { bottom: { x: 0, y: 1 }, right: { x: 1, y: 0 }, top: { x: 0, y: -1 }, left: { x: -1, y: 0 } };
@@ -30,7 +32,7 @@ const trickVariants: Variants = {
   exit: (slot: Slot) => ({ x: DIR[slot].x * 230, y: DIR[slot].y * 260, scale: 0.35, opacity: 0, rotate: 0, transition: { duration: 0.55, ease: [0.4, 0, 0.9, 0.4] } }),
 };
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
-const makePlayers = (n: 2 | 4): TPlayer[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, human: i === 0, name: n === 2 ? (i === 0 ? 'Tú' : 'Bot') : NAMES[i]! }));
+const makePlayers = (n: 2 | 4): TPlayer[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, human: i === 0, name: n === 2 ? (i === 0 ? 'Tú' : botName(1)) : names()[i]! }));
 
 export default function Tute() {
   const nav = useNavigate();
@@ -54,7 +56,7 @@ export default function Tute() {
   // Online: el anfitrión reparte según los asientos de la sala (parejas 0+2 contra 1+3).
   const hostStart = () => {
     const n = teamTableSize(seating);
-    setS(newTute(playersBySeat(seating, n, (i) => (n === 2 ? 'Bot' : `Bot ${i}`)) as TPlayer[])); setBubbles({}); paid.current = false; lastSeq.current = '';
+    setS(newTute(playersBySeat(seating, n, (i) => (n === 2 ? botName(1) : botName(i))) as TPlayer[])); setBubbles({}); paid.current = false; lastSeq.current = '';
   };
   const noS = s === null;
   useEffect(() => { if (online && seating.isHost && noS) hostStart(); }, [online, seating.isHost, noS]); // eslint-disable-line
@@ -93,7 +95,7 @@ export default function Tute() {
       const big = /40/.test(e.text);
       juice.cinematic({ title: big ? '¡LAS 40!' : '¡LAS 20!', sub: e.text, tone: big ? 'gold' : 'emerald', good: true });
       const who = s.players.find((p) => p.id === e.by)!;
-      if (who.id === me) show(e.text.replace('Canta', 'Cantas')); else {
+      if (who.id === me) { progression.track('cante', 'tute'); show(e.text.replace('Canta', 'Cantas')); } else {
         const at = Date.now();
         setBubbles((b) => ({ ...b, [who.id]: { text: e.text, tone: 'bet', at } }));
         window.setTimeout(() => setBubbles((b) => (b[who.id]?.at === at ? { ...b, [who.id]: undefined } : b)), 2200);
@@ -101,12 +103,20 @@ export default function Tute() {
     }
   }, [s, show, showCine, me]);
 
+  // Al mejor de 3 rondas: cada partida del motor es una ronda; gana la serie quien gane 2.
+  const series = useSeries();
+  const { record: recordRound, roundStarted } = series;
   useEffect(() => {
-    if (s?.phase === 'playing') paid.current = false;
+    if (s?.phase === 'playing') { paid.current = false; roundStarted(); }
     if (s?.phase !== 'finished' || paid.current) return;
     paid.current = true;
-    if (winnerTeam(s) === teamOf(s, s.players.findIndex((p) => p.id === me))) { wallet.add(WIN_BONUS); wallet.recordWin('tute'); juice.chips('me'); }
-  }, [s, me]);
+    const w = winnerTeam(s);
+    recordRound(w === null ? null : w === teamOf(s, s.players.findIndex((p) => p.id === me)) ? 'me' : 'them');
+  }, [s, me, recordRound, roundStarted]);
+  const champion = series.champion;
+  useEffect(() => {
+    if (champion === 'me') { wallet.add(WIN_BONUS); wallet.recordWin('tute'); juice.chips('me'); }
+  }, [champion]);
 
   const played = s?.trick.length ?? 0;
   useEffect(() => { if (played > 0) feedback('deal'); }, [played]);
@@ -248,13 +258,16 @@ export default function Tute() {
     </>
   );
 
-  const labels: [string, string] = n === 4 ? ['Nosotros', 'Ellos'] : ['Tú', online ? 'Rival' : 'Bot'];
+  const labels: [string, string] = n === 4 ? [t('ser.us'), t('ser.them')] : [t('ser.you'), online ? t('ser.rival') : botName(1)];
   return (
     <GameFrame
       gameId="tute"
       onExit={online ? () => { setActiveRoom(null); nav('/'); } : undefined}
       timer={{ active: myTurn, id: `${s.trick.length}:${s.hands[me]!.length}`, onTimeout: () => { const l = legalCards(s, me); const c = l[Math.floor(Math.random() * l.length)]; if (c) play(c); } }}
-      header={<ScorePair labels={labels} values={[pts[0]!, pts[1]!]} subs={[myCantes[0] ? `cantes +${myCantes[0]}` : null, myCantes[1] ? `cantes +${myCantes[1]}` : null]} />}
+      header={<ScorePair labels={labels} values={[pts[0]!, pts[1]!]} target={120} subs={[myCantes[0] ? `cantes +${myCantes[0]}` : null, myCantes[1] ? `cantes +${myCantes[1]}` : null]} />}
+      strip={(
+          <SeriesGems entries={[{ key: 'me', label: labels[0], wins: series.wins.me ?? 0 }, { key: 'them', label: labels[1], wins: series.wins.them ?? 0 }]} />
+      )}
       felt={felt}
       bottom={bottom}
       overlays={
@@ -263,14 +276,14 @@ export default function Tute() {
           <AnimatePresence>
             {done && (
               <ResultOverlay
-                outcome={wt === null ? undefined : wt === myTeam ? 'win' : 'lose'}
-                prize={WIN_BONUS}
+                outcome={champion === null ? undefined : champion === 'me' ? 'win' : 'lose'}
+                prize={champion === 'me' ? WIN_BONUS : 0}
                 taunt="Te han cantado las cuarenta"
-                title={wt === null ? 'Empate' : wt === myTeam ? t('g.win') : t('g.lose')}
+                title={champion !== null ? (champion === 'me' ? t('ser.champion') : t('ser.lost')) : wt === null ? '=' : t('ser.roundWin', { w: wt === myTeam ? labels[0] : labels[1] })}
                 actions={[
                   ...(online
-                    ? hostLike ? [{ label: t('a.rematch'), primary: true, onClick: hostStart }] : []
-                    : [{ label: t('a.rematch'), primary: true, onClick: () => start(count!) }, { label: t('a.format'), onClick: () => { setCount(null); setS(null); } }]),
+                    ? hostLike ? [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: hostStart }] : []
+                    : [{ label: champion !== null ? t('ser.newSeries') : t('ser.next'), primary: true, onClick: () => start(count!) }, { label: t('a.format'), onClick: () => { setCount(null); setS(null); } }]),
                   { label: t('a.lobby'), onClick: () => { if (online) setActiveRoom(null); nav('/'); } },
                 ]}
               >
@@ -278,7 +291,8 @@ export default function Tute() {
                 <p className="mt-2 text-center text-[12px] text-stone-400">
                   {s.tuteTeam !== null ? '¡Tute! Gana la partida.' : `Cartas ${s.tricks.map((_, tm) => s.players.reduce((a, p, i) => (teamOf(s, i) === tm ? a + s.won[p.id]!.reduce((x, c) => x + briscaPts(c), 0) : a), 0)).join(' · ')} · cantes ${s.cantes.join(' · ')} · +10 de últimas`}
                 </p>
-                {wt === myTeam && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                {champion === 'me' && <p className="mt-2 text-center text-sm font-bold text-amber-300">+{WIN_BONUS} fichas de premio</p>}
+                <p className="mt-2 text-center text-[11px] text-stone-400">{t('ser.round', { n: series.played })} · {t('ser.score')}: {series.wins.me ?? 0} – {series.wins.them ?? 0}</p>
               </ResultOverlay>
             )}
           </AnimatePresence>

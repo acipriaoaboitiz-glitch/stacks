@@ -21,7 +21,7 @@ export function GameCinematic({ title, sub, tone = 'gold' }: { title: string; su
   const t = TONES[tone];
   const uid = useId().replace(/:/g, '');
   const light = useMemo(isMobile, []);
-  const count = light ? 12 : 20;
+  const count = light ? 8 : 20; // en móvil, 8 partículas ligeras
   const sparks = useMemo(() => Array.from({ length: count }, (_, i) => {
     const a = (i / count) * Math.PI * 2 + (i % 3) * 0.25;
     const d = 120 + ((i * 41) % 110);
@@ -34,7 +34,7 @@ export function GameCinematic({ title, sub, tone = 'gold' }: { title: string; su
   return (
     <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center overflow-hidden" aria-live="assertive">
       {/* enfoque: oscurece y difumina el fondo (entrada 140 ms, salida 220 ms) */}
-      <motion.div className="absolute inset-0 bg-[#030D09]/82 backdrop-blur-sm md:bg-[#030D09]/75 md:backdrop-blur-md"
+      <motion.div className="cine-focus absolute inset-0 bg-[#05140E]/95 max-md:backdrop-blur-none md:bg-[#030D09]/75 md:backdrop-blur-md"
         initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: 1.15, times: [0, 0.122, 0.808, 1], ease: 'linear' }} />
       <div className="relative grid place-items-center">
         {/* chispas vectoriales (rombos) */}

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ExitConfirm } from '../../../../components/ui/ExitConfirm.tsx';
+import { GameCinematic } from '../../../../components/ui/GameCinematic.tsx';
+import { playCinematicSound } from '../../../../store/settings.ts';
 import { legalActions, teamOf } from '@mus/engine';
 import type { Action, Seat, SignId } from '@mus/engine';
 import { ActionBar } from '../components/ActionBar.tsx';
@@ -60,6 +62,11 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [menu, setMenu] = useState(false);
+  // Cinemática de jugada épica (¡ÓRDAGO!): capa con fondo difuminado de ~1 s, sin bloquear la mesa.
+  const [cine, setCine] = useState<{ id: number; title: string; sub: string } | null>(null);
+  const cineTimer = useRef<number | null>(null);
+  const namesRef = useRef<string[]>([]);
+  useEffect(() => { namesRef.current = names; });
   const [history, setHistory] = useState(false);
   const [rules, setRules] = useState(false);
   const [radial, setRadial] = useState<Anchor | null>(null);
@@ -120,6 +127,13 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
       if (e.t === 'handStart') playSound('card_deal');
       if (e.t === 'discard') playSound('card_play');
       if (e.t === 'envido' || e.t === 'ordago' || e.t === 'quiero') playSound('chips');
+      if (e.t === 'ordago') {
+        const name = namesRef.current[e.seat] || 'Alguien';
+        setCine({ id: Date.now(), title: '¡ÓRDAGO!', sub: `${name} lo apuesta todo` });
+        playCinematicSound(false);
+        if (cineTimer.current) window.clearTimeout(cineTimer.current);
+        cineTimer.current = window.setTimeout(() => setCine(null), 1650);
+      }
       if (e.t === 'award' && e.kind === 'deje') sound('point');
       if (e.t === 'gameWon') sound('point');
       if (e.t === 'matchWon') sound(e.team === teamOf(mySeat) ? 'win' : 'lose');
@@ -217,10 +231,9 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
 
   return (
     <main
-      className="relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100"
-      style={{ '--card-w': 'min(19vw,10.2dvh,118px)' } as CSSProperties}
+      className="relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100 [--card-w:min(19vw,10.2dvh,118px)] lg:[--card-w:calc(min(125px,10.5dvh)/var(--z,1))]"
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
+      <div className="desk-zoom mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
         {/* 1 · Marcador */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
           <div className="flex items-center gap-1.5"><ExitButton onClick={onExit} /><IconBtn label="Menú" onClick={() => setMenu(true)}><IconMenu /></IconBtn></div>
@@ -376,6 +389,8 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
           <button type="button" className="menu__item menu__item--danger" onClick={() => { setMenu(false); onExit(); }}><IconExit /> Salir de la partida</button>
         </div>
       </Sheet>
+      <ExitConfirm onExit={onExit} />
+      {cine && <GameCinematic key={cine.id} title={cine.title} sub={cine.sub} tone="ruby" />}
     </main>
   );
 }

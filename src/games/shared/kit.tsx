@@ -102,7 +102,7 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
   const { help } = useSettings();
   if (!help) { badge = undefined; aura = false; shimmer = false; }
   const content = faceDown
-    ? (card.deck === 'fr' ? <CardBackArt variant="midnight" /> : <CardBack />)
+    ? (card.deck === 'fr' ? <CardBackArt /> : <CardBack />)
     : card.deck === 'fr' ? <FrenchFace card={card} /> : <CardFace card={card} />;
   return (
     <motion.button

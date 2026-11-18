@@ -10,7 +10,7 @@ import { SPANISH_SUITS, SUIT_LABEL, type AnyCard, type SpanishCard, type Spanish
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
 import { juice } from '../../services/juice.ts';
-import { useT } from '../../i18n/index.ts';
+import { useT, botName, tr } from '../../i18n/index.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
@@ -21,9 +21,9 @@ import {
 } from './engine.ts';
 
 const WIN_BONUS = 100;
-const NAMES = ['Tú', 'Jon', 'Nerea', 'Aitor'];
+const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3)];
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
-const makePlayers = (n: number): SPlayer[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: n === 2 && i === 1 ? 'Bot' : NAMES[i]!, human: i === 0 }));
+const makePlayers = (n: number): SPlayer[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: n === 2 && i === 1 ? botName(1) : names()[i]!, human: i === 0 }));
 
 /** Altura visible de cada escalón del carril: solo asoma la parte alta de cada carta. */
 const STEP = 0.3;
@@ -76,7 +76,7 @@ export default function Seises() {
   const myIdx = online ? Math.max(0, s?.players.findIndex((p) => p.peerId === seating.myPeerId) ?? 0) : 0;
   const me = s?.players[myIdx]?.id ?? 'p0';
   const hostLike = !online || seating.isHost;
-  const nm = (i: number): string => s?.players[i]?.name ?? NAMES[i] ?? `J${i + 1}`;
+  const nm = (i: number): string => s?.players[i]?.name ?? names()[i] ?? `J${i + 1}`;
 
   const reset = () => { setBubbles({}); lastEv.current = ''; paid.current = false; };
   const start = (n: 2 | 3 | 4) => { reset(); setCount(n); setS(newSeises(makePlayers(n))); };
@@ -87,7 +87,7 @@ export default function Seises() {
     const n = Math.min(4, Math.max(2, seating.fillBots ? 4 : humans.length));
     const players: SPlayer[] = Array.from({ length: n }, (_, i) => i < humans.length
       ? { id: `p${i}`, name: humans[i]!.name, human: true, peerId: humans[i]!.peerId }
-      : { id: `p${i}`, name: NAMES[i - humans.length + 1] ?? `Bot ${i}`, human: false });
+      : { id: `p${i}`, name: names()[i - humans.length + 1] ?? botName(i), human: false });
     reset();
     setS(newSeises(players));
   };

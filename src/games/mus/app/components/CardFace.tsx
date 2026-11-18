@@ -37,5 +37,5 @@ export function CardFace({ card, eightKings = true }: { card: Card; eightKings?:
 }
 
 export function CardBack() {
-  return <span className="card-back block h-full w-full overflow-hidden" aria-hidden="true"><CardBackArt variant="midnight" seal="STACKS" /></span>;
+  return <span className="card-back block h-full w-full overflow-hidden" aria-hidden="true"><CardBackArt seal="STACKS" /></span>;
 }

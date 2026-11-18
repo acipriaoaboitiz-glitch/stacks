@@ -66,7 +66,7 @@ export function PlayerAvatar({ name, chips, size = 44, avatar, photo, onClick }:
 }
 
 /** Contador de fichas con ficha 3D giratoria. `onPlus` añade el botón de recarga. */
-export function ChipBalance({ onPlus, className = '' }: { onPlus?: () => void; className?: string }) {
+export function ChipBalance({ onPlus, className = '', alert = false }: { onPlus?: () => void; className?: string; /** Punto rojo: hay cofre o misiones por cobrar. */ alert?: boolean }) {
   const { chips } = useWallet();
   return (
     <div className={`glass-panel flex items-center gap-1.5 rounded-full py-1 pl-1.5 ${onPlus ? 'pr-1' : 'pr-3'} ${className}`} aria-label={`${chips} fichas`}>
@@ -77,8 +77,9 @@ export function ChipBalance({ onPlus, className = '' }: { onPlus?: () => void; c
       <span className="font-mono text-sm font-bold gold-text"><AnimatedNumber value={chips} /></span>
       {onPlus && (
         <button type="button" onClick={onPlus} aria-label="Recargar fichas"
-          className="gold-foil ml-0.5 grid h-7 w-7 place-items-center rounded-full" style={{ boxShadow: '0 2px 0 #6b4306' }}>
+          className="gold-foil relative ml-0.5 grid h-7 w-7 place-items-center rounded-full" style={{ boxShadow: '0 2px 0 #6b4306' }}>
           <Plus size={16} strokeWidth={3} />
+          {alert && <span aria-hidden className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border border-[#04120C] bg-red-500" />}
         </button>
       )}
     </div>

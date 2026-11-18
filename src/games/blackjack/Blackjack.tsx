@@ -5,6 +5,7 @@ import { DealIn } from '../../components/cards/DealIn.tsx';
 import { AnimatedNumber } from '../mus/app/components/AnimatedNumber.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { canClaimDaily, dailyAmount, useWallet, wallet } from '../../store/wallet.ts';
+import { progression } from '../../store/progression.ts';
 import { botDelay, feedback } from '../../store/settings.ts';
 import { useT } from '../../i18n/index.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
@@ -71,6 +72,7 @@ export default function Blackjack() {
     if (next.phase === 'settled' && prev?.phase !== 'settled') {
       const pay = totalPayout(next);
       const net = pay - totalBet(next);
+      progression.track('hand', 'blackjack');
       if (pay > 0) wallet.add(pay);
       if (next.hands.some((h) => h.outcome === 'blackjack')) { showCine('¡BLACKJACK 21!', 'Pago 3 a 2'); }
       else if (next.hands.some((h) => h.cards.length >= 5 && h.outcome === 'win')) showCine('¡5 CARTAS SIN PASARSE!', `+${net} fichas`);
@@ -167,7 +169,7 @@ export default function Blackjack() {
           <div className="grid justify-items-center gap-1">
             <div className="grid size-[min(22vw,11dvh,86px)] place-items-center rounded-full" style={{ border: '2.5px solid #D4AF37', background: 'radial-gradient(circle, rgba(212,175,55,.14), rgba(0,0,0,.25))', boxShadow: '0 0 0 1px rgba(0,0,0,.55), inset 0 0 12px rgba(0,0,0,.5)' }}>
               {inBetting
-                ? (bet > 0 ? <BetStack chips={stack} size={40} /> : <span className="text-[10px] font-bold uppercase tracking-wider text-amber-200/50">Apuesta</span>)
+                ? (bet > 0 ? <BetStack chips={stack} size={40} /> : null)
                 : <ChipPile amount={game ? totalBet(game) : 0} size={18} maxCols={3} />}
             </div>
             {inBetting && <b className="font-[var(--font-display)] text-xl text-amber-300 tabular-nums">{bet}</b>}
@@ -182,7 +184,7 @@ export default function Blackjack() {
             return (
               <div key={i} className={`grid justify-items-center gap-1 rounded-2xl p-1.5 ${active ? 'bg-amber-300/10 outline outline-2 outline-amber-300' : ''}`}>
                 <div className="flex items-center gap-1.5">
-                  <Pill tone={v.total > 21 ? 'bg-red-950 text-red-50' : 'dark'}>{v.soft && v.total < 21 ? 'blando ' : ''}{v.total}</Pill>
+                  <Pill tone={v.total > 21 ? 'bg-red-950 text-red-50' : 'dark'}>{v.soft && v.total < 21 ? `${v.total - 10} / ${v.total}` : v.total}</Pill>
                   <Pill tone="gold">{h.bet}</Pill>
                   {h.outcome && <Pill tone={OUTCOME_TONE[h.outcome]}>{OUTCOME_TEXT[h.outcome]}</Pill>}
                 </div>
