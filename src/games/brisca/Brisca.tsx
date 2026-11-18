@@ -116,7 +116,9 @@ export default function Brisca() {
     if (s?.phase !== 'finished' || paidRef.current) return;
     paidRef.current = true;
     const { mine, theirs } = sidesFor(s, me);
-    recordRound(mine > theirs ? 'me' : mine < theirs ? 'them' : null);
+    const roundWinner = mine > theirs ? 'me' : mine < theirs ? 'them' : null;
+    recordRound(roundWinner);
+    if (roundWinner) juice.chips(roundWinner === 'me' ? 'me' : 'top'); // fichas en parábola al ganador de la ronda
   }, [s, me, recordRound, roundStarted]);
   const champion = series.champion;
   useEffect(() => {
@@ -224,7 +226,7 @@ export default function Brisca() {
         {/* La muestra (triunfo) va atravesada bajo el mazo: es la última carta que se roba */}
         <div className="relative h-[calc(var(--card-w)*.4*1.583)] w-[calc(var(--card-w)*.84)]">
           <div className="absolute top-0 z-0" style={{ left: 'calc(var(--card-w) * .3165)' }}>
-            <FaceCard card={s.trumpCard} scale={0.4} rotate={90} aura />
+            <FaceCard card={s.trumpCard} flipIn={0.35} scale={0.4} rotate={90} aura />
           </div>
           <div className="absolute left-0 top-0 z-10 aspect-[12/19] w-[calc(var(--card-w)*.4)]">
             {[2, 1, 0].map((k) => (

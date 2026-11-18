@@ -17,6 +17,7 @@ import {
   totalBet, totalPayout, type BJCard, type BJState, type Hand, type Outcome,
 } from './engine.ts';
 import { gameTimeout } from '../../services/timers.ts';
+import { juice } from '../../services/juice.ts';
 
 const MAX_BET = 5000;
 
@@ -74,6 +75,7 @@ export default function Blackjack() {
       const pay = totalPayout(next);
       const net = pay - totalBet(next);
       progression.track('hand', 'blackjack');
+      if (net > 0) juice.chips('me'); // lluvia de fichas al ganar (también con ¡BLACKJACK 21!)
       if (pay > 0) wallet.add(pay);
       if (next.hands.some((h) => h.outcome === 'blackjack')) { showCine('¡BLACKJACK 21!', 'Pago 3 a 2'); }
       else if (next.hands.some((h) => h.cards.length >= 5 && h.outcome === 'win')) showCine('¡5 CARTAS SIN PASARSE!', `+${net} fichas`);

@@ -34,6 +34,13 @@ export function watchAccount(): void {
   c.auth.onAuthStateChange((event, session) => { if (event === 'SIGNED_IN' && session && !session.user.is_anonymous) void afterSignIn(); });
 }
 
+const SESSION_KEY = 'stacks_active_session';
+/** Marca que este dispositivo ya pasó por el acceso (para entrar directo al lobby las próximas veces). */
+export function markSession(kind: 'account' | 'guest'): void {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ kind, at: Date.now() })); } catch { /* sin almacenamiento */ }
+}
+export const hasActiveSession = (): boolean => { try { return localStorage.getItem(SESSION_KEY) !== null; } catch { return false; } };
+
 export const account = {
   /** Vincula correo y contraseña a la sesión actual (si era anónima conserva el mismo usuario) o crea una cuenta nueva. */
   async signUp(email: string, password: string): Promise<AccountResult> {
@@ -49,6 +56,7 @@ export const account = {
       const { data, error } = await c.auth.signUp({ email, password });
       if (error) return fail(error);
       if (!data.session) return { ok: true, message: 'confirm' };
+      markSession('account');
       await afterSignIn();
       return { ok: true };
     } catch (e) { return fail(e); }
@@ -60,6 +68,7 @@ export const account = {
     try {
       const { error } = await c.auth.signInWithPassword({ email, password });
       if (error) return fail(error);
+      markSession('account');
       const restored = await afterSignIn();
       return { ok: true, message: restored ? 'restored' : 'new' };
     } catch (e) { return fail(e); }
@@ -77,6 +86,12 @@ export const account = {
     const c = getSupabase();
     try { await c?.auth.signOut(); } catch { /* sin red */ }
     resetSessionCache();
+  },
+  /** Cerrar sesión de verdad: sale de Supabase, borra los datos de este dispositivo y vuelve a la pantalla de acceso. */
+  async signOutAndReset(): Promise<void> {
+    await account.signOut();
+    try { localStorage.clear(); sessionStorage.clear(); } catch { /* sin almacenamiento */ }
+    window.location.reload();
   },
 };
 

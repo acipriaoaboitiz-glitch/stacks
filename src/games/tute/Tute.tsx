@@ -113,7 +113,9 @@ export default function Tute() {
     if (s?.phase !== 'finished' || paid.current) return;
     paid.current = true;
     const w = winnerTeam(s);
-    recordRound(w === null ? null : w === teamOf(s, s.players.findIndex((p) => p.id === me)) ? 'me' : 'them');
+    const roundWinner = w === null ? null : w === teamOf(s, s.players.findIndex((p) => p.id === me)) ? 'me' : 'them';
+    recordRound(roundWinner);
+    if (roundWinner) juice.chips(roundWinner === 'me' ? 'me' : 'top'); // fichas en parábola al ganador de la ronda
   }, [s, me, recordRound, roundStarted]);
   const champion = series.champion;
   useEffect(() => {
@@ -226,7 +228,7 @@ export default function Tute() {
       </div>
       <div className="absolute left-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10 flex items-center gap-1.5" aria-label={`Quedan ${s.deck.length} cartas; triunfo ${SUIT_LABEL[s.trumpSuit]}`}>
         <div className="relative h-[calc(var(--card-w)*.4*1.583)] w-[calc(var(--card-w)*.84)]">
-          <div className="absolute top-0 z-0" style={{ left: 'calc(var(--card-w) * .3165)' }}><FaceCard card={s.trumpCard} scale={0.4} rotate={90} aura /></div>
+          <div className="absolute top-0 z-0" style={{ left: 'calc(var(--card-w) * .3165)' }}><FaceCard card={s.trumpCard} flipIn={0.35} scale={0.4} rotate={90} aura /></div>
           <div className="absolute left-0 top-0 z-10 aspect-[12/19] w-[calc(var(--card-w)*.4)]">
             {[2, 1, 0].map((k) => (
               <span key={k} className="absolute inset-0 overflow-hidden rounded-[6px] shadow-[0_4px_8px_rgba(0,0,0,.4)]" style={{ transform: `translate(${k * 2}px, ${-k * 2}px)` }}><CardBack /></span>

@@ -86,7 +86,11 @@ export function ScorePair({ labels = ['Nosotros', 'Ellos'], values, target, subs
 
 // ─── Naipes ──────────────────────────────────────────────────────────────────────────────────────
 /** Tamaño de carta: `--card-w` (definida por la mesa) multiplicada por `scale`. */
-export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onClick, onSelect, selected, dim, glow, aura, shimmer, badge, title, rotate = 0, className = '', style, deal, land }: {
+export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onClick, onSelect, selected, dim, glow, aura, shimmer, badge, title, rotate = 0, className = '', style, deal, land, flipIn, flipDelay = 0 }: {
+  /** Giro 3D al aparecer (carta de triunfo bajo el mazo): rotateY 90 → 0 tras `flipIn` segundos. */
+  flipIn?: number;
+  /** Retraso (s) del giro 3D cuando la carta se destapa (escalonar flop / turn / river). */
+  flipDelay?: number;
   /** Posición en el reparto: la carta sale del mazo en cascada (45 ms por carta) con roce de cartón. */
   deal?: number;
   /** Carta que cae en el centro de la mesa: micro-rotación natural y rebote corto (spring 420 / 26). */
@@ -105,6 +109,15 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
 }) {
   const interactive = Boolean(onClick || onSelect);
   const handle = useCallback(() => { if (onSelect) onSelect(card); else onClick?.(); }, [onSelect, onClick, card]);
+  // Giro 3D real al destapar una carta (crupier, flop, turn, river): boca abajo → boca arriba con rotateY 90 → 0.
+  const wasDown = useRef(Boolean(faceDown));
+  const [flipping, setFlipping] = useState(false);
+  useEffect(() => {
+    let id = 0;
+    if (wasDown.current && !faceDown) { setFlipping(true); id = gameTimeout(() => setFlipping(false), 700 + flipDelay * 1000); }
+    wasDown.current = Boolean(faceDown);
+    return () => { if (id) window.clearTimeout(id); };
+  }, [faceDown, flipDelay]);
   const { handlers, click } = useThrow(handle, interactive);
   useEffect(() => {
     if (deal === undefined) return;
@@ -127,6 +140,7 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
       title={faceDown ? undefined : title}
       className={`${deal !== undefined ? 'deal-in ' : ''}${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation select-none overflow-hidden rounded-none border border-black/40 shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       style={{
+        transformPerspective: 1000,
         width: `calc(var(--card-w) * ${scale})`,
         aspectRatio: card.deck === 'fr' ? '167 / 243' : '12 / 19',
         // Una sola sombra sencilla por carta: las sombras múltiples hunden los FPS en iOS Safari.
@@ -135,11 +149,11 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
         ...(interactive ? { touchAction: 'pan-x' } : {}),
         ...style,
       }}
-      initial={land ? { y: -26, scale: 1.2, opacity: 0, rotate: rotate + 9 } : undefined}
-      animate={{ y: selected ? -12 : interactive && !dim ? -8 : glow && interactive ? -6 : 0, rotate, ...(land ? { scale: 1, opacity: 1 } : {}) }}
+      initial={land ? { y: -26, scale: 1.2, opacity: 0, rotate: rotate + 9 } : flipIn !== undefined ? { rotateY: 90, opacity: 0 } : undefined}
+      animate={{ y: selected ? -12 : interactive && !dim ? -8 : glow && interactive ? -6 : 0, rotate, rotateY: flipping ? [90, 0] : 0, ...(land ? { scale: 1, opacity: 1 } : {}), ...(flipIn !== undefined ? { opacity: 1 } : {}) }}
       whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
       whileTap={interactive ? { scale: 0.96 } : undefined}
-      transition={land ? LAND_SPRING : CARD_EASE}
+      transition={land ? LAND_SPRING : flipping ? { duration: 0.4, delay: flipDelay, ease: 'easeOut' } : flipIn !== undefined ? { duration: 0.45, delay: flipIn, ease: 'easeOut' } : CARD_EASE}
     >
       {content}
       {!faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,.14)_0%,rgba(255,255,255,0)_45%,rgba(0,0,0,.08)_100%)]" />}

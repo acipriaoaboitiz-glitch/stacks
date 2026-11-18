@@ -53,6 +53,7 @@ export default function Escoba() {
   const { cine, show: showCine } = useCine();
   const prevRef = useRef<EscobaState | null>(null);
   const paid = useRef(false);
+  const roundChips = useRef('');
   const myIdx = online ? Math.max(0, s?.players?.findIndex((p) => p.peerId === seating.myPeerId) ?? 0) : 0;
   const me = s?.players?.[myIdx]?.id ?? 'p0';
   const hostLike = !online || seating.isHost;
@@ -91,6 +92,12 @@ export default function Escoba() {
       }
     }
     if (s.phase === 'playing') paid.current = false;
+    if (s.phase !== 'playing' && s.summary && roundChips.current !== `${s.roundNo}:${s.phase}`) {
+      roundChips.current = `${s.roundNo}:${s.phase}`;
+      const pts = s.scores.map((_, i) => s.summary!.reduce((a, l) => a + l.points[i]!, 0));
+      const top = Math.max(...pts);
+      if (pts.filter((v) => v === top).length === 1) juice.chips(pts[myIdx] === top ? 'me' : 'top');
+    }
     if (s.phase === 'matchOver' && !paid.current) {
       paid.current = true;
       if ((s.bo3 ? s.roundWins![myIdx] : s.scores[myIdx]) === Math.max(...(s.bo3 ? s.roundWins! : s.scores))) { wallet.add(WIN_BONUS); wallet.recordWin('escoba'); juice.chips('me'); }

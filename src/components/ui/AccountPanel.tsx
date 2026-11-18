@@ -21,9 +21,10 @@ export function AccountPanel({ mode = 'link', onDone }: { mode?: 'link' | 'signi
     return (
       <div className="grid gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-950/20 p-3">
         <p className="flex items-center gap-2 text-[12px] font-bold text-emerald-200"><Cloud size={15} aria-hidden /> {t('acc.cloud')} · {t('acc.signedAs', { e: acc.email })}</p>
-        <button type="button" onClick={() => { void account.signOut(); }} className="flex h-10 touch-manipulation items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-[13px] font-bold text-stone-200">
-          <LogOut size={15} aria-hidden /> {t('acc.signOut')}
+        <button type="button" onClick={() => { void account.signOutAndReset(); }} className="flex h-10 touch-manipulation items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-[13px] font-bold text-stone-200">
+          <LogOut size={15} aria-hidden /> {t('acc.signOutAll')}
         </button>
+        <p className="text-center text-[10px] text-stone-500">{t('acc.signOutNote')}</p>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
@@ -66,7 +66,7 @@ function OrbitRing({ color, ccw }: { color: string; ccw: boolean }) {
         <circle r="92" fill="none" stroke={color} strokeWidth="1.6" opacity=".5" style={{ transition: 'stroke .3s' }} />
       </svg>
       <AnimatePresence initial={false}>
-        <motion.div key={ccw ? 'ccw' : 'cw'} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.28 }}>
+        <motion.div key={ccw ? 'ccw' : 'cw'} className="absolute inset-0" initial={{ opacity: 0, scale: 0.82, rotate: ccw ? 40 : -40 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ type: 'spring', stiffness: 240, damping: 10 }}>
           <div className={`orbit-spin size-full ${ccw ? 'ccw' : ''}`}>
             <svg viewBox="-100 -100 200 200" className="size-full" style={{ overflow: 'visible', transform: ccw ? 'scaleX(-1)' : undefined }}>
               <circle r="92" fill="none" stroke={color} strokeWidth="4.5" strokeLinecap="round" pathLength="360" strokeDasharray="38 82" style={{ transition: 'stroke .3s' }} />
@@ -102,6 +102,17 @@ export default function Uno() {
   const flightId = useRef(0);
   const penaltyId = useRef(0);
   const prevS = useRef<UnoState | null>(null);
+  const seenHand = useRef<Set<string>>(new Set());
+  /** Cartas boca abajo que salen del mazo hacia un asiento (reparto de 7 cartas, 40 ms entre carta y carta). */
+  const flyCards = useCallback((slot: Slot, count: number, base: number, silent: boolean): void => {
+    for (let i = 0; i < count; i++) {
+      const id = ++flightId.current;
+      const delay = base + i * 0.085;
+      setFlights((f) => [...f, { id, slot, delay }]);
+      if (!silent) gameTimeout(() => feedback('draw'), delay * 1000);
+      gameTimeout(() => setFlights((f) => f.filter((x) => x.id !== id)), 700 + delay * 1000);
+    }
+  }, []);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
   const paid = useRef(false);
@@ -216,6 +227,7 @@ export default function Uno() {
       if (skipped) { markPlayer(skipped.id, 'Ø'); juice.cinematic({ title: '¡SALTO DE TURNO!', sub: `${skipped.name} pierde el turno`, tone: 'electric', good: who.id === me }); }
     }
     const colorTone = ({ red: 'ruby', green: 'emerald', blue: 'electric', yellow: 'gold' } as const)[s.color];
+    if (e.text.startsWith('Color ')) juice.cinematic({ title: '¡CAMBIO DE COLOR!', sub: `${who.name} · ${e.text}`, tone: colorTone, good: who.id === me });
     if (e.text === 'Cambio de sentido') juice.cinematic({ title: '¡CAMBIO DE SENTIDO!', sub: who.name, tone: colorTone, good: who.id === me });
     if (e.kind === 'uno') {
       if (who.id !== me) markPlayer(who.id, '¡UNO!'); // destello junto al avatar del bot que lo canta
@@ -241,6 +253,22 @@ export default function Uno() {
 
   const myHand = s?.hands[me] ?? [];
   const sorted = useMemo(() => sortHand(myHand), [myHand]);
+  // Cartas nuevas en tu mano (robo, +2/+4): las jugables hacen un giro 3D real al aparecer. En el reparto (7 nuevas) no.
+  const fresh = new Set(sorted.filter((c) => !seenHand.current.has(c.id)).map((c) => c.id));
+  const flipOk = seenHand.current.size > 0 && fresh.size > 0 && fresh.size <= 4;
+  useEffect(() => { seenHand.current = new Set(sorted.map((c) => c.id)); });
+
+  // Reparto: al empezar cada ronda, las 7 cartas de cada rival salen del mazo una a una, en arco (40 ms).
+  const dealKey = s ? `${s.discard[0]?.id}:${s.hands[me]?.[0]?.id}:${s.players.length}` : '';
+  useEffect(() => {
+    if (!s || !dealKey || s.discard.length !== 1) return;
+    const n = s.players.length;
+    for (let c = 0; c < 7; c++) for (let k = 0; k < n; k++) {
+      const p = s.players[k]!;
+      if (p.id !== me) flyCards(slotOfPlayer(s, me, p.id), 1, (c * n + k) * 0.04, (c * n + k) % 3 !== 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealKey]);
 
   // Abanico interactivo: un único manejador en el contenedor (en táctil el primer objetivo captura el puntero, así que
   // se averigua la carta con elementFromPoint) y solo se re-renderiza cuando cambia la carta señalada.
@@ -367,8 +395,8 @@ export default function Uno() {
                     return (
                       <motion.div key={f.id} aria-hidden className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-xl"
                         initial={{ x: 0, y: 0, scale: 1, opacity: 0, rotate: 0 }}
-                        animate={{ x: d.x, y: d.y, scale: 0.55, opacity: [0, 1, 1, 0], rotate: f.slot === 'left' ? -25 : 25 }}
-                        transition={{ duration: 0.5, delay: f.delay, ease: 'easeIn', opacity: { duration: 0.5, delay: f.delay, times: [0, 0.1, 0.75, 1] } }}>
+                        animate={{ x: [0, d.x * 0.5 + (f.slot === 'left' ? -10 : 10), d.x], y: [0, d.y * 0.5 - 38, d.y], scale: [1, 0.85, 0.55], opacity: [0, 1, 1, 0], rotate: f.slot === 'left' ? [0, -14, -25] : [0, 14, 25] }}
+                        transition={{ duration: 0.5, delay: f.delay, ease: 'easeOut', opacity: { duration: 0.5, delay: f.delay, times: [0, 0.1, 0.75, 1] } }}>
                         <UnoBack />
                       </motion.div>
                     );
@@ -465,7 +493,7 @@ export default function Uno() {
         <div className="mx-auto flex w-max items-end px-2">
           {sorted.map((c, i) => (
             <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${sorted.length > 9 ? -0.46 : sorted.length > 6 ? -0.34 : -0.12})`, zIndex: hot === i ? 60 : i }}>
-              <UnoCardView card={c} deal={i} scale={0.86} rotate={(i - (sorted.length - 1) / 2) * Math.min(3, 28 / sorted.length)} playable={playable.has(c.id)} lifted={hot === i} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
+              <UnoCardView card={c} deal={i} flip={flipOk && fresh.has(c.id) && playable.has(c.id)} scale={0.86} rotate={(i - (sorted.length - 1) / 2) * Math.min(3, 28 / sorted.length)} playable={playable.has(c.id)} lifted={hot === i} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
             </div>
           ))}
         </div>

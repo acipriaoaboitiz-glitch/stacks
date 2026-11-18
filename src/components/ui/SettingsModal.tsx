@@ -7,6 +7,7 @@ import { useT } from '../../i18n/index.ts';
 import { feedback, setSettings, THEMES, useSettings, type AnimSpeed, type Lang, type ThemeId } from '../../store/settings.ts';
 import { CAN_HOVER } from '../../store/settings.ts';
 import { useBackClose } from '../../services/backStack.ts';
+import { account, useAccount } from '../../store/account.ts';
 
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -38,6 +39,7 @@ const SPEEDS: AnimSpeed[] = ['normal', 'rapida'];
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useSettings();
   useBackClose(open, onClose);
+  const acc = useAccount();
   useCosmetics(); // se repinta al comprar un tapete
   const [legal, setLegal] = useState<'privacidad' | 'terminos' | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -108,6 +110,9 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
               </Section>
 
+              {acc.email && !acc.anonymous && (
+                <button type="button" onClick={() => { void account.signOutAndReset(); }} className="h-11 touch-manipulation rounded-xl border border-white/10 bg-white/5 text-[13px] font-bold text-stone-200">{t('acc.signOutAll')} · {acc.email}</button>
+              )}
               <Section icon={<ScrollText size={14} />} title={t('lg.title')}>
                 <p className="rounded-xl border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-[12px] font-semibold text-amber-100">{t('lg.notice')}</p>
                 <div className="grid grid-cols-2 gap-2">

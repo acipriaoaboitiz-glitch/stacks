@@ -39,7 +39,7 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
       {!x.out && !x.folded && slot !== 'bottom' && (
         <div className="flex">
           {x.hole.map((c, k) => (
-            <div key={c.id} style={{ marginLeft: k ? 'calc(var(--card-w) * -0.12)' : 0 }}><FaceCard card={c} faceDown={!shown} scale={0.4} glow={!!win} /></div>
+            <div key={c.id} style={{ marginLeft: k ? 'calc(var(--card-w) * -0.12)' : 0 }}><FaceCard card={c} faceDown={!shown} flipDelay={k * 0.16} scale={0.4} glow={!!win} /></div>
           ))}
         </div>
       )}
