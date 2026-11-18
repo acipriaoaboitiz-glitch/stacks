@@ -1,8 +1,11 @@
 import type { LucideIcon } from 'lucide-react';
-import { CircleDot, Grid3x3, LayoutGrid, Ship, Columns2, Crown, Diamond, Dices, Flame, Hash, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
+import { Bomb, Castle, CircleDot, Club, Dice5, Disc, Grid2x2, Table, Grid3x3, LayoutGrid, Ship, Columns2, Crown, Diamond, Dices, Flame, Hash, Landmark, Layers, Sparkles, Spade, Swords, Zap } from 'lucide-react';
 
-/** Secciones del lobby: Baraja Española · Casino & Cartas · Duelos & Mesa. */
-export type GameCategory = 'espanola' | 'casino' | 'duelos';
+/** Secciones del lobby: Baraja Española · Cartas & Casino · Mesa & Estrategia · Lógica & Ingenio. */
+export type GameCategory = 'espanola' | 'casino' | 'mesa' | 'logica';
+
+/** Juegos individuales: en el lobby llevan selector de dificultad / modo y «Jugar ahora» en vez de sala online. */
+export interface SoloInfo { modes: string[]; def: string }
 
 export interface GameInfo {
   id: string;
@@ -21,6 +24,8 @@ export interface GameInfo {
   /** Degradado propio de la tarjeta. */
   tint: [string, string];
   rules: string[];
+  /** Solo en juegos de un jugador. */
+  solo?: SoloInfo;
 }
 
 export const GAMES: GameInfo[] = [
@@ -128,7 +133,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'domino', name: 'Dominó', tagline: 'Marfil, doble seis y cierre', category: 'duelos', deck: 'none', players: '1v1 · 2v2',
+    id: 'domino', name: 'Dominó', tagline: 'Marfil, doble seis y cierre', category: 'mesa', deck: 'none', players: '1v1 · 2v2',
     icon: Columns2, route: '/play/domino', playable: true, accent: '#f1e7c6', tint: ['#2d2a1c', '#0d1a12'],
     rules: [
       'Se juega con 28 fichas (del doble blanco al doble seis). Cada jugador recibe 7 fichas; en 1v1 las 14 restantes forman el pozo, y en 2v2 se juega por parejas.',
@@ -138,7 +143,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'mentiroso', name: 'El Mentiroso', tagline: 'Dados, faroles y cubiletes', category: 'duelos', deck: 'none', players: '2–4 jugadores',
+    id: 'mentiroso', name: 'El Mentiroso', tagline: 'Dados, faroles y cubiletes', category: 'mesa', deck: 'none', players: '2–4 jugadores',
     icon: Dices, route: '/play/mentiroso', playable: true, accent: '#d4af37', tint: ['#2a1d0a', '#0d1a12'],
     rules: [
       'Cada jugador tiene 5 dados bajo su cubilete. Toca tu cubilete para levantarlo y ver tus dados en secreto.',
@@ -158,7 +163,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'tres', name: '3 en Raya', tagline: 'Serie al mejor de 3', category: 'duelos', deck: 'none', players: '1v1',
+    id: 'tres', name: '3 en Raya', tagline: 'Serie al mejor de 3', category: 'mesa', deck: 'none', players: '1v1',
     icon: Grid3x3, route: '/play/tres', playable: true, accent: '#d4af37', tint: ['#2b1d0f', '#0d1a12'],
     rules: [
       'Tablero de 3×3. Uno juega con la X (oro) y el otro con la O (marfil); se turnan para colocar una ficha en una casilla libre.',
@@ -168,7 +173,7 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'cuatro', name: '4 en Raya', tagline: 'Deja caer, conecta cuatro', category: 'duelos', deck: 'none', players: '1v1',
+    id: 'cuatro', name: '4 en Raya', tagline: 'Deja caer, conecta cuatro', category: 'mesa', deck: 'none', players: '1v1',
     icon: LayoutGrid, route: '/play/cuatro', playable: true, accent: '#e23a52', tint: ['#2a1016', '#0d1a12'],
     rules: [
       'Tablero vertical de 7 columnas por 6 filas. Toca una columna para soltar tu ficha (oro o rubí): cae hasta la casilla libre más baja.',
@@ -178,13 +183,93 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'flota', name: 'Hundir la Flota', tagline: 'Radar 7×7, duelo rápido', category: 'duelos', deck: 'none', players: '1v1',
+    id: 'flota', name: 'Hundir la Flota', tagline: 'Radar 7×7, duelo rápido', category: 'mesa', deck: 'none', players: '1v1',
     icon: Ship, route: '/play/flota', playable: true, accent: '#34d399', tint: ['#08291f', '#0d1a12'],
     rules: [
       'Cada jugador tiene 4 barcos de 4, 3, 2 y 2 casillas en un tablero de 7×7. Pulsa «Aleatorio» para recolocar tu flota y «Listo» cuando te guste.',
       'En tu turno toca una casilla del radar rival para disparar. Una onda azul indica agua y un destello oro y carmesí indica tocado.',
       'Si tocas un barco repites disparo; si fallas, pasa el turno. Un barco con todas sus casillas tocadas queda hundido.',
       'Gana quien hunda primero toda la flota rival. Partidas de 2 a 3 minutos.',
+    ],
+  },
+  {
+    id: 'parchis', name: 'Parchís', tagline: 'Saca un 5, captura y llega a casa', category: 'mesa', deck: 'none', players: '2–4 jugadores',
+    icon: Dice5, route: '/play/parchis', playable: true, accent: '#e23a52', tint: ['#2a1210', '#0d1a12'],
+    rules: [
+      'Cada jugador tiene 4 fichas en su casa y gana quien lleve las 4 a la meta central. Se juega con un dado.',
+      'Con un 5 sacas una ficha de casa a tu salida. Con 6 repites turno. Dos fichas en una casilla forman barrera: nadie puede pasarla.',
+      'Si caes en una casilla con una ficha rival (que no sea un seguro marcado con estrella) la capturas y avanzas 20 casillas extra con otra ficha.',
+      'Llegar a la meta exige tirada exacta y regala 10 casillas extra. Las capturadas vuelven a casa.',
+    ],
+  },
+  {
+    id: 'ajedrez', name: 'Ajedrez', tagline: 'Reglas completas, tres niveles', category: 'mesa', deck: 'none', players: '1v1',
+    icon: Castle, route: '/play/ajedrez', playable: true, accent: '#d4af37', tint: ['#2b2411', '#0d1a12'],
+    rules: [
+      'Reglas oficiales: cada pieza se mueve a su manera y el objetivo es dar jaque mate al rey rival.',
+      'Toca una pieza para ver sus casillas válidas. Hay enroque, captura al paso y coronación del peón (elige pieza en la barra inferior).',
+      'No puedes dejar a tu rey en jaque. El rey en jaque brilla en carmesí. Si no hay jugadas y no hay jaque son tablas (ahogado).',
+      'Contra la IA elige nivel Fácil, Normal o Experto.',
+    ],
+  },
+  {
+    id: 'damas', name: 'Damas', tagline: 'Captura obligatoria y saltos', category: 'mesa', deck: 'none', players: '1v1',
+    icon: Disc, route: '/play/damas', playable: true, accent: '#f1e7c6', tint: ['#2b2214', '#0d1a12'],
+    rules: [
+      'Tablero de 8×8: las fichas se mueven en diagonal hacia delante sobre casillas oscuras.',
+      'Capturar es obligatorio: saltas sobre una ficha rival a una casilla libre y puedes encadenar varios saltos.',
+      'Al llegar a la última fila tu ficha se corona Dama y se mueve y captura también hacia atrás.',
+      'Gana quien captura todas las fichas rivales o las deja sin movimientos.',
+    ],
+  },
+  {
+    id: 'solitario', name: 'Solitario', tagline: 'Klondike clásico, robar 1 o 3', category: 'casino', deck: 'fr', players: '1 jugador',
+    icon: Club, route: '/play/solitario', playable: true, accent: '#34d399', tint: ['#0a2a20', '#0d1a12'], solo: { modes: ['draw1', 'draw3'], def: 'draw1' },
+    rules: [
+      'Klondike: 7 columnas en el tablero, un mazo de robo y 4 bases donde se construye cada palo de As a Rey.',
+      'En las columnas se apilan cartas en orden descendente alternando color. Un Rey (o una escalera que empiece por Rey) puede ocupar una columna vacía.',
+      'Toca una carta para subirla a su base si puede; si no, tócala para seleccionarla y toca la columna de destino.',
+      'Elige robar 1 o 3 cartas. Hay Deshacer y Autocompletar cuando todas las cartas están boca arriba.',
+    ],
+  },
+  {
+    id: 'mahjong', name: 'Mahjong', tagline: 'Pirámide de fichas de marfil', category: 'logica', deck: 'none', players: '1 jugador',
+    icon: Grid2x2, route: '/play/mahjong', playable: true, accent: '#34d399', tint: ['#0a2a22', '#0d1a12'], solo: { modes: ['easy', 'normal', 'expert'], def: 'normal' },
+    rules: [
+      'Retira todas las fichas de la pirámide emparejando fichas iguales.',
+      'Una ficha está libre si no tiene ninguna encima y al menos un lado (izquierdo o derecho) despejado. Las bloqueadas se ven atenuadas.',
+      'Toca dos fichas libres iguales para quitarlas. «Pista» te muestra una pareja y «Mezclar» reordena las que quedan.',
+      'La dificultad limita las pistas y mezclas disponibles.',
+    ],
+  },
+  {
+    id: 'game2048', name: '2048', tagline: 'Fusiona hasta el oro imperial', category: 'logica', deck: 'none', players: '1 jugador',
+    icon: Table, route: '/play/2048', playable: true, accent: '#d4af37', tint: ['#2a220e', '#0d1a12'], solo: { modes: ['easy', 'normal', 'expert'], def: 'normal' },
+    rules: [
+      'Desliza el dedo (o usa las flechas) para mover todas las fichas a la vez. Dos fichas iguales se fusionan en una con el valor doble.',
+      'Tras cada movimiento aparece una ficha nueva (2 o 4). El objetivo es llegar a 2048, y puedes seguir después.',
+      'Pierdes cuando el tablero se llena y no hay fusiones posibles. Puedes deshacer el último movimiento.',
+      'La dificultad cambia el tamaño del tablero y cuántas veces puedes deshacer.',
+    ],
+  },
+  {
+    id: 'sudoku', name: 'Sudoku', tagline: 'Lógica pura 9×9', category: 'logica', deck: 'none', players: '1 jugador',
+    icon: Grid3x3, route: '/play/sudoku', playable: true, accent: '#f0c35f', tint: ['#2b2410', '#0d1a12'], solo: { modes: ['easy', 'normal', 'expert'], def: 'normal' },
+    rules: [
+      'Completa la cuadrícula 9×9 para que cada fila, columna y subcuadrícula de 3×3 contenga los números del 1 al 9 sin repetir.',
+      'Toca una celda para resaltar su fila, su columna y los números iguales; usa el teclado numérico de abajo.',
+      'Con «Notas» anotas candidatos a lápiz. «Borrar» limpia la celda.',
+      'Tienes 3 errores: al tercero pierdes la partida.',
+    ],
+  },
+  {
+    id: 'buscaminas', name: 'Buscaminas', tagline: 'Despeja sin pisar una mina', category: 'logica', deck: 'none', players: '1 jugador',
+    icon: Bomb, route: '/play/buscaminas', playable: true, accent: '#ef4444', tint: ['#241210', '#0d1a12'], solo: { modes: ['easy', 'normal', 'expert'], def: 'normal' },
+    rules: [
+      'Despeja todas las casillas que no tengan mina. Cada número indica cuántas minas hay en las 8 casillas de alrededor.',
+      'El primer toque nunca es una mina. Las casillas vacías se abren en cascada.',
+      'Usa el alternador «Cavar / Bandera» de abajo (o mantén pulsada una casilla) para marcar las minas con una bandera.',
+      'Tableros: fácil 8×8, normal 10×12 y experto 12×16.',
     ],
   },
 ];

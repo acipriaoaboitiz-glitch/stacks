@@ -168,3 +168,20 @@ export function rouletteRoll(c: AudioContext, t: number, dur: number): void {
     burst(c, at, 0.02, 'highpass', 5000, 4000, 0.07, 0.7);
   });
 }
+
+/** Pieza de madera pulida posándose sobre el tablero (ajedrez, damas, parchís). */
+export function woodTap(c: AudioContext, t: number): void {
+  note(c, t, jitter(310), 0.09, 0.32, 'triangle', 150, 0.002);
+  burst(c, t, 0.03, 'bandpass', jitter(1100), 700, 0.2, 1.1);
+  burst(c, t + 0.003, 0.06, 'lowpass', jitter(520), 240, 0.22, 0.8);
+}
+
+/** Ficha de ajedrez/damas capturada: golpe algo más seco y grave. */
+export function woodCapture(c: AudioContext, t: number): void {
+  woodTap(c, t);
+  note(c, t + 0.05, jitter(180), 0.12, 0.28, 'sine', 80, 0.002);
+  burst(c, t + 0.05, 0.05, 'lowpass', 700, 260, 0.3, 0.8);
+}
+
+/** Fanfarria corta de victoria (misma armonía que el resto de la app). */
+export function winJingle(c: AudioContext, t: number): void { fanfare(c, t); clinkCascade(c, t + 0.5, 6); }

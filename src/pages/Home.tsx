@@ -17,7 +17,7 @@ import { Wordmark } from '../components/ui/Logo.tsx';
 import { EconomyModal } from '../components/ui/EconomyModal.tsx';
 import { RulesModal } from '../components/ui/RulesModal.tsx';
 import { ProfileCard } from '../components/ui/ProfileModal.tsx';
-import { SettingsModal } from '../components/ui/SettingsModal.tsx';
+import { Segmented, SettingsModal } from '../components/ui/SettingsModal.tsx';
 import { GAMES, findGame, type GameCategory, type GameInfo } from '../games/registry.ts';
 import { useT } from '../i18n/index.ts';
 import type { Room } from '../services/multiplayer.ts';
@@ -26,7 +26,7 @@ import { useBackClose } from '../services/backStack.ts';
 
 /** Secciones del lobby (el orden es el de la barra). */
 const CATS: { id: 'all' | GameCategory; key: string }[] = [
-  { id: 'all', key: 'cat.all' }, { id: 'espanola', key: 'cat.es' }, { id: 'casino', key: 'cat.casino' }, { id: 'duelos', key: 'cat.duel' },
+  { id: 'all', key: 'cat.all' }, { id: 'espanola', key: 'cat.es' }, { id: 'casino', key: 'cat.casino' }, { id: 'mesa', key: 'cat.mesa' }, { id: 'logica', key: 'cat.logic' },
 ];
 
 /** Polvo dorado del fondo: posiciones fijas, animación CSS (transform/opacity), sin JS por fotograma. */
@@ -147,6 +147,8 @@ export default function Home() {
     if (params.has('room') || params.has('sala') || params.has('join')) { params.delete('room'); params.delete('sala'); params.delete('join'); params.delete('game'); setParams(params, { replace: true }); }
   };
 
+  const [modes, setModes] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem('stacks.modes') ?? '{}') as Record<string, string>; } catch { return {}; } });
+  const pickMode = (id: string, m: string): void => { setModes((cur) => { const n = { ...cur, [id]: m }; try { localStorage.setItem('stacks.modes', JSON.stringify(n)); } catch { /* sin almacenamiento */ } return n; }); };
   const [cat, setCat] = useState<'all' | GameCategory>('all');
   const LIST = useMemo(() => (cat === 'all' ? GAMES : GAMES.filter((g) => g.category === cat)), [cat]);
   const N = LIST.length;
@@ -285,17 +287,30 @@ export default function Home() {
           <button type="button" aria-label="→" onClick={() => goTo(curRef.current + 1)} className="absolute right-0 top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronRight size={18} /></button>
         </motion.div>
 
-        {/* Acciones del juego elegido */}
+        {/* Acciones del juego elegido: multijugador (IA o sala) o individual (modo + Jugar ahora) */}
         <div className="relative z-10 grid w-full max-w-sm gap-2">
-          <button type="button"
-            className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(game.route); }}>
-            <Play size={17} aria-hidden /> {t('lobby.playAi')}
-          </button>
-          <button type="button"
-            className="flex min-h-12 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl border border-amber-200/25 bg-gradient-to-b from-zinc-800/90 to-zinc-950/90 text-[14px] font-bold text-stone-100 shadow-[inset_0_1px_rgba(255,255,255,.1)]"
-            onClick={() => { feedback('tap'); setOnline(game); }}>
-            <Globe size={16} aria-hidden /> {t('lobby.online')}
-          </button>
+          {game.solo ? (
+            <>
+              <Segmented value={modes[game.id] && game.solo.modes.includes(modes[game.id]!) ? modes[game.id]! : game.solo.def}
+                options={game.solo.modes.map((m) => ({ id: m, label: t(`mode.${m}`) }))} onChange={(m) => pickMode(game.id, m)} label={t('mode.title')} />
+              <button type="button"
+                className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(`${game.route}?mode=${modes[game.id] && game.solo!.modes.includes(modes[game.id]!) ? modes[game.id] : game.solo!.def}`); }}>
+                <Play size={17} aria-hidden /> {t('lobby.playNow')}
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button"
+                className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(game.route); }}>
+                <Play size={17} aria-hidden /> {t('lobby.playAi')}
+              </button>
+              <button type="button"
+                className="flex min-h-12 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl border border-amber-200/25 bg-gradient-to-b from-zinc-800/90 to-zinc-950/90 text-[14px] font-bold text-stone-100 shadow-[inset_0_1px_rgba(255,255,255,.1)]"
+                onClick={() => { feedback('tap'); setOnline(game); }}>
+                <Globe size={16} aria-hidden /> {t('lobby.online')}
+              </button>
+            </>
+          )}
         </div>
       </div>
 

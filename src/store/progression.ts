@@ -18,7 +18,8 @@ const POOL: MissionDef[] = [
   { id: 'winUno', text: 'Gana una partida de UNO o COME💩', target: 1, reward: 150, counts: (e, g) => e === 'win' && (g === 'uno' || g === 'presidente') },
   { id: 'hands3', text: 'Juega 3 manos de Póker', target: 3, reward: 120, counts: (e, g) => e === 'hand' && g === 'poker' },
   { id: 'handsRl', text: 'Juega 5 giros de Ruleta', target: 5, reward: 150, counts: (e, g) => e === 'hand' && g === 'ruleta' },
-  { id: 'winTable', text: 'Gana un juego de Duelos & Mesa', target: 1, reward: 150, counts: (e, g) => e === 'win' && (g === 'domino' || g === 'mentiroso' || g === 'tres' || g === 'cuatro' || g === 'flota') },
+  { id: 'winLogic', text: 'Completa un juego de Lógica & Ingenio', target: 1, reward: 150, counts: (e, g) => e === 'win' && (g === 'mahjong' || g === 'game2048' || g === 'sudoku' || g === 'buscaminas' || g === 'solitario') },
+  { id: 'winTable', text: 'Gana un juego de Duelos & Mesa', target: 1, reward: 150, counts: (e, g) => e === 'win' && (g === 'domino' || g === 'mentiroso' || g === 'tres' || g === 'cuatro' || g === 'flota' || g === 'parchis' || g === 'ajedrez' || g === 'damas') },
 ];
 
 export interface MissionView { id: string; text: string; target: number; reward: number; progress: number; claimed: boolean; done: boolean }
@@ -31,7 +32,7 @@ const dayKey = (d = new Date()): string => `${d.getFullYear()}-${String(d.getMon
 function pick(day: string): string[] {
   let h = 0;
   for (const c of day) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const groups = [['win2', 'win1', 'winEs', 'winUno', 'winTable'], ['escobaCante'], ['hands5', 'hands3', 'handsRl']];
+  const groups = [['win2', 'win1', 'winEs', 'winUno', 'winTable', 'winLogic'], ['escobaCante'], ['hands5', 'hands3', 'handsRl']];
   return groups.map((g, i) => g[(h >>> (i * 3)) % g.length]!);
 }
 

@@ -44,7 +44,7 @@ export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selec
   const long = `calc(${size} * 2)`;
   const edge = `calc(${size} * .09)`;
   const lift = selected ? `0 0 0 2px #f0c35f, ` : glow ? `0 0 0 2.5px #FCE38A, 0 0 14px rgba(252,227,138,.7), ` : '';
-  const body = faceDown ? '#0a2a1e' : '#c9b987';
+  const body = faceDown ? '#0a2a1e' : '#8C816A';
   return (
     <button type="button" disabled={!onClick} onClick={onClick} aria-label={faceDown ? undefined : `${a}-${b}`}
       className={`relative block shrink-0 touch-manipulation select-none rounded-[14%/28%] will-change-transform ${selected ? '-translate-y-2' : ''} ${className}`}
@@ -57,7 +57,7 @@ export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selec
       <svg viewBox="0 0 100 50" aria-hidden="true" shapeRendering="geometricPrecision"
         style={vertical ? { position: 'absolute', display: 'block', width: long, height: size, left: `calc(50% - ${long} / 2)`, top: `calc(50% - ${size} / 2)`, transform: 'rotate(90deg)' } : { display: 'block', width: '100%', height: '100%' }}>
         <defs>
-          <linearGradient id="dm-ivory" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FFFDF2" /><stop offset=".55" stopColor="#F3E9C8" /><stop offset="1" stopColor="#DCCDA0" /></linearGradient>
+          <linearGradient id="dm-ivory" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FAF6EE" /><stop offset=".55" stopColor="#EFE7D2" /><stop offset="1" stopColor="#E4DBC4" /></linearGradient>
           <linearGradient id="dm-back" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#14503a" /><stop offset="1" stopColor="#061810" /></linearGradient>
           <linearGradient id="dm-gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8B6914" /><stop offset=".45" stopColor="#FCE38A" /><stop offset="1" stopColor="#A57A12" /></linearGradient>
           <radialGradient id="dm-pip" cx=".38" cy=".34" r=".8"><stop offset="0" stopColor="#3a342a" /><stop offset=".6" stopColor="#0f0c07" /><stop offset="1" stopColor="#000" /></radialGradient>

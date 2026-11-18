@@ -20,6 +20,14 @@ import Ruleta from './games/ruleta/Ruleta.tsx';
 import TresEnRaya from './games/tres/TresEnRaya.tsx';
 import CuatroEnRaya from './games/cuatro/CuatroEnRaya.tsx';
 import Flota from './games/flota/Flota.tsx';
+import Parchis from './games/parchis/Parchis.tsx';
+import Ajedrez from './games/ajedrez/Ajedrez.tsx';
+import Damas from './games/damas/Damas.tsx';
+import Solitario from './games/solitario/Solitario.tsx';
+import Mahjong from './games/mahjong/Mahjong.tsx';
+import Game2048 from './games/game2048/Game2048.tsx';
+import Sudoku from './games/sudoku/Sudoku.tsx';
+import Buscaminas from './games/buscaminas/Buscaminas.tsx';
 import Home from './pages/Home.tsx';
 
 // Enlace directo a mesa: «?sala=CODIGO» (WhatsApp, etc.) se traslada al hash que lee el router.
@@ -56,6 +64,14 @@ export default function App() {
         <Route path="/play/tres" element={<TresEnRaya />} />
         <Route path="/play/cuatro" element={<CuatroEnRaya />} />
         <Route path="/play/flota" element={<Flota />} />
+        <Route path="/play/parchis" element={<Parchis />} />
+        <Route path="/play/ajedrez" element={<Ajedrez />} />
+        <Route path="/play/damas" element={<Damas />} />
+        <Route path="/play/solitario" element={<Solitario />} />
+        <Route path="/play/mahjong" element={<Mahjong />} />
+        <Route path="/play/2048" element={<Game2048 />} />
+        <Route path="/play/sudoku" element={<Sudoku />} />
+        <Route path="/play/buscaminas" element={<Buscaminas />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

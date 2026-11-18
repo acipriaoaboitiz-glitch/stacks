@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { PREFS, setPref } from '../games/mus/app/lib/feedback.ts';
 import { getAudioContext } from '../services/audioCore.ts';
-import { burst, clack, clink, clinkCascade, diceDrop, diceRattle, fanfare, flick, jitter, masterOut, note, rouletteRoll, slam, turnChime } from '../utils/sound.ts';
+import { burst, clack, clink, clinkCascade, diceDrop, diceRattle, fanfare, flick, jitter, masterOut, note, rouletteRoll, slam, turnChime, winJingle, woodCapture, woodTap } from '../utils/sound.ts';
 import { triggerHaptic } from '../services/haptics.ts';
 
 /** El «hover» se queda pegado en pantallas táctiles: los efectos de ratón solo se usan con puntero fino. */
@@ -87,7 +87,7 @@ export const CARD_EASE = { duration: 0.18, ease: 'easeOut' } as const;
 
 let noiseBuf: AudioBuffer | null = null;
 
-export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn' | 'draw' | 'impact' | 'defeat' | 'tick' | 'whoosh' | 'clack' | 'dice' | 'drop';
+export type Sfx = 'tap' | 'chip' | 'card' | 'deal' | 'thud' | 'trick' | 'win' | 'big' | 'play' | 'turn' | 'draw' | 'impact' | 'defeat' | 'tick' | 'whoosh' | 'clack' | 'dice' | 'drop' | 'wood' | 'capture' | 'jingle';
 
 const audio = (): AudioContext | null => getAudioContext();
 
@@ -155,6 +155,12 @@ export function playDiceRattle(): void { buzz([10, 20, 10, 20, 10]); withAudio((
 export function playDiceDrop(): void { buzz([20]); withAudio((c, t) => diceDrop(c, t)); }
 /** Bola de ruleta rodando y cayendo en su casilla (`seconds` = duración del giro). */
 export function playRouletteRoll(seconds: number): void { withAudio((c, t) => rouletteRoll(c, t, seconds)); }
+/** Pieza de madera sobre el tablero. */
+export function playWood(): void { buzz([12]); withAudio((c, t) => woodTap(c, t)); }
+/** Captura de pieza (ajedrez, damas, parchís). */
+export function playWoodCapture(): void { buzz([24]); withAudio((c, t) => woodCapture(c, t)); }
+/** Fanfarria de victoria de un juego individual. */
+export function playWinJingle(): void { buzz([20, 40, 20]); withAudio((c, t) => winJingle(c, t)); }
 /** Micro-clic al deslizar el dedo sobre las cartas de la mano. */
 export function playTick(): void { buzz(4); withAudio((c, t) => { note(c, t, jitter(1900), 0.02, 0.035, 'square', 1300, 0.002); }); }
 /** Cascada de fichas de casino: choques cristalinos con 35 ms entre ficha y ficha. */
@@ -188,6 +194,9 @@ export function feedback(kind: Sfx = 'tap'): void {
     case 'tick': playTick(); return;
     case 'whoosh': playWhoosh(); return;
     case 'clack': playClack(); return;
+    case 'wood': playWood(); return;
+    case 'capture': playWoodCapture(); return;
+    case 'jingle': playWinJingle(); return;
     case 'dice': playDiceRattle(); return;
     case 'drop': playDiceDrop(); return;
     case 'turn': playTurnPing(); return;

@@ -14,6 +14,7 @@ import type { SeatInfo } from '../mus/app/game/types.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { ResultOverlay } from '../shared/kit.tsx';
 import { useDuel } from '../shared/duel.ts';
+import { MetalDefs, ShipArt } from '../shared/art.tsx';
 import { N, SHIPS, applyFlota, botFire, isSunk, newFlota, shipsLeft, type FAction, type FState, type Ship, type Shot, type Side } from './engine.ts';
 
 const WIN_BONUS = 100;
@@ -31,13 +32,16 @@ interface RadarProps {
   /** Última casilla disparada sobre este tablero, para la onda de radar. */
   pulse: { cell: number; res: 'water' | 'hit' | 'sunk'; key: number } | null;
   dim?: boolean;
+  /** Barrido de radar (solo en el tablero rival durante el combate). */
+  sweep?: boolean;
 }
 
 /** Radar naval esmeralda y oro: anillos concéntricos, retícula fina y casillas con agua, impactos y barcos hundidos. */
-const Radar = memo(function Radar({ fleet, shots, reveal, onCell, pulse, dim }: RadarProps) {
+const Radar = memo(function Radar({ fleet, shots, reveal, onCell, pulse, dim, sweep }: RadarProps) {
   return (
     <div className="relative aspect-square h-full w-full" style={{ opacity: dim ? 0.55 : 1, transition: 'opacity .2s' }}>
       <svg viewBox={`0 0 ${VB} ${VB}`} className="absolute inset-0 h-full w-full" shapeRendering="geometricPrecision" aria-hidden="true">
+        <MetalDefs />
         <defs>
           <radialGradient id="fl-bg" cx=".5" cy=".5" r=".75"><stop offset="0" stopColor="#0d4a36" /><stop offset=".6" stopColor="#07261c" /><stop offset="1" stopColor="#03120d" /></radialGradient>
           <linearGradient id="fl-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FCE38A" /><stop offset="1" stopColor="#B8860B" /></linearGradient>
@@ -53,17 +57,9 @@ const Radar = memo(function Radar({ fleet, shots, reveal, onCell, pulse, dim }: 
         {fleet.map((sh, k) => {
           const sunk = isSunk(sh, shots);
           if (!reveal && !sunk) return null;
-          const first = sh.cells[0]!; const last = sh.cells[sh.cells.length - 1]!;
-          const horiz = sh.cells.length > 1 && sh.cells[1]! - first === 1;
-          const x = cx(first) - 38; const y = cy(first) - 38;
-          const w = horiz ? cx(last) - cx(first) + 76 : 76; const h = horiz ? 76 : cy(last) - cy(first) + 76;
-          return (
-            <g key={k}>
-              <rect x={x + 3} y={y + 5} width={w} height={h} rx="30" fill="#000" opacity=".4" />
-              <rect x={x} y={y} width={w} height={h} rx="30" fill={sunk ? '#5a0f1a' : 'url(#fl-hull)'} stroke={sunk ? '#ef4444' : '#FCE38A'} strokeWidth="3" strokeOpacity={sunk ? 0.9 : 0.7} />
-              {!sunk && <rect x={x + 10} y={y + 8} width={w - 20} height="10" rx="5" fill="#fff" opacity=".28" />}
-            </g>
-          );
+          const first = sh.cells[0]!;
+          const horiz = sh.cells.length > 1 ? sh.cells[1]! - first === 1 : true;
+          return <ShipArt key={k} len={sh.cells.length} x={cx(first) - 50} y={cy(first) - 50} vertical={!horiz} sunk={sunk} />;
         })}
         {/* resultados de los disparos */}
         {Object.entries(shots).map(([k, res]) => {
@@ -71,7 +67,7 @@ const Radar = memo(function Radar({ fleet, shots, reveal, onCell, pulse, dim }: 
           return res === 'hit'
             ? (
               <g key={k}>
-                <circle cx={cx(c)} cy={cy(c)} r="27" fill="#b91c1c" /><circle cx={cx(c)} cy={cy(c)} r="27" fill="none" stroke="#FCE38A" strokeWidth="5" />
+                <circle cx={cx(c)} cy={cy(c)} r="30" fill="#ef4444" opacity=".25" /><circle cx={cx(c)} cy={cy(c)} r="25" fill="#991b1b" /><circle cx={cx(c)} cy={cy(c)} r="25" fill="none" stroke="#FCE38A" strokeWidth="5" /><circle cx={cx(c) - 7} cy={cy(c) - 8} r="6" fill="#fff" opacity=".35" />
                 <path d={`M${cx(c) - 12} ${cy(c) - 12}L${cx(c) + 12} ${cy(c) + 12}M${cx(c) + 12} ${cy(c) - 12}L${cx(c) - 12} ${cy(c) + 12}`} stroke="#FFF0B0" strokeWidth="6" strokeLinecap="round" />
               </g>
             )
@@ -85,6 +81,9 @@ const Radar = memo(function Radar({ fleet, shots, reveal, onCell, pulse, dim }: 
           </g>
         )}
       </svg>
+      {sweep && (
+        <motion.div aria-hidden className="pointer-events-none absolute inset-[3%] rounded-full" style={{ background: 'conic-gradient(from 0deg, rgba(63,224,168,0) 0deg, rgba(63,224,168,.20) 38deg, rgba(63,224,168,0) 40deg)', willChange: 'transform' }} animate={{ rotate: 360 }} transition={{ duration: 7, repeat: Infinity, ease: 'linear' }} />
+      )}
       {onCell && (
         <div className="absolute inset-[1%] grid" style={{ gridTemplateColumns: `repeat(${N}, 1fr)`, gridTemplateRows: `repeat(${N}, 1fr)` }} role="grid" aria-label="Radar">
           {Array.from({ length: N * N }, (_, c) => (
@@ -181,15 +180,15 @@ export default function Flota() {
       )}
       felt={(
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
-          <SeatBadge info={info(foeIdx, foe.name, foe.human)} tone="them" mano={false} turn={s.phase === 'battle' && s.turn === foeIdx} deadline={null} cards={0} />
+          <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(foeIdx, foe.name, foe.human)} tone="them" mano={false} turn={s.phase === 'battle' && s.turn === foeIdx} deadline={null} cards={0} /></div>
           {placing ? (
-            <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh)', height: 'min(100cqw, 100cqh)' }}><Radar fleet={s.fleets[myIdx]} shots={s.shots[myIdx]} reveal pulse={null} dim={iAmReady} /></div></div>
+            <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, 680px)', height: 'min(100cqw, 100cqh, 680px)' }}><Radar fleet={s.fleets[myIdx]} shots={s.shots[myIdx]} reveal pulse={null} dim={iAmReady} /></div></div>
           ) : (
             <>
-              <div className="min-h-0 w-full flex-[1.5] [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh)', height: 'min(100cqw, 100cqh)' }}>
-                <Radar fleet={s.fleets[foeIdx]} shots={s.shots[foeIdx]} reveal={s.phase === 'over'} onCell={myTurn ? fire : undefined} pulse={pulseOn(foeIdx)} />
+              <div className="min-h-0 w-full flex-[1.5] [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, 680px)', height: 'min(100cqw, 100cqh, 680px)' }}>
+                <Radar fleet={s.fleets[foeIdx]} shots={s.shots[foeIdx]} reveal={s.phase === 'over'} sweep={s.phase === 'battle'} onCell={myTurn ? fire : undefined} pulse={pulseOn(foeIdx)} />
               </div></div>
-              <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh)', height: 'min(100cqw, 100cqh)' }}>
+              <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, 680px)', height: 'min(100cqw, 100cqh, 680px)' }}>
                 <Radar fleet={s.fleets[myIdx]} shots={s.shots[myIdx]} reveal pulse={pulseOn(myIdx)} />
               </div></div>
             </>

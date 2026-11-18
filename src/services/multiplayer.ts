@@ -41,6 +41,9 @@ export const ROOM_LAYOUTS: Record<string, RoomLayout> = {
   tres: { capacity: 2, mode: 'table', min: 2 },
   cuatro: { capacity: 2, mode: 'table', min: 2 },
   flota: { capacity: 2, mode: 'table', min: 2 },
+  parchis: { capacity: 4, mode: 'table', min: 2 },
+  ajedrez: { capacity: 2, mode: 'table', min: 2 },
+  damas: { capacity: 2, mode: 'table', min: 2 },
 };
 export const layoutFor = (gameId: string): RoomLayout => ROOM_LAYOUTS[gameId] ?? { capacity: 4, mode: 'table', min: 2 };
 export const teamOfSeat = (seat: number): 'A' | 'B' => (seat % 2 === 0 ? 'A' : 'B');

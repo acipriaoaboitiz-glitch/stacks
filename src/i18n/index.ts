@@ -3,6 +3,7 @@ import { coreDe, coreFr } from './core2.ts';
 import { accDe, accEn, accEs, accFr } from './acc.ts';
 import { catDe, catEn, catEs, catFr, setDe, setEn, setEs, setFr, clubDe, clubEn, clubEs, clubFr, CLUB_RULES } from './club.ts';
 import { olDe, olEn, olEs, olFr } from './ol.ts';
+import { MORE_RULES, moreDe, moreEn, moreEs, moreFr } from './more.ts';
 import { RULES } from './rules.ts';
 import { uiDe, uiEn, uiEs, uiFr } from './ui.ts';
 
@@ -100,11 +101,11 @@ const eu: Dict = {
 };
 
 const DICTS: Record<Lang, Dict> = {
-  es: { ...es, ...uiEs, ...olEs, ...accEs, ...clubEs, ...catEs, ...setEs },
-  en: { ...en, ...uiEn, ...olEn, ...accEn, ...clubEn, ...catEn, ...setEn },
+  es: { ...es, ...uiEs, ...olEs, ...accEs, ...clubEs, ...catEs, ...setEs, ...moreEs },
+  en: { ...en, ...uiEn, ...olEn, ...accEn, ...clubEn, ...catEn, ...setEn, ...moreEn },
   eu: { ...eu },
-  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr, ...clubFr, ...catFr, ...setFr },
-  de: { ...coreDe, ...uiDe, ...olDe, ...accDe, ...clubDe, ...catDe, ...setDe },
+  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr, ...clubFr, ...catFr, ...setFr, ...moreFr },
+  de: { ...coreDe, ...uiDe, ...olDe, ...accDe, ...clubDe, ...catDe, ...setDe, ...moreDe },
 };
 
 /** Sustituye `{n}`, `{h}`… en una traducción. */
@@ -114,7 +115,7 @@ export const trf = (key: string, vars: Record<string, string | number>, lang: La
 /** Nombre de un bot en el idioma activo: «Jugador 1», «Player 1», «Joueur 1», «Spieler 1». */
 export const botName = (i: number): string => `${tr('bot.name')} ${i}`;
 /** Reglas de un juego en el idioma activo (cae al texto español del registro). */
-export const rulesFor = (id: string, fallback: string[], lang: Lang = getSettings().lang): string[] => RULES[lang]?.[id] ?? (lang === 'en' || lang === 'fr' || lang === 'de' ? CLUB_RULES[lang][id] : undefined) ?? fallback;
+export const rulesFor = (id: string, fallback: string[], lang: Lang = getSettings().lang): string[] => RULES[lang]?.[id] ?? (lang === 'en' || lang === 'fr' || lang === 'de' ? CLUB_RULES[lang][id] ?? MORE_RULES[lang][id] : undefined) ?? fallback;
 
 /** Traducción puntual (fuera de componentes). */
 export function tr(key: string, lang: Lang = getSettings().lang): string {
