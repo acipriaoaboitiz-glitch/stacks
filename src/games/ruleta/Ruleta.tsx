@@ -24,6 +24,17 @@ const short = (n: number): string => (n >= 1000 ? `${+(n / 1000).toFixed(1)}k` :
 const ROWS = [0, 1, 2].map((r) => Array.from({ length: 12 }, (_, c) => c * 3 + 3 - r));
 
 function ChipMark({ amt }: { amt: number }) {
+  // pila de 1 a 4 fichas según el importe; la de arriba muestra el total
+  const layers = amt >= 1000 ? 4 : amt >= 300 ? 3 : amt >= 60 ? 2 : 1;
+  return (
+    <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      {Array.from({ length: layers - 1 }, (_, i) => <span key={i} className="absolute left-1/2 top-1/2 block -translate-x-1/2 rounded-full border border-amber-100/50 bg-gradient-to-br from-amber-300 to-amber-700" style={{ width: 'clamp(16px,4.6vw,26px)', height: 'clamp(16px,4.6vw,26px)', transform: `translate(-50%, calc(-50% + ${(layers - 1 - i) * 3}px))` }} />)}
+      <ChipTop amt={amt} />
+    </span>
+  );
+}
+
+function ChipTop({ amt }: { amt: number }) {
   return (
     <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-amber-100/70 bg-gradient-to-br from-amber-200 to-amber-600 font-extrabold tabular-nums text-amber-950 shadow-[0_2px_4px_rgba(0,0,0,.6)]"
       style={{ width: 'clamp(16px,4.6vw,26px)', height: 'clamp(16px,4.6vw,26px)', fontSize: 'clamp(7px,2vw,11px)' }}>{short(amt)}</span>

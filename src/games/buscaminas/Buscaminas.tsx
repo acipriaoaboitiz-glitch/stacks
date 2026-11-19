@@ -17,10 +17,10 @@ import { MODES, chord, dig, newMines, toggleFlag, type Cell, type MState } from 
 const NUM = ['', '#5aa8ff', '#3fe0a8', '#ff7a7a', '#b794ff', '#ffb454', '#2dd4bf', '#f1e7c6', '#9aa5a0'];
 const mmss = (s: number): string => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-interface CellProps { cell: Cell; boom: boolean; i: number; onTap: (i: number) => void; onPress: (i: number) => void; size: string }
+interface CellProps { cell: Cell; boom: boolean; i: number; onTap: (i: number) => void; onPress: (i: number) => void; size: string; delay: number }
 
 /** Casilla biselada: cerrada = esmeralda oscuro en relieve; abierta = obsidiana hundida con número de alto contraste. */
-const CellView = memo(function CellView({ cell, boom, i, onTap, onPress, size }: CellProps) {
+const CellView = memo(function CellView({ cell, boom, i, onTap, onPress, size, delay }: CellProps) {
   const timer = useRef<number | null>(null);
   const long = useRef(false);
   const down = (): void => { long.current = false; timer.current = gameTimeout(() => { long.current = true; onPress(i); }, 340); };
@@ -31,9 +31,9 @@ const CellView = memo(function CellView({ cell, boom, i, onTap, onPress, size }:
     <button type="button" onPointerDown={down} onPointerUp={up} onPointerLeave={cancel} onPointerCancel={cancel} onContextMenu={(e) => { e.preventDefault(); onPress(i); }}
       aria-label={open ? String(cell.adj) : cell.flag ? 'flag' : '·'} className="touch-manipulation select-none p-[1px]" style={{ width: size, height: size }}>
       <span className="grid h-full w-full place-items-center rounded-[22%] font-extrabold tabular-nums"
-        style={open
+        style={{ transition: 'background .26s ease, box-shadow .26s ease, transform .26s ease', transitionDelay: open ? `${delay}ms` : '0ms', transform: open ? 'scale(1)' : 'scale(1)', ...(open
           ? { background: boom ? 'radial-gradient(circle, #c02626 0%, #5a0f0f 80%)' : 'linear-gradient(160deg,#0b1612,#050b08)', boxShadow: 'inset 0 3px 5px rgba(0,0,0,.75), inset 0 -1px 0 rgba(255,255,255,.05)', color: NUM[cell.adj] }
-          : { background: 'linear-gradient(160deg,#21735a,#0e3f30 55%,#082a1f)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 3px rgba(0,0,0,.35), 0 3px 0 #030D08, 0 4px 5px rgba(0,0,0,.5)' }}>
+          : { background: 'linear-gradient(160deg,#21735a,#0e3f30 55%,#082a1f)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 3px rgba(0,0,0,.35), 0 3px 0 #030D08, 0 4px 5px rgba(0,0,0,.5)' }) }}>
         {open
           ? (cell.mine ? <span className="block h-[86%] w-[86%]"><MineArt /></span> : cell.adj > 0 ? <span style={{ fontSize: `calc(${size} * .58)` }}>{cell.adj}</span> : null)
           : cell.flag ? <span className="block h-[88%] w-[88%]"><FlagArt /></span> : null}
@@ -52,6 +52,7 @@ export default function Buscaminas() {
   const [flagMode, setFlagMode] = useState(false);
   const [secs, setSecs] = useState(0);
   const done = useRef(false);
+  const [origin, setOrigin] = useState(0);
 
   const reset = useCallback(() => { setS(newMines(mode)); setSecs(0); done.current = false; }, [mode]);
 
@@ -70,6 +71,7 @@ export default function Buscaminas() {
   }, [s.over, s.won, mode, secs, cfg.reward]);
 
   const tap = useCallback((i: number) => {
+    setOrigin(i);
     setS((cur) => {
       const c = cur.cells[i]!;
       const n = flagMode && !c.open ? toggleFlag(cur, i) : c.open ? chord(cur, i) : dig(cur, i);
@@ -90,7 +92,7 @@ export default function Buscaminas() {
         <div className="h-full w-full p-[clamp(6px,2vw,16px)] [container-type:size]">
           <div className="grid h-full place-items-center">
             <div className="grid rounded-[14px] bg-[#0a1210] p-[1.5%] shadow-[inset_0_0_0_1px_rgba(255,255,255,.07),inset_0_6px_14px_rgba(0,0,0,.65),0_8px_18px_rgba(0,0,0,.45)]" style={{ gridTemplateColumns: `repeat(${s.w}, ${size})`, width: 'fit-content' }}>
-              {s.cells.map((c, i) => <CellView key={i} i={i} cell={c} boom={s.boom === i} onTap={tap} onPress={press} size={size} />)}
+              {s.cells.map((c, i) => <CellView key={i} i={i} cell={c} boom={s.boom === i} onTap={tap} onPress={press} size={size} delay={Math.min(700, Math.round(Math.hypot((i % s.w) - (origin % s.w), Math.floor(i / s.w) - Math.floor(origin / s.w)) * 55))} />)}
             </div>
           </div>
         </div>

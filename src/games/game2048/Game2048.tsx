@@ -35,6 +35,7 @@ export default function Game2048() {
   const [g, setG] = useState<G2048>(() => newGame(cfg.size));
   const [undo, setUndo] = useState<G2048[]>([]);
   const [undosLeft, setUndosLeft] = useState(cfg.undos);
+  const [sparks, setSparks] = useState<{ k: number; r: number; c: number }[]>([]);
   const rewarded = useRef(false);
   const wonShown = useRef(false);
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -46,6 +47,8 @@ export default function Game2048() {
       if (!n) return cur;
       setUndo((u) => [...u.slice(-9), cur]);
       feedback(n.score > cur.score ? 'clack' : 'tap');
+      const big = n.tiles.filter((x) => x.merged && x.v >= 512);
+      if (big.length) setSparks((sp) => [...sp.slice(-6), ...big.map((x) => ({ k: n.moves * 100 + x.id, r: x.r, c: x.c }))]);
       return n;
     });
   }, []);
@@ -102,6 +105,14 @@ export default function Game2048() {
                     <div key={i} aria-hidden className="absolute" style={{ left: `${((i % N) / N) * 100}%`, top: `${(Math.floor(i / N) / N) * 100}%`, width: `${100 / N}%`, height: `${100 / N}%`, padding: '1.1%' }}>
                       <div className="h-full w-full rounded-[12%] bg-white/[0.045]" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,.45)' }} />
                     </div>
+                  ))}
+                  {sparks.map((sp) => (
+                    <span key={sp.k} aria-hidden className="pointer-events-none absolute z-20" style={{ left: `${((sp.c + 0.5) / N) * 100}%`, top: `${((sp.r + 0.5) / N) * 100}%` }}>
+                      {Array.from({ length: 10 }, (_, i) => (
+                        <motion.span key={i} className="absolute block size-1.5 rounded-full bg-[#FCE38A]" style={{ boxShadow: '0 0 6px #FCE38A', willChange: 'transform, opacity' }}
+                          initial={{ x: 0, y: 0, scale: 1, opacity: 1 }} animate={{ x: Math.cos((i / 10) * 6.283) * 46, y: Math.sin((i / 10) * 6.283) * 46, scale: 0.2, opacity: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }} />
+                      ))}
+                    </span>
                   ))}
                   {g.tiles.map((tile) => {
                     const l = look(tile.v);

@@ -17,18 +17,21 @@ import { MODES, deal, isFree, pairs, remove, shuffleTiles, type Tile } from './e
 const mmss = (s: number): string => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 const RATIO = 1.28;
 
-interface TileProps { tile: Tile; w: number; free: boolean; selected: boolean; hint: boolean; onTap: (id: number) => void }
+interface TileProps { tile: Tile; w: number; cx: number; cy: number; free: boolean; selected: boolean; hint: boolean; onTap: (id: number) => void }
 
 /** Ficha de marfil gruesa: cara con bisel inferior-derecho (canto), dibujo vectorial y, si está bloqueada, un velo oscuro. */
-const TileView = memo(function TileView({ tile, w, free, selected, hint, onTap }: TileProps) {
+const TileView = memo(function TileView({ tile, w, cx, cy, free, selected, hint, onTap }: TileProps) {
   const h = w * RATIO;
   const edge = Math.max(2, w * 0.09);
   return (
-    <motion.div className="absolute left-0 top-0" style={{ width: w, height: h, zIndex: tile.z * 100 + tile.y, willChange: 'transform' }}
-      initial={false}
-      animate={{ x: (tile.x / 2) * w - tile.z * edge * 0.9, y: (tile.y / 2) * h - tile.z * edge * 0.9, scale: tile.gone ? 0.6 : 1, opacity: tile.gone ? 0 : 1 }}
-      transition={{ duration: tile.gone ? 0.2 : 0.01 }}>
-      <button type="button" disabled={tile.gone || !free} onClick={() => onTap(tile.id)} aria-label={String(tile.type)} className="relative block touch-manipulation"
+    <div className="pointer-events-none absolute left-0 top-0" style={{
+      width: w, height: h, zIndex: tile.gone ? 900 + (tile.id % 2) : tile.z * 100 + tile.y, willChange: 'transform, opacity',
+      // al emparejar, las dos fichas vuelan al centro de la mesa y se desvanecen tras el choque
+      transform: tile.gone ? `translate3d(${cx + (tile.id % 2 ? 6 : -6)}px, ${cy}px, 0) scale(1.12)` : `translate3d(${(tile.x / 2) * w - tile.z * edge * 0.9}px, ${(tile.y / 2) * h - tile.z * edge * 0.9}px, 0)`,
+      opacity: tile.gone ? 0 : 1,
+      transition: tile.gone ? 'transform .3s cubic-bezier(.45,0,.75,.35), opacity .14s ease .26s' : 'none',
+    }}>
+      <button type="button" disabled={tile.gone || !free} onClick={() => onTap(tile.id)} aria-label={String(tile.type)} className="pointer-events-auto relative block touch-manipulation"
         style={{
           width: w, height: h, borderRadius: w * 0.13,
           background: 'linear-gradient(150deg,#FDFAF0,#F3EAD0 55%,#E2D6B4)',
@@ -38,7 +41,7 @@ const TileView = memo(function TileView({ tile, w, free, selected, hint, onTap }
         <svg viewBox="0 0 60 80" className="absolute inset-[6%] h-[88%] w-[88%]" shapeRendering="geometricPrecision" aria-hidden="true"><Face type={tile.type} /></svg>
         {!free && <span aria-hidden className="absolute inset-0 rounded-[inherit] bg-black/38" />}
       </button>
-    </motion.div>
+    </div>
   );
 });
 
@@ -52,6 +55,7 @@ export default function Mahjong() {
   const [sel, setSel] = useState<number | null>(null);
   const [hint, setHint] = useState<[number, number] | null>(null);
   const [hints, setHints] = useState(cfg.hints);
+  const [flash, setFlash] = useState(0);
   const [shuffles, setShuffles] = useState(cfg.shuffles);
   const [secs, setSecs] = useState(0);
   const done = useRef(false);
@@ -100,6 +104,7 @@ export default function Mahjong() {
         feedback('clack');
         gameTimeout(() => feedback('clack'), 90);
         setTiles((ts) => remove(ts, cur, id));
+        setFlash((k) => k + 1);
         return null;
       }
       feedback('tap');
@@ -127,7 +132,11 @@ export default function Mahjong() {
         <div ref={wrap} className="relative grid h-full w-full place-items-center overflow-hidden">
           {w > 0 && (
             <div className="relative" style={{ width: bw, height: bh }}>
-              {tiles.map((tile) => <TileView key={tile.id} tile={tile} w={w} free={isFree(tiles, tile)} selected={sel === tile.id} hint={hintSet.has(tile.id)} onTap={tap} />)}
+              {flash > 0 && (
+                <motion.span key={flash} aria-hidden className="pointer-events-none absolute rounded-full" style={{ left: bw / 2 - w, top: bh / 2 - w, width: w * 2, height: w * 2, zIndex: 950, background: 'radial-gradient(circle, rgba(255,246,196,.95) 0%, rgba(252,227,138,.7) 35%, rgba(212,175,55,0) 70%)', willChange: 'transform, opacity' }}
+                  initial={{ scale: 0.2, opacity: 0 }} animate={{ scale: [0.2, 1.4, 1.9], opacity: [0, 1, 0] }} transition={{ delay: 0.26, duration: 0.45, times: [0, 0.4, 1] }} />
+              )}
+              {tiles.map((tile) => <TileView key={tile.id} tile={tile} w={w} cx={bw / 2 - w / 2} cy={bh / 2 - w * RATIO / 2} free={isFree(tiles, tile)} selected={sel === tile.id} hint={hintSet.has(tile.id)} onTap={tap} />)}
             </div>
           )}
         </div>

@@ -47,7 +47,7 @@ export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selec
   const body = faceDown ? '#0a2a1e' : '#8C816A';
   return (
     <button type="button" disabled={!onClick} onClick={onClick} aria-label={faceDown ? undefined : `${a}-${b}`}
-      className={`relative block shrink-0 touch-manipulation select-none rounded-[14%/28%] will-change-transform ${selected ? '-translate-y-2' : ''} ${className}`}
+      className={`relative block shrink-0 touch-manipulation select-none rounded-[14%/28%] will-change-transform ${selected ? '-translate-y-2' : ''} ${glow ? 'dm-pulse' : ''} ${className}`}
       style={{
         width: vertical ? size : long, height: vertical ? long : size,
         // grosor: canto inferior (y derecho) del marfil + sombra de contacto sobre el fieltro

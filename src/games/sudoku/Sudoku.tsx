@@ -120,7 +120,7 @@ export default function Sudoku() {
           <div className="grid grid-cols-9 gap-1">
             {Array.from({ length: 9 }, (_, k) => (
               <button key={k} type="button" disabled={count(k + 1) >= 9 || over} onClick={() => put(k + 1)}
-                className="h-12 touch-manipulation rounded-xl border border-white/10 bg-white/[0.07] text-[20px] font-bold tabular-nums text-[#FCE38A] transition-opacity active:scale-90 disabled:opacity-25">{k + 1}</button>
+                className="relative h-12 touch-manipulation rounded-xl border border-white/10 bg-white/[0.07] text-[20px] font-bold tabular-nums leading-none text-[#FCE38A] transition-opacity active:scale-90 disabled:opacity-25">{k + 1}<span className="absolute bottom-0.5 right-1 text-[9px] font-semibold text-white/55">{9 - count(k + 1)}</span></button>
             ))}
           </div>
           <div className="flex min-h-[48px] items-center gap-2">
