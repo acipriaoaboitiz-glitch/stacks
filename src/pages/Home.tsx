@@ -184,11 +184,12 @@ export default function Home() {
       if (!c) return;
       const d = Math.max(-2, Math.min(2, i - pos));
       const a = Math.abs(d);
-      c.style.transform = `scale(${1 - Math.min(1, a) * 0.1})`;
-      // Las vecinas solo asoman en monitores muy anchos o en móvil; en tablet/PC normal se desvanecen sin franjas cortadas
       const w = window.innerWidth;
-      const hideSides = w >= 640 && w < 1536;
-      c.style.opacity = String(a < 0.5 ? 1 : hideSides ? Math.max(0, 1 - a * 2) : Math.max(0.35, 1 - a * 0.5));
+      const wide = w >= 1280;
+      c.style.transform = `scale(${1 - Math.min(1, a) * (wide ? 0.14 : 0.1)})`;
+      // Las vecinas solo asoman en monitores muy anchos o en móvil; en tablet/PC normal se desvanecen sin franjas cortadas
+      const hideSides = w >= 640 && w < 1280;
+      c.style.opacity = String(a < 0.5 ? 1 : hideSides ? Math.max(0, 1 - a * 2) : wide ? Math.max(0.45, 1 - a * 0.9) : Math.max(0.35, 1 - a * 0.5));
       c.style.zIndex = String(10 - Math.round(a));
     });
   }, []);
@@ -212,6 +213,18 @@ export default function Home() {
     const k = ((i % N) + N) % N;
     el.scrollTo({ left: k * stepOf(el), behavior: 'smooth' });
   }, [N]);
+  // Teclado: ← → navegan y Enter juega (si no hay un modal o campo enfocado)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.closest('[role=dialog]'))) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(curRef.current - 1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); goTo(curRef.current + 1); }
+      else if (e.key === 'Enter' && el?.tagName !== 'BUTTON') document.querySelector<HTMLButtonElement>('[data-play]')?.click();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [goTo]);
   const badge = (n: number, tone: string) => (n > 0 ? <span className={`pointer-events-none absolute -right-1 -top-1 grid min-w-[16px] place-items-center rounded-full px-1 text-[10px] font-extrabold leading-4 tabular-nums text-white ${tone}`}>{n}</span> : null);
   const friendsBtn = (
     <span className="relative">
@@ -226,12 +239,12 @@ export default function Home() {
 
   return (
     <div className="screen obsidian overflow-x-hidden">
-      <header className="desk-zoom glass-panel relative z-20 mx-auto grid w-full max-w-7xl overflow-hidden sm:h-16 sm:px-6 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_auto_1fr]" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
+      <header className="desk-zoom glass-panel relative z-20 mx-auto grid w-full max-w-7xl overflow-hidden max-sm:min-h-14 max-sm:pt-[env(safe-area-inset-top)] sm:h-16 sm:px-6 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_auto_1fr]" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
         <div className="col-start-1 row-start-1 min-w-0 justify-self-start"><ProfileCard /></div>
         {/* Fila central: STACKS siempre en el centro exacto (columnas 1fr · auto · 1fr); en móvil, a sus lados van Amigos/Ranking y Club VIP */}
-        <div className="col-span-2 row-start-2 grid grid-cols-[1fr_auto_1fr] items-center sm:col-span-1 sm:col-start-2 sm:row-start-1">
+        <div className="col-span-2 row-start-2 grid grid-cols-[1fr_auto_1fr] items-center max-sm:hidden sm:col-span-1 sm:col-start-2 sm:row-start-1">
           <div className="sm:hidden" />
-          <h1 aria-label="STACKS"><Wordmark size={20} /></h1>
+          <h1 aria-label="STACKS" className="max-sm:hidden"><Wordmark size={20} /></h1>
           <div className="sm:hidden" />
         </div>
         <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-2 justify-self-end sm:col-start-3">
@@ -268,7 +281,7 @@ export default function Home() {
         <div aria-hidden className="pointer-events-none absolute left-1/2 top-[44%] z-0 size-[min(90vw,620px)] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background] duration-500" style={{ background: `radial-gradient(circle, ${HALO[game.category]}30 0%, ${HALO[game.category]}00 66%)` }} />
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
-        <motion.div key={cat} className="relative z-10 h-[min(36dvh,340px)] w-full md:h-[min(40dvh,360px)] lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
+        <motion.div key={cat} className="relative z-10 h-[min(36dvh,340px)] w-full max-md:h-auto max-md:max-h-[46dvh] max-md:min-h-0 max-md:flex-1 md:h-[min(40dvh,360px)] lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
           <div ref={scroller} onScroll={onScroll} role="group" aria-label="Juegos"
             className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain] lg:gap-3 lg:px-[calc(50%-calc(190px/var(--z,1)))] xl:px-[calc(50%-calc(210px/var(--z,1)))]">
             {LIST.map((g, i) => (
@@ -295,7 +308,7 @@ export default function Home() {
               <Segmented value={modes[game.id] && game.solo.modes.includes(modes[game.id]!) ? modes[game.id]! : game.solo.def}
                 options={game.solo.modes.map((m) => ({ id: m, label: t(`mode.${m}`) }))} onChange={(m) => pickMode(game.id, m)} label={t('mode.title')} />
               <button type="button"
-                className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(`${game.route}?mode=${modes[game.id] && game.solo!.modes.includes(modes[game.id]!) ? modes[game.id] : game.solo!.def}`); }}>
+                data-play className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(`${game.route}?mode=${modes[game.id] && game.solo!.modes.includes(modes[game.id]!) ? modes[game.id] : game.solo!.def}`); }}>
                 <Play size={17} aria-hidden /> {t('lobby.playNow')}
               </button>
             </>
@@ -306,7 +319,7 @@ export default function Home() {
                   options={game.levels.modes.map((m) => ({ id: m, label: t(`mode.${m}`) }))} onChange={(m) => pickMode(game.id, m)} label={t('mode.title')} />
               )}
               <button type="button"
-                className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(game.levels ? `${game.route}?mode=${modes[game.id] && game.levels.modes.includes(modes[game.id]!) ? modes[game.id] : game.levels.def}` : game.route); }}>
+                data-play className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(game.levels ? `${game.route}?mode=${modes[game.id] && game.levels.modes.includes(modes[game.id]!) ? modes[game.id] : game.levels.def}` : game.route); }}>
                 <Play size={17} aria-hidden /> {t('lobby.playAi')}
               </button>
               <button type="button"
@@ -318,7 +331,7 @@ export default function Home() {
           )}
         </div>
         {/* acceso rápido: recompensa diaria y reglas del juego elegido */}
-        <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/10 bg-[#081711]/90 p-1 max-md:hidden">
+        <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/10 bg-[#081711]/90 p-1">
           <button type="button" onClick={() => { feedback('tap'); setShowRefill(true); }} className="relative flex h-9 touch-manipulation items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold text-stone-200 active:scale-95">
             <Gift size={15} strokeWidth={1.75} aria-hidden />Recompensa diaria
             {chestReady && <span aria-hidden className="absolute right-1.5 top-1.5 size-2 animate-pulse rounded-full bg-[#FCE38A] shadow-[0_0_6px_#FCE38A]" />}
@@ -337,7 +350,7 @@ export default function Home() {
           ['Club VIP', Gem, shopOpen, () => setShopOpen(true), false],
         ] as const).map(([label, Icon, on, go, dot]) => (
           <button key={label} type="button" aria-current={on} onClick={() => { feedback('tap'); go(); }} className={`relative flex h-[58px] touch-manipulation flex-col items-center justify-center gap-0.5 text-[11px] font-bold active:scale-95 ${on ? 'text-[#FCE38A]' : 'text-white/55'}`}>
-            {on && <span aria-hidden className="absolute inset-x-6 top-0 h-[3px] rounded-b-full bg-[#FCE38A]" />}
+            {on && <motion.span layoutId="mobile-nav" aria-hidden className="absolute inset-x-6 top-0 h-[3px] rounded-b-full bg-[#FCE38A]" transition={{ type: 'spring', stiffness: 420, damping: 32 }} />}
             <span className="relative"><Icon size={21} strokeWidth={1.75} aria-hidden />{dot && <span aria-hidden className="absolute -right-1 -top-0.5 size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />}</span>
             {label}
           </button>

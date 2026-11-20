@@ -201,23 +201,58 @@ export function CoverBody({ id }: { id: string }) {
           </g>
         </g>
       );
-    case 'bingo':
-      return (
+    case 'bingo': {
+      const Ball3 = ({ x, y, r, c2, n, dark }: { x: number; y: number; r: number; c2: string; n: string; dark?: boolean }) => (
         <g>
-          <Shadow />
-          <g style={{ filter: 'drop-shadow(0 6px 5px rgba(0,0,0,.55))' }}>
-            <path d="M50 134 L62 106 H88 L100 134 Z" fill="url(#ta-gold)" stroke="#6b4a08" strokeWidth="1.5" />
-            <circle cx="75" cy="66" r="50" fill="url(#cv-felt)" stroke="url(#ta-gold)" strokeWidth="6" />
-            {[0, 45, 90, 135].map((r) => <line key={r} x1="75" y1="20" x2="75" y2="112" stroke="url(#ta-gold)" strokeWidth="3" transform={`rotate(${r} 75 66)`} />)}
-            {[[56, 48, '#e11d48', '7'], [92, 54, '#2563eb', '42'], [64, 84, '#16a34a', '18'], [96, 88, '#eab308', '63'], [76, 36, '#f1e7c6', '5']].map(([x, y, c, n]) => (
-              <g key={String(n)}><circle cx={Number(x)} cy={Number(y)} r="10" fill={String(c)} stroke="#fff" strokeWidth="1.6" /><circle cx={Number(x) - 3} cy={Number(y) - 3.5} r="2.6" fill="#fff" opacity=".6" /><text x={Number(x)} y={Number(y) + 3.6} textAnchor="middle" fontSize="10" fontWeight="800" fill={String(c) === '#f1e7c6' || String(c) === '#eab308' ? '#2a1d02' : '#fff'} fontFamily="Outfit, system-ui, sans-serif">{n}</text></g>
-            ))}
-            <circle cx="75" cy="66" r="8" fill="url(#ta-hub)" stroke="#6b4a08" />
-          </g>
-          <Gloss x={30} y={20} w={90} h={40} r={20} />
-          <g transform="translate(118 112)"><circle r="13" fill="url(#ta-goldr)" stroke="#fff6c4" strokeWidth="1.6" /><text y="4.6" textAnchor="middle" fontSize="13" fontWeight="800" fill="#2a1d02" fontFamily="Outfit, system-ui, sans-serif">90</text></g>
+          <ellipse cx={x + 1} cy={y + r + 1.5} rx={r * 0.9} ry={r * 0.28} fill="#000" opacity=".5" />
+          <circle cx={x} cy={y} r={r} fill={`url(#bb-${n})`} stroke={c2} strokeWidth=".8" />
+          <circle cx={x} cy={y} r={r * 0.52} fill="#fffbe8" opacity=".92" />
+          <text x={x} y={y + r * 0.22} textAnchor="middle" fontSize={r * 0.72} fontWeight="800" fill={dark ? '#3a2603' : c2} fontFamily="Outfit, system-ui, sans-serif">{n}</text>
+          <ellipse cx={x - r * 0.36} cy={y - r * 0.5} rx={r * 0.34} ry={r * 0.2} fill="#fff" opacity=".7" transform={`rotate(-30 ${x - r * 0.36} ${y - r * 0.5})`} />
         </g>
       );
+      return (
+        <g>
+          <defs>
+            {[['90', '#FFF3B0', '#D4AF37', '#8a6410'], ['11', '#ff8a9a', '#c3162c', '#5c0a14'], ['7', '#7ff0c0', '#0a8a5c', '#04382a'], ['22', '#8DB4FF', '#1D4FBF', '#0b2260']].map(([n, a1, a2, a3]) => (
+              <radialGradient key={n} id={`bb-${n}`} cx=".34" cy=".28" r=".85"><stop offset="0" stopColor={a1} /><stop offset=".55" stopColor={a2} /><stop offset="1" stopColor={a3} /></radialGradient>
+            ))}
+            <radialGradient id="bb-glass" cx=".38" cy=".3" r=".8"><stop offset="0" stopColor="#5fd6b0" stopOpacity=".5" /><stop offset=".6" stopColor="#0f5a42" stopOpacity=".35" /><stop offset="1" stopColor="#031a12" stopOpacity=".7" /></radialGradient>
+            <linearGradient id="bb-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#a0612c" /><stop offset="1" stopColor="#4a2610" /></linearGradient>
+          </defs>
+          <ellipse cx="72" cy="140" rx="54" ry="6" fill="rgba(0,0,0,.55)" />
+          {/* peana de bronce */}
+          <path d="M40 130 L52 104 H92 L104 130 Z" fill="url(#ta-gold)" stroke="#5c430b" strokeWidth="1.4" />
+          <rect x="34" y="128" width="76" height="7" rx="3" fill="url(#ta-gold)" stroke="#5c430b" strokeWidth="1.2" />
+          {/* bombo: esfera de cristal con varillas doradas en perspectiva */}
+          <circle cx="72" cy="62" r="44" fill="url(#cv-felt)" />
+          <circle cx="72" cy="62" r="44" fill="url(#bb-glass)" />
+          {[0, 60, 120].map((r) => <ellipse key={r} cx="72" cy="62" rx="44" ry="14" fill="none" stroke="url(#ta-gold)" strokeWidth="2.4" transform={`rotate(${r} 72 62)`} />)}
+          <ellipse cx="72" cy="62" rx="14" ry="44" fill="none" stroke="url(#ta-gold)" strokeWidth="2.4" />
+          <circle cx="72" cy="62" r="44" fill="none" stroke="url(#ta-gold)" strokeWidth="4" />
+          {[[56, 50, '#e11d48'], [86, 56, '#2563eb'], [64, 78, '#16a34a'], [84, 80, '#eab308']].map(([x, y, col]) => <circle key={String(x)} cx={Number(x)} cy={Number(y)} r="8" fill={String(col)} stroke="#fff" strokeWidth="1.2" opacity=".9" />)}
+          <ellipse cx="56" cy="40" rx="17" ry="9" fill="#fff" opacity=".28" transform="rotate(-28 56 40)" />
+          {/* eje y manivela de madera */}
+          <circle cx="72" cy="62" r="6" fill="url(#ta-hub)" stroke="#5c430b" />
+          <path d="M116 62 H134" stroke="url(#ta-gold)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M134 62 L138 40" stroke="url(#ta-gold)" strokeWidth="3.4" strokeLinecap="round" />
+          <rect x="133" y="30" width="10" height="13" rx="4" fill="url(#bb-wood)" stroke="#2a1306" strokeWidth="1" />
+          {/* rampa dorada y bolas en primer plano */}
+          <path d="M96 92 Q112 100 124 118 L112 122 Q104 106 92 100 Z" fill="url(#ta-gold)" stroke="#5c430b" strokeWidth="1.2" />
+          <Ball3 x={104} y={110} r={9} c2="#8a6410" n="90" dark />
+          <Ball3 x={118} y={122} r={10} c2="#8f0f22" n="11" />
+          <Ball3 x={22} y={116} r={11} c2="#04382a" n="7" />
+          <Ball3 x={42} y={126} r={9.5} c2="#0b2260" n="22" />
+          {/* esquina de cartón marfil con tres fichas */}
+          <g transform="translate(76 118) rotate(-6)">
+            <rect x="0" y="0" width="64" height="30" rx="4" fill="url(#ta-ivory)" stroke="url(#ta-gold)" strokeWidth="1.6" />
+            {[[8, '#FCE38A', '17'], [26, '#fb7185', '44'], [44, '#FCE38A', '63']].map(([x, col, n]) => (
+              <g key={String(n)}><text x={Number(x) + 6} y="19" textAnchor="middle" fontSize="11" fontWeight="800" fill="#2a1d02" fontFamily="Outfit, system-ui, sans-serif">{n}</text><circle cx={Number(x) + 6} cy="15" r="7.5" fill={String(col)} opacity=".6" stroke="#8a6410" strokeWidth=".6" /></g>
+            ))}
+          </g>
+        </g>
+      );
+    }
     case 'mentiroso':
       return (
         <g>

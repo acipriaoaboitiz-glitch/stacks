@@ -266,9 +266,12 @@ export default function Uno() {
 
   const felt = (
     <>
-      <div className="grid h-full place-items-center"><div className="relative flex h-[290px] max-h-full w-full items-center justify-center sm:h-[340px] lg:h-[380px]">
-        <div className="absolute left-1/2 top-2.5 z-20 -translate-x-1/2">{seat('top')}</div>
-        <div className="absolute left-3 top-1/2 z-20 sm:left-7 -translate-y-1/2">{seat('left')}</div>
+      <div className="flex h-full min-h-[310px] flex-col sm:min-h-[350px] lg:min-h-[390px]">
+        {/* 1 · franja superior: asiento compacto */}
+        <div className="flex h-14 shrink-0 items-center justify-center">{seat('top')}</div>
+        {/* 2 · zona central: mazo, descarte y anillo centrados en el espacio libre; 3 · laterales centrados en vertical */}
+        <div className="relative flex min-h-0 flex-1 items-center justify-center py-7">
+        <div className="absolute left-3 top-1/2 z-20 -translate-y-1/2 sm:left-7">{seat('left')}</div>
         <div className="relative z-10 flex items-center justify-center gap-4 sm:gap-7">
           <div className="grid justify-items-center gap-3">
             <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-2">
@@ -309,8 +312,9 @@ export default function Uno() {
             </div>
           </div>
         </div>
-        <div className="absolute right-3 top-1/2 z-20 sm:right-7 -translate-y-1/2">{seat('right')}</div>
-      </div></div>
+        <div className="absolute right-3 top-1/2 z-20 -translate-y-1/2 sm:right-7">{seat('right')}</div>
+        </div>
+      </div>
       <Banner text={banner} />
     </>
   );
