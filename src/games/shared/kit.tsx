@@ -13,6 +13,8 @@ import { CARD_EASE, FAST_EASE, feedback, playWhoosh, useSettings } from '../../s
 import { gameTimeout } from '../../services/timers.ts';
 import { useThrow } from './useThrow.ts';
 import { wallet } from '../../store/wallet.ts';
+import { useVictory } from '../../store/cosmetics.ts';
+import { VictoryFx } from '../../components/ui/VictoryFx.tsx';
 import { points as briscaPoints } from '../brisca/engine.ts';
 import { escobaValue } from '../escoba/engine.ts';
 
@@ -260,9 +262,11 @@ export function ResultOverlay({ title, children, actions, outcome, prize = 0, ta
     feedback(outcome === 'win' ? 'win' : 'defeat');
   }, [outcome]);
   const win = outcome === 'win';
+  const victory = useVictory();
   return (
     <motion.div data-result-overlay className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {win && <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">{CONFETTI.map((c, i) => (
+      {win && <VictoryFx id={victory} />}
+      {win && victory === 'destello' && <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">{CONFETTI.map((c, i) => (
         <span key={i} className="confetti" style={{ left: `${c.left}%`, background: c.color, ['--dx' as string]: `${c.dx}px`, ['--rot' as string]: `${c.rot}deg`, ['--dur' as string]: `${c.dur}s`, ['--delay' as string]: `${c.delay}s` }} />
       ))}</div>}
       {outcome === 'lose' && <>

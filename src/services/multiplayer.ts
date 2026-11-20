@@ -3,6 +3,7 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase.ts';
 import { useSyncExternalStore } from 'react';
 import { shareBase } from './env.ts';
 import { getIdent } from '../store/identity.ts';
+import { getCosmetics, type AvatarId } from '../store/cosmetics.ts';
 import { dbCloseRoom, dbCreateRoom, dbFindPublic, dbLoadState, dbRoomOpen, dbUpdateRoom } from './roomsDb.ts';
 
 /**
@@ -65,10 +66,11 @@ export function inviteLink(code: string, gameId: string): string {
 }
 
 // ─── Tipos públicos ──────────────────────────────────────────────────────────────────────
-interface PeerMeta { id: string; name: string; ready: boolean; seat: number; joinedAt: number; isHost: boolean }
+/** `emblem`: avatar VIP equipado (se ve en el lobby y en la mesa de los demás). */
+interface PeerMeta { id: string; name: string; ready: boolean; seat: number; joinedAt: number; isHost: boolean; emblem?: AvatarId | null }
 
 export interface PlayerView {
-  id: string; name: string; ready: boolean; seat: number; isHost: boolean; isSelf: boolean;
+  id: string; name: string; ready: boolean; seat: number; isHost: boolean; isSelf: boolean; emblem: AvatarId | null;
   /** Latencia ida y vuelta en ms (null = aún sin medir). */
   ping: number | null;
 }
@@ -125,7 +127,7 @@ class SupabaseTransport implements Transport {
     ch.on('presence', { event: 'sync' }, () => {
       const state = ch.presenceState<PeerMeta>();
       h.onPeers(Object.values(state).flat().map((p) => ({
-        id: p.id, name: p.name, ready: p.ready, seat: p.seat, joinedAt: p.joinedAt, isHost: p.isHost,
+        id: p.id, name: p.name, ready: p.ready, seat: p.seat, joinedAt: p.joinedAt, isHost: p.isHost, emblem: p.emblem ?? null,
       })));
     });
     ch.on('broadcast', { event: 'msg' }, ({ payload }) => h.onMessage(payload as Msg));
@@ -262,7 +264,7 @@ export class Room {
     this.gameId = gameId;
     this.layout = layoutFor(gameId);
     this.transport = this.makeTransport();
-    this.meta = { id: stablePeerId(code), name, ready: isHost, seat: -1, joinedAt: Date.now(), isHost };
+    this.meta = { id: stablePeerId(code), name, ready: isHost, seat: -1, joinedAt: Date.now(), isHost, emblem: getCosmetics().avatar };
     this.peers = [this.meta];
     this.snap = this.build();
   }
@@ -418,7 +420,7 @@ export class Room {
     const players: PlayerView[] = this.peers
       .filter((p) => seatOf.has(p.id))
       .map((p) => ({
-        id: p.id, name: p.name, ready: p.isHost || p.ready, seat: seatOf.get(p.id)!, isHost: p.isHost,
+        id: p.id, name: p.name, ready: p.isHost || p.ready, seat: seatOf.get(p.id)!, isHost: p.isHost, emblem: p.emblem ?? null,
         isSelf: p.id === this.meta.id, ping: p.id === this.meta.id ? 0 : this.pings.get(p.id) ?? null,
       }))
       .sort((a, b) => a.seat - b.seat);
@@ -511,4 +513,11 @@ export async function resumeRoom(): Promise<Room | null> {
     await new Promise<void>((done) => { const off = room.onStart(() => { off(); done(); }); window.setTimeout(done, 6000); });
     return room.getSnapshot().started ? room : (room.leave(), null);
   } catch { clearResume(); return null; }
+}
+
+/** Emblema VIP de otro jugador humano de la sala activa, por nombre (para dibujar su avatar en la mesa). */
+export function emblemOfName(name: string): AvatarId | null {
+  const room = getActiveRoom();
+  if (!room) return null;
+  return room.getSnapshot().players.find((p) => p.name === name && !p.isSelf)?.emblem ?? null;
 }

@@ -189,3 +189,8 @@ alter table public.stacks_rooms add column if not exists is_public boolean not n
 alter table public.stacks_rooms add column if not exists game_id text generated always as (game_type) stored;
 create index if not exists stacks_rooms_matchmaking_idx on public.stacks_rooms (game_type, updated_at desc) where is_public and status = 'waiting';
 create index if not exists stacks_rooms_game_idx on public.stacks_rooms (game_id);
+
+-- ── Club VIP: colección y cosméticos equipados (migración, ejecutable varias veces) ─────────────────────────────────────
+-- cosmetics: jsonb con lo que posee y lleva equipado el jugador (dorsos, tapetes, marcos, avatares, victorias, títulos, reacciones).
+-- Si esta columna aún no existe en tu proyecto, la app sigue funcionando: guarda el resto del perfil y la colección queda en el dispositivo.
+alter table public.stacks_profiles add column if not exists cosmetics jsonb not null default '{}'::jsonb;

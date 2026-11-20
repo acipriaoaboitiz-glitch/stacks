@@ -3,6 +3,8 @@ import { animate, motion } from 'framer-motion';
 import { Crown, Diamond, Flame, Plus, Sparkles, Spade, Swords, Zap, type LucideIcon } from 'lucide-react';
 import { Chip } from '../cards/Chip.tsx';
 import { AvatarFrame } from './AvatarFrame.tsx';
+import { AvatarEmblem } from './AvatarEmblem.tsx';
+import { useEmblem } from '../../store/cosmetics.ts';
 import { useProfile } from '../../store/profile.ts';
 import { useWallet } from '../../store/wallet.ts';
 
@@ -49,11 +51,13 @@ export function PlayerAvatar({ name, chips, size = 44, avatar, photo, onClick }:
   const rank = rankFor(chips);
   const w = useWallet();
   const a = AVATARS[avatar ?? w.avatar] ?? AVATARS[0]!;
+  const mine = useEmblem();
+  const emblem = avatar === undefined && photo === undefined ? mine : null; // solo el avatar propio lleva tu emblema
   const inner = (
     <>
       <div className="avatar-ring h-full w-full" style={{ background: `conic-gradient(from 210deg, #fff, ${rank.color}, #3b2a05, ${rank.color})` }}>
         <div className="font-display grid h-full w-full place-items-center rounded-full font-black" style={{ background: a.bg, color: '#fef08a', fontSize: size * 0.42 }}>
-          {pic ? <img src={pic} alt="" draggable={false} className="h-full w-full rounded-full object-cover" /> : a.icon ? <a.icon size={size * 0.5} /> : name.slice(0, 1).toUpperCase()}
+          {emblem ? <AvatarEmblem id={emblem} /> : pic ? <img src={pic} alt="" draggable={false} className="h-full w-full rounded-full object-cover" /> : a.icon ? <a.icon size={size * 0.5} /> : name.slice(0, 1).toUpperCase()}
         </div>
       </div>
       {avatar === undefined && photo === undefined && <AvatarFrame />}

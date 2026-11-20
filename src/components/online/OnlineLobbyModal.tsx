@@ -1,4 +1,5 @@
 import { Portal } from '../ui/Portal.tsx';
+import { AvatarEmblem } from '../ui/AvatarEmblem.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Copy, Crown, Link2, Loader2, LogOut, UserPlus, Wifi, WifiOff, X } from 'lucide-react';
@@ -57,8 +58,8 @@ function SeatCard({ seat, index, teams, player, onSit, onInvite }: {
     <motion.div layout className="glass-panel flex h-[92px] w-full flex-col items-center justify-center gap-1 rounded-2xl px-1"
       style={{ borderColor: `${color}88`, boxShadow: player.isSelf ? `0 0 0 1.5px ${color}, 0 0 20px ${color}44` : undefined }}>
       <div className="flex items-center gap-1.5">
-        <span className="grid h-8 w-8 place-items-center rounded-full text-sm font-black" style={{ background: color, color: '#06130e' }}>
-          {player.name.slice(0, 1).toUpperCase()}
+        <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full text-sm font-black" style={{ background: color, color: '#06130e' }}>
+          {player.emblem ? <AvatarEmblem id={player.emblem} /> : player.name.slice(0, 1).toUpperCase()}
         </span>
         {player.isHost && <Crown size={14} style={{ color: '#fef08a' }} aria-label={t('ol.host')} />}
       </div>

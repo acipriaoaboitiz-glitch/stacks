@@ -17,7 +17,7 @@ const payload = (): ProfilePayload | null => {
   const w = getWallet();
   return {
     id: getIdent().uid, username: displayName(), tag: getIdent().tag, avatar_id: String(w.avatar), title: p.title,
-    chips: w.chips, wins: totalWins(w), games_played: w.games, equipped_card_back: eq.card_back, equipped_table: eq.table,
+    chips: w.chips, wins: totalWins(w), games_played: w.games, equipped_card_back: eq.card_back, equipped_table: eq.table, cosmetics: eq.cosmetics,
   };
 };
 
@@ -63,7 +63,7 @@ export async function hydrateFromCloud(): Promise<boolean> {
   adoptIdentity(row.id, row.tag);
   saveProfile({ name: row.username, title: row.title ?? getProfile()?.title ?? 'Jugador VIP', avatar: Number(row.avatar_id ?? 0) || 0, photo: getProfile()?.photo ?? null });
   wallet.hydrate({ chips: Number(row.chips), wins: row.wins, games: row.games_played });
-  cosmetics.hydrate(row.equipped_card_back, row.equipped_table);
+  cosmetics.hydrate(row.equipped_card_back, row.equipped_table, row.cosmetics);
   lastSent = '';
   return true;
 }

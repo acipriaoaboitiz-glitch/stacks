@@ -114,26 +114,33 @@ function FrenchFaceDrawn({ card }: { card: FrenchCard }) {
 export function CardBackArt({ variant: forced, seal = APP_NAME }: { variant?: BackVariant; seal?: string }) {
   const equipped = useCardBack();
   const variant = forced ?? equipped; // por defecto, el dorso que el jugador tiene equipado en la tienda
-  const base = { emerald: '#06281e', crimson: '#3a0f14', midnight: '#0B1528', gold: '#2b1f05', obsidian: '#0b0b0e', marble: '#ece6d6', purple: '#2a0f4d', lauburu: '#1a1206' }[variant];
-  const mid = { emerald: '#0c4333', crimson: '#6b1c24', midnight: '#16305a', gold: '#6e5012', obsidian: '#6b1420', marble: '#c9bf9f', purple: '#5a24a8', lauburu: '#5a4210' }[variant];
+  const base = { emerald: '#06281e', crimson: '#3a0f14', midnight: '#0B1528', gold: '#2b1f05', obsidian: '#0b0b0e', marble: '#ece6d6', purple: '#2a0f4d', lauburu: '#1a1206', carbon: '#0d0e10', montecarlo: '#0a1630', neon: '#03130d', eguzkilore: '#2b0c14', dragon: '#120708' }[variant];
+  const mid = { emerald: '#0c4333', crimson: '#6b1c24', midnight: '#16305a', gold: '#6e5012', obsidian: '#6b1420', marble: '#c9bf9f', purple: '#5a24a8', lauburu: '#5a4210', carbon: '#2a2d33', montecarlo: '#1e3a78', neon: '#0e5a40', eguzkilore: '#5c1a2c', dragon: '#7a1414' }[variant];
+  const ink = variant === 'neon' ? '#34d399' : 'url(#st-gold)';
   const id = `bk-${variant}`;
   const cx = W / 2, cy = H / 2;
   return (
     <svg shapeRendering="geometricPrecision" viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" aria-hidden="true" preserveAspectRatio="xMidYMid slice" style={{ display: 'block' }}>
       <SvgDefs />
       <defs>
-        {variant === 'obsidian' ? (
+        {variant === 'carbon' ? (
+          <pattern id={id} width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill={base} />
+            <rect width="10" height="10" fill={mid} /><rect x="10" y="10" width="10" height="10" fill={mid} />
+            <path d="M0 0 L10 10 M10 10 L20 20" stroke="#5b616b" strokeWidth="1" opacity=".6" />
+          </pattern>
+        ) : variant === 'obsidian' || variant === 'dragon' ? (
           <pattern id={id} width="32" height="32" patternUnits="userSpaceOnUse">
             <rect width="32" height="32" fill={base} />
             {[[0, 0], [32, 0], [16, 16], [0, 32], [32, 32]].map(([px, py]) => <circle key={`${px}-${py}`} cx={px} cy={py} r="16" fill="none" stroke={mid} strokeWidth="2.4" />)}
-            <circle cx="16" cy="16" r="2.4" fill="url(#st-gold)" opacity=".8" />
+            <circle cx="16" cy="16" r="2.4" fill={ink} opacity=".8" />
           </pattern>
         ) : (
           <pattern id={id} width="56" height="56" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width="56" height="56" fill={base} />
             <path d="M0 28 H56 M28 0 V56" stroke={mid} strokeWidth="2" />
-            <path d="M28 6 L50 28 L28 50 L6 28Z" fill="none" stroke="url(#st-gold)" strokeWidth="1.6" opacity=".7" />
-            <circle cx="28" cy="28" r="3" fill="url(#st-gold)" />
+            <path d="M28 6 L50 28 L28 50 L6 28Z" fill="none" stroke={ink} strokeWidth="1.6" opacity=".7" />
+            <circle cx="28" cy="28" r="3" fill={ink} />
           </pattern>
         )}
         <radialGradient id={`${id}-glow`} cx=".5" cy=".5" r=".6">
@@ -143,27 +150,31 @@ export function CardBackArt({ variant: forced, seal = APP_NAME }: { variant?: Ba
       <rect width={W} height={H} rx="34" fill="#f6efdc" />
       <rect x="16" y="16" width={W - 32} height={H - 32} rx="24" fill={`url(#${id})`} />
       <rect x="16" y="16" width={W - 32} height={H - 32} rx="24" fill={`url(#${id}-glow)`} />
-      <rect x="16" y="16" width={W - 32} height={H - 32} rx="24" fill="none" stroke="url(#st-gold)" strokeWidth="5" />
-      <rect x="36" y="36" width={W - 72} height={H - 72} rx="14" fill="none" stroke="url(#st-gold)" strokeWidth="1.6" />
+      <rect x="16" y="16" width={W - 32} height={H - 32} rx="24" fill="none" stroke={ink} strokeWidth="5" />
+      <rect x="36" y="36" width={W - 72} height={H - 72} rx="14" fill="none" stroke={ink} strokeWidth="1.6" />
       {/* esquinas déco en abanico */}
       {[[56, 56, 0], [W - 56, 56, 90], [W - 56, H - 56, 180], [56, H - 56, 270]].map(([x, y, r]) => (
-        <g key={`${x}-${y}`} transform={`translate(${x} ${y}) rotate(${r})`} stroke="url(#st-gold)" strokeWidth="2" fill="none">
+        <g key={`${x}-${y}`} transform={`translate(${x} ${y}) rotate(${r})`} stroke={ink} strokeWidth="2" fill="none">
           {[14, 26, 38].map((d) => <path key={d} d={`M0 ${d} A${d} ${d} 0 0 1 ${d} 0`} />)}
         </g>
       ))}
       {/* emblema central */}
       <g transform={`translate(${cx} ${cy})`}>
-        <circle r="104" fill={base} stroke="url(#st-gold)" strokeWidth="5" />
-        <circle r="92" fill="none" stroke="url(#st-gold)" strokeWidth="1.6" strokeDasharray="2 6" />
+        <circle r="104" fill={base} stroke={ink} strokeWidth="5" />
+        <circle r="92" fill="none" stroke={ink} strokeWidth="1.6" strokeDasharray="2 6" />
         {Array.from({ length: 16 }, (_, i) => (
-          <path key={i} d="M0 -88 L6 -74 L0 -66 L-6 -74Z" fill="url(#st-gold)" transform={`rotate(${i * 22.5})`} />
+          <path key={i} d="M0 -88 L6 -74 L0 -66 L-6 -74Z" fill={ink} transform={`rotate(${i * 22.5})`} />
         ))}
-        <circle r="56" fill={mid} stroke="url(#st-gold)" strokeWidth="3" />
-        {variant === 'lauburu'
-          ? [0, 90, 180, 270].map((r) => <path key={r} transform={`rotate(${r})`} d="M0 0 C0 -30 34 -34 34 -8 C34 10 14 16 6 4 C18 8 22 -6 12 -14 C2 -22 -4 -10 0 0Z" fill="url(#st-gold)" stroke="#6b4306" strokeWidth="1.6" />)
-          : <path d="M-26 -22 L0 -40 L26 -22 L0 -4Z M-26 0 L0 -18 L26 0 L0 18Z M-26 22 L0 4 L26 22 L0 40Z" fill="none" stroke="url(#st-gold)" strokeWidth="4" strokeLinejoin="round" />}
+        <circle r="56" fill={mid} stroke={ink} strokeWidth="3" />
+        {variant === 'eguzkilore'
+          ? <>{Array.from({ length: 12 }, (_, i) => <path key={i} transform={`rotate(${i * 30})`} d="M0 -46 L7 -26 L0 -18 L-7 -26Z" fill={ink} stroke="#6b4306" strokeWidth="1.2" strokeLinejoin="round" />)}<circle r="13" fill={ink} stroke="#6b4306" strokeWidth="2" /></>
+          : variant === 'dragon'
+          ? <path d="M-36 -30 L-14 -14 L0 -42 L14 -14 L36 -30 L28 10 L0 38 L-28 10Z" fill="none" stroke={ink} strokeWidth="4" strokeLinejoin="round" />
+          : variant === 'lauburu'
+          ? [0, 90, 180, 270].map((r) => <path key={r} transform={`rotate(${r})`} d="M0 0 C0 -30 34 -34 34 -8 C34 10 14 16 6 4 C18 8 22 -6 12 -14 C2 -22 -4 -10 0 0Z" fill={ink} stroke="#6b4306" strokeWidth="1.6" />)
+          : <path d="M-26 -22 L0 -40 L26 -22 L0 -4Z M-26 0 L0 -18 L26 0 L0 18Z M-26 22 L0 4 L26 22 L0 40Z" fill="none" stroke={ink} strokeWidth="4" strokeLinejoin="round" />}
       </g>
-      <text x={cx} y={cy + 150} textAnchor="middle" fontFamily="Cinzel, Georgia, serif" fontWeight="900" fontSize={seal.length > 6 ? 26 : 30} letterSpacing={seal.length > 6 ? 5 : 8} fill="url(#st-gold)">{seal}</text>
+      <text x={cx} y={cy + 150} textAnchor="middle" fontFamily="Cinzel, Georgia, serif" fontWeight="900" fontSize={seal.length > 6 ? 26 : 30} letterSpacing={seal.length > 6 ? 5 : 8} fill={ink}>{seal}</text>
     </svg>
   );
 }

@@ -3,6 +3,7 @@ import { Camera, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { photoToDataUrl, TITLES, titleLevel, type Profile } from '../../store/profile.ts';
 import { useWallet } from '../../store/wallet.ts';
+import { TITLE_ITEMS, useCosmetics } from '../../store/cosmetics.ts';
 import { AVATARS, PlayerAvatar, rankFor } from './Hud.tsx';
 
 /** Formulario de perfil: apodo, título, avatar predefinido o foto propia. Lo usan la bienvenida y el modal de edición. */
@@ -10,6 +11,8 @@ export function ProfileEditor({ initial, submitLabel, onSubmit }: { initial: Pro
   const [p, setP] = useState<Profile>(initial);
   const [err, setErr] = useState('');
   const level = rankFor(useWallet().chips).level;
+  const bought = useCosmetics().titles; // títulos comprados en el Club VIP
+  const titles: string[] = [...TITLES, ...TITLE_ITEMS.filter((x) => bought.includes(x.id)).map((x) => x.name)];
   const file = useRef<HTMLInputElement>(null);
   const upload = async (f?: File) => {
     if (!f) return;
@@ -41,7 +44,7 @@ export function ProfileEditor({ initial, submitLabel, onSubmit }: { initial: Pro
       <div>
         <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-amber-300/90">Título</p>
         <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Título">
-          {TITLES.map((t) => {
+          {titles.map((t) => {
             const need = titleLevel(t);
             const locked = need > level;
             return (

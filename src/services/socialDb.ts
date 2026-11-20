@@ -9,6 +9,8 @@ import { ensureSession, getSupabase } from '../lib/supabase.ts';
 export interface DbProfile {
   id: string; username: string; tag: string; avatar_id: string | null; title: string | null;
   chips: number; wins: number; games_played: number; equipped_card_back: string; equipped_table: string;
+  /** Colección y equipo de la tienda VIP (columna jsonb; si la base aún no la tiene, se omite sin romper nada). */
+  cosmetics?: unknown;
 }
 export interface DbFriendship { requester_id: string; addressee_id: string; status: 'pending' | 'accepted' }
 export interface DbInvite { id: string; from_user_id: string; to_user_id: string; game_type: string; room_code: string; status: string; created_at: string }
@@ -39,11 +41,17 @@ const COLS = 'id,username,tag,avatar_id,title,chips,wins,games_played,equipped_c
 export type ProfilePayload = Omit<DbProfile, 'id'> & { id: string };
 
 /** Crea o actualiza el perfil propio. `conflict` = ese Apodo#TAG ya lo usa otra persona (hay que sortear otro TAG). */
+/** Faltan las columnas nuevas (migración sin aplicar): se sigue guardando el resto del perfil. */
+let noCosmeticsCol = false;
+const missingCosmeticsCol = (err: { code?: string; message?: string } | null): boolean => Boolean(err) && (err!.code === 'PGRST204' || err!.code === '42703' || /cosmetics/i.test(err!.message ?? ''));
+
 export async function dbUpsertProfile(p: ProfilePayload): Promise<'ok' | 'conflict' | 'off'> {
   const c = await dbClient();
   const auth = await authUserId();
   if (!c || !auth) return 'off';
-  const { error } = await c.from(T.profiles).upsert({ ...p, auth_id: auth }, { onConflict: 'id' });
+  const { cosmetics: cos, ...base } = p;
+  let { error } = await c.from(T.profiles).upsert(noCosmeticsCol ? { ...base, auth_id: auth } : { ...base, cosmetics: cos ?? {}, auth_id: auth }, { onConflict: 'id' });
+  if (!noCosmeticsCol && missingCosmeticsCol(error)) { noCosmeticsCol = true; ({ error } = await c.from(T.profiles).upsert({ ...base, auth_id: auth }, { onConflict: 'id' })); }
   if (error?.code === '23505') return 'conflict';
   return dbFail(error) ? 'off' : 'ok';
 }
@@ -53,9 +61,12 @@ export async function dbLoadOwnProfile(): Promise<DbProfile | null> {
   const c = await dbClient();
   const auth = await authUserId();
   if (!c || !auth) return null;
-  const { data, error } = await c.from(T.profiles).select(COLS).eq('auth_id', auth).maybeSingle();
+  const sel: string = noCosmeticsCol ? COLS : COLS + ',cosmetics';
+  let res = await c.from(T.profiles).select(sel).eq('auth_id', auth).maybeSingle();
+  if (!noCosmeticsCol && missingCosmeticsCol(res.error)) { noCosmeticsCol = true; res = await c.from(T.profiles).select(COLS).eq('auth_id', auth).maybeSingle(); }
+  const { data, error } = res;
   if (dbFail(error) || !data) return null;
-  return data as DbProfile;
+  return data as unknown as DbProfile;
 }
 
 /** Busca por «Apodo#TAG» (exacto), por TAG suelto o por parte del apodo. */
