@@ -253,12 +253,12 @@ export default function Escoba() {
       </div>
       <p className="sr-only" aria-live="polite">{status}</p>
       <PillBar pills={pills} idle={status} />
-      <div className="flex items-end justify-center gap-[min(2vw,12px)] pt-[min(3.4dvh,26px)]" role="group" aria-label="Tu mano">
+      <div className="no-scrollbar w-full touch-pan-x overflow-x-auto overflow-y-hidden px-4 pb-2 pt-5" role="group" aria-label="Tu mano"><div className="mx-auto flex w-max items-end justify-start gap-1.5 sm:gap-2">
         {s.hands[myIdx]!.map((c, i, arr) => (
           <FaceCard key={c.id} card={c} deal={i} rotate={(i - (arr.length - 1) / 2) * 1.8} selected={selCard === c.id} dim={!myTurn} {...escobaDeco(c)}
             onClick={myTurn ? () => pickCard(c.id) : undefined} />
         ))}
-      </div>
+      </div></div>
     </>
   );
 

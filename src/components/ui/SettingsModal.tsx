@@ -163,9 +163,9 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
             <ol className="grid gap-2.5 px-3.5 py-3 text-[13px] text-white/75">
               {install === 'ios' ? (
                 <>
-                  <li className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><Share size={16} strokeWidth={1.75} aria-hidden /></span>Abre STACKS en <b>Safari</b> y pulsa <b>Compartir</b>.</li>
-                  <li className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><SquarePlus size={16} strokeWidth={1.75} aria-hidden /></span>Elige <b>Añadir a pantalla de inicio</b>.</li>
-                  <li className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><Check size={16} strokeWidth={1.75} aria-hidden /></span>Pulsa <b>Añadir</b>: se abrirá como una app a pantalla completa.</li>
+                  <li className="flex items-start gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><Share size={16} strokeWidth={1.75} aria-hidden /></span><p className="flex-1 text-sm leading-relaxed text-white/80">Abre STACKS en <strong className="font-semibold text-white">Safari</strong> y pulsa <strong className="font-semibold text-white">Compartir</strong>.</p></li>
+                  <li className="flex items-start gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><SquarePlus size={16} strokeWidth={1.75} aria-hidden /></span><p className="flex-1 text-sm leading-relaxed text-white/80">Elige <strong className="font-semibold text-white">Añadir a pantalla de inicio</strong>.</p></li>
+                  <li className="flex items-start gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><Check size={16} strokeWidth={1.75} aria-hidden /></span><p className="flex-1 text-sm leading-relaxed text-white/80">Pulsa <strong className="font-semibold text-white">Añadir</strong>: se abrirá como una app a pantalla completa.</p></li>
                 </>
               ) : (
                 <>

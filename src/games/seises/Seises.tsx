@@ -238,7 +238,7 @@ export default function Seises() {
         active: myTurn, id: `${s.turn}:${hand.length}:${s.roundNo}`,
         onTimeout: () => { const m = botMove(s); dispatch(me, m.type === 'play' ? { k: 'play', cardId: m.cardId } : { k: 'pass' }); },
       }}
-      header={<ScoreStrip items={s.scores.map((v, i) => ({ name: nm(i), value: v, us: i === myIdx }))} target={SEISES_LIMIT} />}
+      header={<ScoreStrip items={s.scores.map((v, i) => ({ name: i === myIdx ? t('g.you') : `J${i < myIdx ? i + 1 : i}`, value: v, us: i === myIdx }))} target={SEISES_LIMIT} />}
       felt={felt}
       bottom={bottom}
       overlays={

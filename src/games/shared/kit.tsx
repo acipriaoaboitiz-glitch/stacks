@@ -309,7 +309,7 @@ export const escobaDeco = (card: SpanishCard): { badge?: string; shimmer: boolea
 /** Marcador compacto para 3 o más jugadores (o puntuaciones individuales). */
 export function ScoreStrip({ items, target }: { items: { name: string; value: number; us?: boolean }[]; target?: number }) {
   return (
-    <div className="grid w-full gap-[min(1.4vw,6px)]" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }} role="group" aria-label="Marcador">
+    <div className="grid w-full gap-1 tabular-nums sm:gap-2" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(${items.length > 3 ? '58px' : '0'}, 1fr))` }} role="group" aria-label="Marcador">
       {items.map((it) => (
         <div key={it.name} className={`min-w-0 rounded-[13px] border border-white/10 px-[min(2vw,8px)] py-[min(1dvh,5px)] ${it.us ? 'bg-gradient-to-br from-teal-400/10 to-black/30' : 'bg-gradient-to-br from-orange-400/10 to-black/30'}`}>
           <span className={`block truncate text-[8px] font-extrabold uppercase tracking-[.06em] ${it.us ? 'text-teal-300' : 'text-orange-300'}`}>{it.name}</span>

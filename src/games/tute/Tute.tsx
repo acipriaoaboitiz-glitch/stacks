@@ -240,16 +240,16 @@ export default function Tute() {
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{t('g.you')}</b>
           <span className="rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{myTricks} bazas</span>
         </div>
-        <span className="flex items-center gap-1 text-[11px] text-stone-400">Triunfo: <b className="flex items-center gap-1 text-amber-200"><span className="grid size-5 place-items-center rounded bg-[#fffdf5] text-[13px]" style={{ color: ({ oros: '#a8740a', copas: '#c3162c', espadas: '#1d4fbf', bastos: '#0a7a4c' } as Record<string, string>)[s.trumpSuit] }}><SpanishGlyph suit={s.trumpSuit as never} /></span>{SUIT_LABEL[s.trumpSuit]}</b></span>
+        <span className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-black/40 px-2.5 py-1 text-[11px] text-amber-300">Triunfo: <b className="flex items-center gap-1 text-amber-300"><span className="grid size-4 place-items-center text-[13px]" style={{ color: ({ oros: '#a8740a', copas: '#c3162c', espadas: '#1d4fbf', bastos: '#0a7a4c' } as Record<string, string>)[s.trumpSuit] }}><SpanishGlyph suit={s.trumpSuit as never} /></span>{SUIT_LABEL[s.trumpSuit]}</b></span>
       </div>
       <PillBar pills={pills} idle={pills.length === 0 ? status : undefined} />
       <p className="sr-only" aria-live="polite">{status}</p>
-      <div className="flex items-end justify-center gap-[min(1.2vw,8px)] pt-[min(3.2dvh,24px)]" role="group" aria-label="Tu mano">
+      <div className="no-scrollbar w-full touch-pan-x overflow-x-auto overflow-y-hidden px-4 pb-2 pt-5" role="group" aria-label="Tu mano"><div className="mx-auto flex w-max items-end justify-start gap-1.5 sm:gap-2">
         {s.hands[me]!.map((c, i, arr) => (
-          <FaceCard key={c.id} card={c} deal={i} scale={arr.length > 6 ? 0.66 : 0.8} rotate={(i - (arr.length - 1) / 2) * 1.4}
+          <FaceCard key={c.id} card={c} deal={i} scale={0.8} rotate={(i - (arr.length - 1) / 2) * 1.4}
             dim={myTurn && !legalIds.has(c.id)} {...briscaDeco(c, s.trumpSuit)} onSelect={myTurn && legalIds.has(c.id) ? play : undefined} />
         ))}
-      </div>
+      </div></div>
     </>
   );
 

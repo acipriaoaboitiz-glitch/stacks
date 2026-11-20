@@ -175,7 +175,7 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
       {...(interactive ? handlers : {})}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl border-2 border-white bg-white sm:border-[3px] shadow-md transition-transform duration-150 ${lifted || selected ? '-translate-y-3' : playable ? '-translate-y-2.5' : ''} ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl border-2 border-white bg-white sm:border-[3px] shadow-md transition-transform duration-150 ${lifted || selected ? '-translate-y-4 scale-105 shadow-[0_14px_22px_rgba(0,0,0,.6)]' : playable ? '-translate-y-2.5' : ''} ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
         boxShadow: lit ? '0 0 0 2px #FCE38A, 0 0 8px 1px rgba(255,255,255,.7), 0 3px 8px rgba(0,0,0,.5)' : undefined,
