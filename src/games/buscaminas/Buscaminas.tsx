@@ -28,7 +28,7 @@ const CellView = memo(function CellView({ cell, boom, i, onTap, onPress, size, d
   const cancel = (): void => { if (timer.current) window.clearTimeout(timer.current); timer.current = null; long.current = true; };
   const open = cell.open;
   return (
-    <button type="button" onPointerDown={down} onPointerUp={up} onPointerLeave={cancel} onPointerCancel={cancel} onContextMenu={(e) => { e.preventDefault(); onPress(i); }}
+    <button type="button" onPointerDown={down} onPointerUp={up} onPointerLeave={cancel} onPointerCancel={cancel} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onPress(i); }}
       aria-label={open ? String(cell.adj) : cell.flag ? 'flag' : '·'} className="touch-manipulation select-none p-[1px]" style={{ width: size, height: size }}>
       <span className="grid h-full w-full place-items-center rounded-[22%] font-extrabold tabular-nums"
         style={{ transition: 'background .26s ease, box-shadow .26s ease, transform .26s ease', transitionDelay: open ? `${delay}ms` : '0ms', transform: open ? 'scale(1)' : 'scale(1)', ...(open
@@ -91,7 +91,7 @@ export default function Buscaminas() {
       felt={(
         <div className="h-full w-full p-[clamp(6px,2vw,16px)] [container-type:size]">
           <div className="grid h-full place-items-center">
-            <div className="grid rounded-[14px] bg-[#0a1210] p-[1.5%] shadow-[inset_0_0_0_1px_rgba(255,255,255,.07),inset_0_6px_14px_rgba(0,0,0,.65),0_8px_18px_rgba(0,0,0,.45)]" style={{ gridTemplateColumns: `repeat(${s.w}, ${size})`, width: 'fit-content' }}>
+            <div onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }} className="grid rounded-[14px] bg-[#0a1210] p-[1.5%] shadow-[inset_0_0_0_1px_rgba(255,255,255,.07),inset_0_6px_14px_rgba(0,0,0,.65),0_8px_18px_rgba(0,0,0,.45)]" style={{ gridTemplateColumns: `repeat(${s.w}, ${size})`, width: 'fit-content' }}>
               {s.cells.map((c, i) => <CellView key={i} i={i} cell={c} boom={s.boom === i} onTap={tap} onPress={press} size={size} delay={Math.min(700, Math.round(Math.hypot((i % s.w) - (origin % s.w), Math.floor(i / s.w) - Math.floor(origin / s.w)) * 55))} />)}
             </div>
           </div>

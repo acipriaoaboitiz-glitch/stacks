@@ -7,13 +7,15 @@ const PIPS: Record<number, (keyof typeof P)[]> = {
 };
 
 /** Punto hundido: aro de luz abajo-derecha, pozo negro con degradado y reflejo mínimo. */
+/** Puntos con el código de color clásico de torneo: 1 carmesí · 2 esmeralda · 3 cobalto · 4 ámbar · 5 púrpura · 6 obsidiana. */
+const PIP_COLORS: [string, string, string][] = [['#ff6b7e', '#b3122a', '#4d0711'], ['#4fe0a6', '#0f8a5c', '#053a27'], ['#7fa8ff', '#1d4fbf', '#0a1f5c'], ['#ffd36b', '#d98a0b', '#6b3d02'], ['#c79bff', '#7a3fc2', '#2f1160'], ['#4a4a4a', '#141414', '#000']];
 function Face({ n, x }: { n: number; x: number }) {
   return (
     <g transform={`translate(${x} 0)`}>
       {PIPS[n]!.map((k) => (
         <g key={k}>
           <circle cx={P[k][0] + 0.5} cy={P[k][1] + 0.8} r="5.4" fill="#fff" opacity=".85" />
-          <circle cx={P[k][0]} cy={P[k][1]} r="5" fill="url(#dm-pip)" />
+          <circle cx={P[k][0]} cy={P[k][1]} r="5" fill={`url(#dm-pip${n})`} />
           <circle cx={P[k][0] - 1.3} cy={P[k][1] - 1.5} r="1.1" fill="#fff" opacity=".28" />
         </g>
       ))}
@@ -60,7 +62,7 @@ export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selec
           <linearGradient id="dm-ivory" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FAF6EE" /><stop offset=".55" stopColor="#EFE7D2" /><stop offset="1" stopColor="#E4DBC4" /></linearGradient>
           <linearGradient id="dm-back" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#14503a" /><stop offset="1" stopColor="#061810" /></linearGradient>
           <linearGradient id="dm-gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8B6914" /><stop offset=".45" stopColor="#FCE38A" /><stop offset="1" stopColor="#A57A12" /></linearGradient>
-          <radialGradient id="dm-pip" cx=".38" cy=".34" r=".8"><stop offset="0" stopColor="#3a342a" /><stop offset=".6" stopColor="#0f0c07" /><stop offset="1" stopColor="#000" /></radialGradient>
+          {PIP_COLORS.map(([hi, mid, lo], i) => <radialGradient key={i} id={`dm-pip${i + 1}`} cx=".38" cy=".34" r=".8"><stop offset="0" stopColor={hi} /><stop offset=".6" stopColor={mid} /><stop offset="1" stopColor={lo} /></radialGradient>)}
           <radialGradient id="dm-rivet" cx=".35" cy=".3" r=".8"><stop offset="0" stopColor="#FFF6C6" /><stop offset=".4" stopColor="#D4AF37" /><stop offset="1" stopColor="#6b4a08" /></radialGradient>
           <linearGradient id="dm-gloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".55" /><stop offset=".5" stopColor="#fff" stopOpacity="0" /></linearGradient>
         </defs>

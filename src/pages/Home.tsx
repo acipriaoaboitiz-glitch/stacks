@@ -42,6 +42,7 @@ const Slide = memo(function Slide({ game }: { game: GameInfo; active: boolean })
   return (
     <div className="relative grid h-full w-full content-between overflow-hidden rounded-[28px] p-4"
       style={{ background: `radial-gradient(ellipse at 50% -4%, rgba(255,236,190,.24), transparent 52%), radial-gradient(ellipse at 50% 40%, ${game.accent}40, transparent 62%), linear-gradient(160deg, ${c1}, ${c2} 85%)`, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <span aria-hidden className="pointer-events-none absolute inset-0 z-20 -translate-x-full rounded-[28px] opacity-0 transition-[transform,opacity] duration-500 ease-out group-hover:translate-x-0 group-hover:opacity-100" style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,.14) 48%, transparent 62%)' }} />
       <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/3 rounded-t-[28px]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,0))' }} />
       <span className="font-mono relative z-10 flex w-fit items-center gap-1 rounded-full px-2.5 py-[3px] text-[11px]" style={{ background: '#000a', color: game.accent, border: `1px solid ${game.accent}55` }}>
         <Users size={11} aria-hidden /> {t(`g.${game.id}.pl`)}
@@ -167,18 +168,7 @@ export default function Home() {
   // El scroll nativo con snap lo gestiona el navegador (GPU); aquí solo se averigua qué tarjeta queda centrada.
   const cards = useRef<(HTMLDivElement | null)[]>([]);
   const inner = useRef<(HTMLDivElement | null)[]>([]);
-  /** Inclinación 3D suave de la tarjeta activa con el ratón (en el contenedor interior: el exterior ya lo usa el efecto de anillo). */
-  const tilt = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse') return;
-    const el = inner.current[curRef.current];
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2)));
-    const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2)));
-    el.style.transform = `perspective(700px) rotateY(${nx * 9}deg) rotateX(${-ny * 9}deg)`;
-  }, []);
-  const untilt = useCallback(() => { inner.current.forEach((el) => { if (el) el.style.transform = ''; }); }, []);
-  /** Efecto de profundidad tipo anillo: giro, escala y brillo según la distancia al centro. Solo transform/opacity, sin re-render. */
+  /** Escala y opacidad según la distancia al centro (sin giros 3D). Solo transform/opacity, sin re-render. */
   const applyFx = useCallback(() => {
     const el = scroller.current;
     if (!el) return;
@@ -188,8 +178,8 @@ export default function Home() {
       if (!c) return;
       const d = Math.max(-2, Math.min(2, i - pos));
       const a = Math.abs(d);
-      c.style.transform = `perspective(900px) translateZ(${-a * 70}px) rotateY(${-d * 38}deg) scale(${1 - a * 0.06})`;
-      c.style.opacity = String(Math.max(0.25, 1 - a * 0.32));
+      c.style.transform = `scale(${1 - Math.min(1, a) * 0.1})`;
+      c.style.opacity = String(a < 0.5 ? 1 : Math.max(0.35, 1 - a * 0.5));
       c.style.zIndex = String(10 - Math.round(a));
     });
   }, []);
@@ -226,8 +216,8 @@ export default function Home() {
   void online$;
 
   return (
-    <div className="screen obsidian">
-      <header className="desk-zoom glass-panel relative z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_auto_1fr]" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
+    <div className="screen obsidian overflow-x-hidden">
+      <header className="desk-zoom glass-panel relative z-20 mx-auto grid w-full max-w-7xl overflow-hidden sm:h-16 sm:px-6 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_auto_1fr]" style={{ borderWidth: '0 0 1px 0', borderRadius: 0 }}>
         <div className="col-start-1 row-start-1 min-w-0 justify-self-start"><ProfileCard /></div>
         {/* Fila central: STACKS siempre en el centro exacto (columnas 1fr · auto · 1fr); en móvil, a sus lados van Amigos/Ranking y Club VIP */}
         <div className="col-span-2 row-start-2 grid grid-cols-[1fr_auto_1fr] items-center sm:col-span-1 sm:col-start-2 sm:row-start-1">
@@ -250,10 +240,10 @@ export default function Home() {
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
         {/* Barra de secciones con selector deslizante */}
-        <div className="relative z-20 flex w-full justify-center"><div role="tablist" aria-label="Secciones" className="no-scrollbar inline-flex max-w-[95vw] items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-[#081711] p-1.5">
+        <div className="relative z-20 flex w-full justify-center"><div role="tablist" aria-label="Secciones" className="no-scrollbar inline-flex w-auto max-w-[96vw] items-center justify-center gap-1 rounded-full border border-white/10 bg-[#081711] p-1.5 no-scrollbar max-md:justify-start max-md:overflow-x-auto">
           {CATS.map((c) => (
-            <button key={c.id} type="button" role="tab" aria-selected={cat === c.id} onClick={() => { if (cat !== c.id) { feedback('tap'); setCat(c.id); } }}
-              className={`relative shrink-0 touch-manipulation whitespace-nowrap rounded-full px-3.5 py-2 text-[11.5px] font-bold transition-colors lg:px-5 lg:text-[13px] ${cat === c.id ? 'text-[#2a1d02]' : 'text-white/55 active:text-white'}`}>
+            <button key={c.id} type="button" role="tab" aria-selected={cat === c.id} onClick={(e) => { e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); if (cat !== c.id) { feedback('tap'); setCat(c.id); } }}
+              className={`relative shrink-0 touch-manipulation whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold transition-colors lg:px-4 lg:py-2 lg:text-sm ${cat === c.id ? 'text-[#2a1d02]' : 'text-white/55 active:text-white'}`}>
               {cat === c.id && <motion.span layoutId="lobby-category" aria-hidden className="absolute inset-0 rounded-full bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] shadow-[0_2px_10px_rgba(212,175,55,.35)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
               <span className="relative">{t(c.key)}</span>
             </button>
@@ -269,13 +259,13 @@ export default function Home() {
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
         <motion.div key={cat} className="relative z-10 h-[min(40dvh,360px)] w-full lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
-          <div ref={scroller} onScroll={onScroll} onPointerMove={tilt} onPointerLeave={untilt} role="group" aria-label="Juegos"
+          <div ref={scroller} onScroll={onScroll} role="group" aria-label="Juegos"
             className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain] lg:gap-3 lg:px-[calc(50%-calc(190px/var(--z,1)))] xl:px-[calc(50%-calc(210px/var(--z,1)))]">
             {LIST.map((g, i) => (
               <div key={g.id} ref={(n) => { cards.current[i] = n; }}
                 className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform lg:h-[calc(min(430px,50dvh)/var(--z,1))] lg:w-[calc(380px/var(--z,1))] xl:h-[calc(min(470px,54dvh)/var(--z,1))] xl:w-[calc(420px/var(--z,1))]"
                 role="group" aria-label={t(`g.${g.id}.name`)} aria-current={i === cur} onClick={() => { if (i !== cur) { feedback('tap'); goTo(i); } }}>
-                <div ref={(n) => { inner.current[i] = n; }} className="h-full w-full rounded-[28px] transition-[box-shadow,transform] duration-200 ease-out"
+                <div ref={(n) => { inner.current[i] = n; }} className="group h-full w-full rounded-[28px] border border-transparent transition-[box-shadow,transform,border-color] duration-[220ms] ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-1.5 hover:border-[#D4AF37]/70"
                   style={{ boxShadow: i === cur ? `0 0 0 1px ${g.accent}aa, 0 14px 34px rgba(0,0,0,.55), 0 0 30px ${g.accent}44` : '0 8px 18px rgba(0,0,0,.5)' }}>
                   <Slide game={g} active={i === cur} />
                 </div>
@@ -284,8 +274,8 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <button type="button" aria-label="←" onClick={() => goTo(curRef.current - 1)} className="absolute left-0 top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronLeft size={18} /></button>
-          <button type="button" aria-label="→" onClick={() => goTo(curRef.current + 1)} className="absolute right-0 top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronRight size={18} /></button>
+          <button type="button" aria-label="←" onClick={() => goTo(curRef.current - 1)} className="absolute left-0 max-sm:hidden top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronLeft size={18} /></button>
+          <button type="button" aria-label="→" onClick={() => goTo(curRef.current + 1)} className="absolute max-sm:hidden right-0 top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronRight size={18} /></button>
         </motion.div>
 
         {/* Acciones del juego elegido: multijugador (IA o sala) o individual (modo + Jugar ahora) */}

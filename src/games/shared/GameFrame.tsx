@@ -20,6 +20,7 @@ import { RulesModal } from '../../components/ui/RulesModal.tsx';
 import { SettingsModal } from '../../components/ui/SettingsModal.tsx';
 import { findGame } from '../registry.ts';
 import { gameTimeout } from '../../services/timers.ts';
+import { setActivePacing } from '../../utils/gamePacing.ts';
 
 const EMERALD_FELT =
   'radial-gradient(ellipse at center, #0F3A2A 0%, #0A2A1E 55%, #061810 100%)';
@@ -105,6 +106,18 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
   const active = Boolean(timer?.active);
   useEffect(() => { if (active && !wasActive.current) feedback('turn'); wasActive.current = active; }, [active]);
 
+  useEffect(() => {
+    // wakeLock: la pantalla no se apaga mientras piensas (si el navegador lo permite)
+    let lock: { release: () => Promise<void> } | null = null;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } };
+    const ask = (): void => { if (document.visibilityState === 'visible') nav.wakeLock?.request('screen').then((l) => { lock = l; }).catch(() => { /* no disponible */ }); };
+    ask();
+    document.addEventListener('visibilitychange', ask);
+    return () => { document.removeEventListener('visibilitychange', ask); void lock?.release().catch(() => {}); };
+  }, []);
+
+  setActivePacing(gameId); // síncrono: la barra de turno y botDelay() leen el ritmo desde el primer render
+  useEffect(() => () => setActivePacing(null), []);
   useGameTimers(); // al desmontar la mesa se cancelan todos los temporizadores de la partida
   const doExit = (): void => { if (onExit) onExit(); else void exitMatch(nav); };
   const exit = (): void => { if (!askExit()) doExit(); };
@@ -136,10 +149,9 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
               {chipFx && <ChipFlight key={chipFx.id} target={chipFx.target} n={chipFx.n} w={chipFx.w} h={chipFx.h} />}
               {/* foco cenital suave y viñeta cinematográfica */}
               <div aria-hidden className="pointer-events-none absolute inset-0 z-[15]" style={{ background: 'radial-gradient(ellipse at 50% 44%, rgba(255,226,160,.17) 0%, rgba(255,226,160,.05) 38%, rgba(255,226,160,0) 62%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.5) 100%)' }} />
-              <ReactionButton onSend={sendEmote} />
             </section>
             </div>
-            <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<EmoteBubble text={emote} /><div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-1" aria-live="polite">{others.map((r) => <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>)}</div></section>
+            <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<div className="absolute right-0 top-0 z-20"><ReactionButton onSend={sendEmote} /></div><EmoteBubble text={emote} /><div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-1" aria-live="polite">{others.map((r) => <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>)}</div></section>
           </div>
           {timer?.active && <div aria-hidden className="turn-glow pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20" style={{ background: 'linear-gradient(to top, rgba(240,195,95,.5), transparent)' }} />}
           {cinematic && <GameCinematic key={cinematic.id} title={cinematic.title} sub={cinematic.sub} tone={cinematic.tone} />}

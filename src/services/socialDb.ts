@@ -86,7 +86,16 @@ export async function dbTop(limit = 30): Promise<(Card & { chips: number; wins: 
 export async function dbRequest(from: string, to: string): Promise<void> {
   const c = await dbClient();
   if (!c) return;
-  const { error } = await c.from(T.friendships).upsert({ requester_id: from, addressee_id: to, status: 'pending' }, { onConflict: 'requester_id,addressee_id', ignoreDuplicates: true });
+  // Mira siempre ambos sentidos: si ya existe la amistad (o una solicitud cruzada) no se crea otra fila.
+  const { data: found, error: e0 } = await c.from(T.friendships).select('requester_id,addressee_id,status')
+    .or(`and(requester_id.eq.${from},addressee_id.eq.${to}),and(requester_id.eq.${to},addressee_id.eq.${from})`);
+  if (dbFail(e0)) return;
+  const rows = (found ?? []) as DbFriendship[];
+  if (rows.some((r) => r.status === 'accepted')) return;
+  const reverse = rows.find((r) => r.requester_id === to && r.addressee_id === from);
+  if (reverse) { dbFail((await c.from(T.friendships).update({ status: 'accepted' }).eq('requester_id', to).eq('addressee_id', from)).error); return; } // solicitud cruzada: se acepta
+  if (rows.length) return;
+  const { error } = await c.from(T.friendships).insert({ requester_id: from, addressee_id: to, status: 'pending' });
   dbFail(error);
 }
 export async function dbSetFriendship(requester: string, addressee: string, status: 'accepted' | 'removed'): Promise<void> {
@@ -94,7 +103,7 @@ export async function dbSetFriendship(requester: string, addressee: string, stat
   if (!c) return;
   const q = status === 'removed'
     ? c.from(T.friendships).delete().or(`and(requester_id.eq.${requester},addressee_id.eq.${addressee}),and(requester_id.eq.${addressee},addressee_id.eq.${requester})`)
-    : c.from(T.friendships).update({ status }).eq('requester_id', requester).eq('addressee_id', addressee);
+    : c.from(T.friendships).update({ status }).or(`and(requester_id.eq.${requester},addressee_id.eq.${addressee}),and(requester_id.eq.${addressee},addressee_id.eq.${requester})`);
   const { error } = await q;
   dbFail(error);
 }
@@ -118,6 +127,13 @@ export async function dbInvite(from: string, to: string, game: string, code: str
   const c = await dbClient();
   if (!c) return;
   const { error } = await c.from(T.invites).insert({ from_user_id: from, to_user_id: to, game_type: game, room_code: code });
+  dbFail(error);
+}
+/** Caduca las invitaciones pendientes de una sala (al terminar la partida o salir de ella) para poder re-invitar al instante. */
+export async function dbExpireRoomInvites(code: string): Promise<void> {
+  const c = await dbClient();
+  if (!c) return;
+  const { error } = await c.from(T.invites).update({ status: 'expired' }).eq('room_code', code).eq('status', 'pending');
   dbFail(error);
 }
 export async function dbRespondInvite(id: string, status: 'accepted' | 'declined'): Promise<void> {

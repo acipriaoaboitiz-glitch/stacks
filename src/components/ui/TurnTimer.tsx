@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-
-export const TURN_SECONDS = 15;
+import { getPacing } from '../../utils/gamePacing.ts';
 
 export interface TurnTimerSpec {
   /** Hay un turno humano en curso. */
@@ -12,10 +11,11 @@ export interface TurnTimerSpec {
 }
 
 /**
- * Barra de cuenta atrás de 15 s. La barra se anima con CSS (`transform: scaleX`, en GPU) y solo el número
+ * Barra de cuenta atrás (segundos según el juego: ver gamePacing.ts). La barra se anima con CSS (`transform: scaleX`, en GPU) y solo el número
  * se actualiza una vez por segundo dentro de este subcomponente: el tablero y las cartas no se vuelven a pintar.
  */
 export function TurnTimerBar({ spec }: { spec: TurnTimerSpec }) {
+  const TURN_SECONDS = getPacing().turn;
   const [left, setLeft] = useState(TURN_SECONDS);
   const cb = useRef(spec.onTimeout);
   cb.current = spec.onTimeout;
@@ -27,7 +27,7 @@ export function TurnTimerBar({ spec }: { spec: TurnTimerSpec }) {
     const tick = window.setInterval(() => setLeft(Math.max(0, Math.ceil((end - Date.now()) / 1000))), 1000);
     const timeout = window.setTimeout(() => cb.current(), TURN_SECONDS * 1000);
     return () => { window.clearInterval(tick); window.clearTimeout(timeout); };
-  }, [spec.active, spec.id]);
+  }, [spec.active, spec.id, TURN_SECONDS]);
 
   if (!spec.active) return <div className="h-[18px]" />;
   const color = left <= 4 ? '#ef4444' : left <= 8 ? '#f59e0b' : '#10b981';

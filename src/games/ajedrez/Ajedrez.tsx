@@ -104,6 +104,8 @@ export default function Ajedrez() {
   const view = (i: number): { r: number; c: number } => { const r = Math.floor(i / 8); const c = i % 8; return flip ? { r: 7 - r, c: 7 - c } : { r, c }; };
   const legal = sel !== null && myTurn ? legalMoves(s, sel) : [];
   const targets = new Set(legal.map((m) => m.to));
+  const PV = [0, 1, 3, 3, 5, 9, 0];
+  const adv = s.captured[myIdx].reduce((n, k) => n + PV[k]!, 0) - s.captured[oppIdx].reduce((n, k) => n + PV[k]!, 0);
   const kingIdx = s.inCheck ? s.board.indexOf(s.turn === 0 ? 6 : -6) : -1;
 
   const tap = (i: number): void => {
@@ -125,8 +127,8 @@ export default function Ajedrez() {
       header={<div className="flex items-center justify-center"><span className="text-[11px] font-extrabold uppercase tracking-[.14em] text-amber-300">{t('g.ajedrez.name')} · {t(`mode.${level}`)}</span></div>}
       strip={(
         <div className="flex items-center justify-between gap-3 px-1" aria-label={t('g8.captured')}>
-          <Captured list={s.captured[myIdx]} side={oppIdx} />
-          <Captured list={s.captured[oppIdx]} side={myIdx} />
+          <span className="flex items-center gap-1.5"><Captured list={s.captured[myIdx]} side={oppIdx} />{adv > 0 && <b className="text-[11px] tabular-nums text-amber-300">+{adv}</b>}</span>
+          <span className="flex items-center gap-1.5">{adv < 0 && <b className="text-[11px] tabular-nums text-amber-300">+{-adv}</b>}<Captured list={s.captured[oppIdx]} side={myIdx} /></span>
         </div>
       )}
       felt={(
@@ -134,7 +136,7 @@ export default function Ajedrez() {
           <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, s.players[oppIdx]!.name, s.players[oppIdx]!.human)} tone="them" mano={false} turn={s.winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
           <div className="min-h-0 w-full flex-1 [container-type:size]">
             <div className="grid h-full place-items-center">
-              <div className="relative rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', padding: '4.6%', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
+              <div className="relative rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, calc(820px / var(--z, 1)))', padding: '4.6%', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
                 {/* coordenadas discretas en el marco */}
                 {Array.from({ length: 8 }, (_, k) => {
                   const file = flip ? 7 - k : k; const rank = flip ? k + 1 : 8 - k;

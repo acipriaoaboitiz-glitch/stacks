@@ -115,7 +115,7 @@ export const GAMES: GameInfo[] = [
     icon: Landmark, route: '/play/comemierda', playable: true, accent: '#d4af37', tint: ['#2e2608', '#0d1a12'],
     rules: [
       'Baraja española de 40 cartas repartida entre 4 jugadores (10 cada uno). Jerarquía de mayor a menor: 2 > As > Rey > Caballo > Sota > 7 > 6 > 5 > 4 > 3.',
-      'Primera ronda: empieza obligado quien tenga el 3 de oros y sale soltando ese 3 (solo, o junto a todos los demás treses que tenga: pareja, trío o póker). Se juega siempre una carta, una pareja, un trío o un póker del mismo valor.',
+      'Primera ronda: abre quien tenga el 3 de oros, pero no está obligado a tirarlo: puede jugar cualquier carta, pareja, trío o póker. Se juega siempre una carta, una pareja, un trío o un póker del mismo valor.',
       'El siguiente jugador debe superar el valor con la misma cantidad de cartas, o pasar. Un 2 corta la mesa al instante: se limpia el centro y vuelve a salir quien lo tiró.',
       'Si todos pasan o alguien corta con un 2, se limpia la mesa y vuelve a salir quien ganó la baza.',
       'Según el orden en que te quedas sin cartas: 1º Rey, 2º, 3º y 4º COME💩. En la ronda siguiente COME💩 entrega sus 2 mejores cartas al Rey, y el Rey le da sus 2 peores. Después sale COME💩, con libertad para tirar cualquier carta o combinación. La serie dura 3 rondas.',

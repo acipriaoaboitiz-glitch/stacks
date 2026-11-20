@@ -1,5 +1,6 @@
 import type { NavigateFunction } from 'react-router-dom';
-import { setActiveRoom } from './multiplayer.ts';
+import { getActiveRoom, setActiveRoom } from './multiplayer.ts';
+import { dbExpireRoomInvites } from './socialDb.ts';
 import { releaseBackTrap } from './backStack.ts';
 import { cancelGameTimers } from './timers.ts';
 import { social } from '../store/social.ts';
@@ -20,6 +21,9 @@ export async function exitMatch(nav: NavigateFunction): Promise<void> {
   try {
     cancelGameTimers();
     silence();
+    // las invitaciones de esta sala caducan: el amigo puede ser invitado de nuevo a otra sala sin quedar atascado
+    const code = getActiveRoom()?.code;
+    if (code) void dbExpireRoomInvites(code);
     setActiveRoom(null);
     social.setActivity('lobby');
     const root = document.getElementById('root');

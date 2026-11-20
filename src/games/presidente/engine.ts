@@ -124,7 +124,7 @@ export function canPlay(s: PresState, pid: string, ids: string[]): boolean {
   if (s.phase !== 'play' || s.players[s.turn]!.id !== pid) return false;
   const cards = s.hands[pid]!.filter((c) => ids.includes(c.id));
   if (cards.length !== ids.length || !sameSet(cards)) return false;
-  if (!s.table) return !s.mustInclude || ids.includes(s.mustInclude);
+  if (!s.table) return true; // el titular del 3 de Oros abre la ronda 1, pero puede jugar cualquier carta o grupo
   const p = power(cards[0]!);
   const top = TOP(s.deck);
   return (cards.length === s.table.cards.length && p > s.table.power) || (p === top && cards.length === 1);
@@ -205,10 +205,6 @@ export function botMove(s: PresState): BotMove {
   const g = [...groups(hand).entries()].sort((a, b) => a[0] - b[0]);
   const top = TOP(s.deck);
   if (!s.table) {
-    if (s.mustInclude) {
-      const c = hand.find((x) => x.id === s.mustInclude)!;
-      return { type: 'play', ids: groups(hand).get(power(c))!.map((x) => x.id) };
-    }
     const low = g.find(([p]) => p !== top) ?? g[0]!;
     return { type: 'play', ids: low[1].map((x) => x.id) };
   }

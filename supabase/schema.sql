@@ -67,7 +67,7 @@ create table if not exists public.stacks_game_invites (
   to_user_id    uuid not null references public.stacks_profiles (id) on delete cascade,
   game_type     text not null,
   room_code     text not null,
-  status        text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  status        text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'expired')),
   created_at    timestamptz not null default now()
 );
 create index if not exists stacks_game_invites_to_idx on public.stacks_game_invites (to_user_id, created_at desc);
@@ -141,9 +141,11 @@ create policy stacks_invites_insert on public.stacks_game_invites for insert to 
         and ((f.requester_id = from_user_id and f.addressee_id = to_user_id) or (f.requester_id = to_user_id and f.addressee_id = from_user_id))
     )
   );
+-- el destinatario responde; el remitente puede caducar sus invitaciones al salir de la sala
 drop policy if exists stacks_invites_update on public.stacks_game_invites;
 create policy stacks_invites_update on public.stacks_game_invites for update to authenticated
-  using (public.stacks_owns_profile(to_user_id)) with check (public.stacks_owns_profile(to_user_id));
+  using (public.stacks_owns_profile(to_user_id) or public.stacks_owns_profile(from_user_id))
+  with check (public.stacks_owns_profile(to_user_id) or (public.stacks_owns_profile(from_user_id) and status = 'expired'));
 drop policy if exists stacks_invites_delete on public.stacks_game_invites;
 create policy stacks_invites_delete on public.stacks_game_invites for delete to authenticated
   using (public.stacks_owns_profile(from_user_id) or public.stacks_owns_profile(to_user_id));
@@ -171,3 +173,7 @@ end $$;
 -- Limpieza opcional (programa un cron de Supabase si la quieres automática):
 -- delete from public.stacks_game_invites where created_at < now() - interval '1 day';
 -- delete from public.stacks_rooms where status = 'closed' or updated_at < now() - interval '1 day';
+
+-- Migración (bases ya creadas): admitir el estado 'expired' en invitaciones.
+alter table public.stacks_game_invites drop constraint if exists stacks_game_invites_status_check;
+alter table public.stacks_game_invites add constraint stacks_game_invites_status_check check (status in ('pending', 'accepted', 'declined', 'expired'));

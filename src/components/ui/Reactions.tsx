@@ -14,10 +14,10 @@ export const EMOTES: { id: EmoteId; icon: LucideIcon; label: string; text: strin
 export function ReactionButton({ onSend }: { onSend: (text: string) => void }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="absolute bottom-2 right-2 z-20 flex flex-col items-end gap-1.5">
+    <div className="relative z-20 flex flex-col items-end gap-1.5">
       <AnimatePresence>
         {open && (
-          <motion.div className="flex gap-1 rounded-full border border-white/10 bg-zinc-900/90 p-1 shadow-lg" role="group" aria-label="Reacciones rápidas"
+          <motion.div className="absolute bottom-full right-0 mb-1.5 flex gap-1 rounded-full border border-white/10 bg-zinc-900/90 p-1 shadow-lg" role="group" aria-label="Reacciones rápidas"
             initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6 }} transition={FAST_EASE}>
             {EMOTES.map((e) => (
               <button key={e.id} type="button" aria-label={e.label} title={e.label}
