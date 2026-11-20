@@ -177,3 +177,7 @@ end $$;
 -- Migración (bases ya creadas): admitir el estado 'expired' en invitaciones.
 alter table public.stacks_game_invites drop constraint if exists stacks_game_invites_status_check;
 alter table public.stacks_game_invites add constraint stacks_game_invites_status_check check (status in ('pending', 'accepted', 'declined', 'expired'));
+
+-- Juegos soportados en salas y presencia (20): mus, brisca, escoba, chinchon, tute, blackjack, poker, seises, presidente, uno,
+-- domino, mentiroso, ruleta, bingo, tres, cuatro, flota, parchis, ajedrez, damas. `stacks_game_invites.game` y las salas
+-- aceptan cualquier id de esta lista (no hay restricción CHECK: añadir un juego nuevo no requiere migración).

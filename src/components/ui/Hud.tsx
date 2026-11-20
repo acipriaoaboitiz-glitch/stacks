@@ -76,7 +76,7 @@ export function ChipBalance({ onPlus, className = '', alert = false }: { onPlus?
         transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}>
         <Chip value={25} size={26} />
       </motion.span>
-      <span className="font-mono text-sm font-bold gold-text"><AnimatedNumber value={chips} /></span>
+      <span className="font-sans tabular-nums text-sm font-bold gold-text"><AnimatedNumber value={chips} /></span>
       {onPlus && (
         <button type="button" onClick={onPlus} aria-label="Recargar fichas"
           className="gold-foil relative ml-0.5 grid h-7 w-7 place-items-center rounded-full" style={{ boxShadow: '0 2px 0 #6b4306' }}>

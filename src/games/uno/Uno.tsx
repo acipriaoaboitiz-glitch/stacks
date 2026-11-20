@@ -22,6 +22,7 @@ import {
 import { UNO_HEX, UnoBack, UnoCard as UnoCardView } from './UnoCard.tsx';
 import { exitMatch } from '../../services/exitMatch.ts';
 import { gameInterval, gameTimeout } from '../../services/timers.ts';
+import { FLY_EASE, getSeatVector } from '../../utils/gameMotion.ts';
 
 const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -43,13 +44,8 @@ const slotOfPlayer = (st: UnoState, me: string, id: string): Slot => {
   return SLOT[n as 2 | 3 | 4][(st.players.findIndex((p) => p.id === id) - myI + n) % n]!;
 };
 
-/** Desde dónde sale (en px respecto al descarte) la carta que tira cada lado. */
-const reach = (slot: Slot): { x: number; y: number } => {
-  const W = typeof window === 'undefined' ? 360 : window.innerWidth;
-  const H = typeof window === 'undefined' ? 640 : window.innerHeight;
-  return slot === 'top' ? { x: 0, y: -H * 0.26 } : slot === 'left' ? { x: -W * 0.33, y: -H * 0.03 } : slot === 'right' ? { x: W * 0.33, y: -H * 0.03 } : { x: 0, y: H * 0.32 };
-};
-const EASE = [0.22, 1, 0.36, 1] as const;
+const reach = getSeatVector;
+const EASE = FLY_EASE;
 
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
 
@@ -261,10 +257,10 @@ export default function Uno() {
 
   const felt = (
     <>
-      <div className="grid h-full grid-cols-[minmax(0,.7fr)_minmax(0,2.2fr)_minmax(0,.7fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
-        <div className="col-start-2 row-start-1 justify-self-center">{seat('top')}</div>
-        <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat('left')}</div>
-        <div className="col-start-2 row-start-2 grid min-h-0 place-items-center">
+      <div className="relative h-full">
+        <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2">{seat('top')}</div>
+        <div className="absolute left-3 top-1/2 z-20 -translate-y-1/2">{seat('left')}</div>
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
           <div className="grid justify-items-center gap-3">
             <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-3">
               {/* anillo luminoso del color activo con el sentido de giro */}
@@ -304,7 +300,7 @@ export default function Uno() {
             </div>
           </div>
         </div>
-        <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center">{seat('right')}</div>
+        <div className="absolute right-3 top-1/2 z-20 -translate-y-1/2">{seat('right')}</div>
       </div>
       <Banner text={banner} />
     </>

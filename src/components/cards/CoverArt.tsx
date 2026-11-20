@@ -6,7 +6,7 @@ import { Body2 } from './TableArt2.tsx';
  * Portadas 2.5D de los juegos de mesa del lobby (cuadro 150×150): materiales con degradados, bisel, brillo especular y sombra de
  * contacto. Se incluyen dentro del <svg> de `TableArt`, que ya aporta los degradados `t2-*` y `ta-*`.
  */
-export const COVER = new Set(['flota', 'parchis', 'domino', 'ajedrez', 'damas', 'buscaminas', 'mentiroso', 'tres', 'cuatro', 'mahjong', 'game2048', 'sudoku']);
+export const COVER = new Set(['bingo', 'flota', 'parchis', 'domino', 'ajedrez', 'damas', 'buscaminas', 'mentiroso', 'tres', 'cuatro', 'mahjong', 'game2048', 'sudoku']);
 
 export function CoverDefs() {
   const pips = [['#ff6b7e', '#b3122a', '#4d0711'], ['#4fe0a6', '#0f8a5c', '#053a27'], ['#7fa8ff', '#1d4fbf', '#0a1f5c'], ['#ffd36b', '#d98a0b', '#6b3d02'], ['#c79bff', '#7a3fc2', '#2f1160'], ['#4a4a4a', '#141414', '#000']];
@@ -199,6 +199,23 @@ export function CoverBody({ id }: { id: string }) {
             {Array.from({ length: 8 }, (_, i) => <g key={i} transform={`rotate(${i * 45})`}><path d="M-3 -9 L0 -17 L3 -9Z" fill="url(#ta-gold)" stroke="#5c430b" strokeWidth=".6" /></g>)}
             <circle r="10" fill="url(#cv-ball)" stroke="#05080a" /><circle cx="-3.4" cy="-3.6" r="2.6" fill="#fff" opacity=".6" />
           </g>
+        </g>
+      );
+    case 'bingo':
+      return (
+        <g>
+          <Shadow />
+          <g style={{ filter: 'drop-shadow(0 6px 5px rgba(0,0,0,.55))' }}>
+            <path d="M50 134 L62 106 H88 L100 134 Z" fill="url(#ta-gold)" stroke="#6b4a08" strokeWidth="1.5" />
+            <circle cx="75" cy="66" r="50" fill="url(#cv-felt)" stroke="url(#ta-gold)" strokeWidth="6" />
+            {[0, 45, 90, 135].map((r) => <line key={r} x1="75" y1="20" x2="75" y2="112" stroke="url(#ta-gold)" strokeWidth="3" transform={`rotate(${r} 75 66)`} />)}
+            {[[56, 48, '#e11d48', '7'], [92, 54, '#2563eb', '42'], [64, 84, '#16a34a', '18'], [96, 88, '#eab308', '63'], [76, 36, '#f1e7c6', '5']].map(([x, y, c, n]) => (
+              <g key={String(n)}><circle cx={Number(x)} cy={Number(y)} r="10" fill={String(c)} stroke="#fff" strokeWidth="1.6" /><circle cx={Number(x) - 3} cy={Number(y) - 3.5} r="2.6" fill="#fff" opacity=".6" /><text x={Number(x)} y={Number(y) + 3.6} textAnchor="middle" fontSize="10" fontWeight="800" fill={String(c) === '#f1e7c6' || String(c) === '#eab308' ? '#2a1d02' : '#fff'} fontFamily="Outfit, system-ui, sans-serif">{n}</text></g>
+            ))}
+            <circle cx="75" cy="66" r="8" fill="url(#ta-hub)" stroke="#6b4a08" />
+          </g>
+          <Gloss x={30} y={20} w={90} h={40} r={20} />
+          <g transform="translate(118 112)"><circle r="13" fill="url(#ta-goldr)" stroke="#fff6c4" strokeWidth="1.6" /><text y="4.6" textAnchor="middle" fontSize="13" fontWeight="800" fill="#2a1d02" fontFamily="Outfit, system-ui, sans-serif">90</text></g>
         </g>
       );
     case 'mentiroso':

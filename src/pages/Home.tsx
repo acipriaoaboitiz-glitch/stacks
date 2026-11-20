@@ -57,7 +57,7 @@ const Slide = memo(function Slide({ game }: { game: GameInfo; active: boolean })
         <GameArt id={game.id} size={176} />
       </div>
       <div className="relative z-10">
-        <h3 className="gold-text font-[var(--font-display)] text-[28px] font-bold leading-none">{t(`g.${game.id}.name`)}</h3>
+        <h3 className="gold-text font-[var(--font-display)] text-[28px] font-bold leading-snug py-0.5">{t(`g.${game.id}.name`)}</h3>
         <p className="mt-1 text-[12px] text-stone-300/80">{t(`g.${game.id}.tag`)}</p>
       </div>
     </div>

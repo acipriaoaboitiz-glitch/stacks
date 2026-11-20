@@ -38,6 +38,7 @@ export const ROOM_LAYOUTS: Record<string, RoomLayout> = {
   domino: { capacity: 4, mode: 'teams', min: 2 },
   mentiroso: { capacity: 4, mode: 'table', min: 2 },
   ruleta: { capacity: 4, mode: 'table', min: 1 },
+  bingo: { capacity: 4, mode: 'table', min: 1 },
   tres: { capacity: 2, mode: 'table', min: 2 },
   cuatro: { capacity: 2, mode: 'table', min: 2 },
   flota: { capacity: 2, mode: 'table', min: 2 },

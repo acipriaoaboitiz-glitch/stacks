@@ -1,4 +1,3 @@
-import { CornerIndex } from '../../components/cards/CornerIndex.tsx';
 import { SUIT_LABEL, type SpanishCard } from '../../engine/deck.ts';
 import { CardBack, CardFace } from '../mus/app/components/CardFace.tsx';
 
@@ -9,7 +8,7 @@ export function TrumpPile({ trump, count }: { trump: SpanishCard; count: number 
     <div className="absolute left-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10 flex items-center gap-1.5" aria-label={`Quedan ${count} cartas; triunfo ${SUIT_LABEL[trump.suit]}`}>
       <div className="relative h-[72px] w-32 sm:h-[90px] sm:w-40 lg:h-[112px]">
         <div className={`absolute left-0 top-0 ${size} translate-x-10 rotate-90 overflow-hidden rounded-[6px] shadow-[0_4px_10px_rgba(0,0,0,.55)] ring-2 ring-amber-300/80 sm:translate-x-14 lg:translate-x-[4.5rem]`}>
-          <CardFace card={trump as never} /><CornerIndex card={trump} />
+          <CardFace card={trump as never} />
         </div>
         {[2, 1, 0].map((k) => (
           <span key={k} className={`absolute left-0 top-0 z-10 ${size} overflow-hidden rounded-[6px] shadow-[0_4px_8px_rgba(0,0,0,.4)]`} style={{ transform: `translate(${k * 2}px, ${-k * 2}px)` }}><CardBack /></span>

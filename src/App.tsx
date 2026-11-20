@@ -17,6 +17,7 @@ import Tute from './games/tute/Tute.tsx';
 import Domino from './games/domino/Domino.tsx';
 import Mentiroso from './games/mentiroso/Mentiroso.tsx';
 import Ruleta from './games/ruleta/Ruleta.tsx';
+import Bingo from './games/bingo/Bingo.tsx';
 import TresEnRaya from './games/tres/TresEnRaya.tsx';
 import CuatroEnRaya from './games/cuatro/CuatroEnRaya.tsx';
 import Flota from './games/flota/Flota.tsx';
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/play/domino" element={<Domino />} />
         <Route path="/play/mentiroso" element={<Mentiroso />} />
         <Route path="/play/ruleta" element={<Ruleta />} />
+        <Route path="/play/bingo" element={<Bingo />} />
         <Route path="/play/tres" element={<TresEnRaya />} />
         <Route path="/play/cuatro" element={<CuatroEnRaya />} />
         <Route path="/play/flota" element={<Flota />} />

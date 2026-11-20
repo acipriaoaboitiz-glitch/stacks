@@ -138,7 +138,7 @@ function Body({ id }: { id: string }) {
   );
 }
 
-export const TABLE_GAMES = new Set(['domino', 'mentiroso', 'ruleta', 'tres', 'cuatro', 'flota', ...ART2]);
+export const TABLE_GAMES = new Set(['bingo', 'domino', 'mentiroso', 'ruleta', 'tres', 'cuatro', 'flota', ...ART2]);
 
 /** Ilustración 150×150 de un juego de mesa (el tamaño final lo da `size`). */
 export const TableArt = memo(function TableArt({ id, size = 150 }: { id: string; size?: number }) {

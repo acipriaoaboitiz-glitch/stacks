@@ -155,6 +155,16 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
+    id: 'bingo', name: 'Mega Bingo VIP', tagline: 'Bombo, líneas y bingo', category: 'casino', deck: 'none', players: '1–4 cartones',
+    icon: Hash, route: '/play/bingo', playable: true, accent: '#e0a21a', tint: ['#33250a', '#0d1a12'],
+    rules: [
+      'Bingo español de 90 bolas. Compras de 1 a 4 cartones (10 fichas cada uno) que forman el bote junto con los de tus 3 rivales.',
+      'Cada cartón tiene 3 filas y 15 números. Cuando sale una bola, toca ese número en tu cartón para marcarlo (o activa Auto).',
+      '«¡Cantar LÍNEA!» con una fila completa se lleva el 20 % del bote; «¡Cantar BINGO!» con el cartón entero, el 80 %. Si cantas sin tenerlo, no pasa nada.',
+      'Elige la velocidad del bombo: Pausado, Normal o Turbo. Fichas virtuales, nunca dinero real.',
+    ],
+  },
+  {
     id: 'ruleta', name: 'Ruleta VIP', tagline: 'Pleno, docenas y golpe de suerte', category: 'casino', deck: 'none', players: 'Mesa compartida',
     icon: CircleDot, route: '/play/ruleta', playable: true, accent: '#c0213a', tint: ['#3a0f18', '#0d1a12'],
     rules: [
