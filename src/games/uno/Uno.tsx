@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
@@ -23,6 +23,7 @@ import { UNO_HEX, UnoBack, UnoCard as UnoCardView } from './UnoCard.tsx';
 import { exitMatch } from '../../services/exitMatch.ts';
 import { gameInterval, gameTimeout } from '../../services/timers.ts';
 import { FLY_EASE, getSeatVector } from '../../utils/gameMotion.ts';
+import { AmbientGlow, CountdownRing, OrbitRing, UnoFx, fxLife, seatOffset, type FxInput, type FxItem } from './UnoFx.tsx';
 
 const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -61,7 +62,7 @@ export default function Uno() {
   const [shake, setShake] = useState(0);
   const [flights, setFlights] = useState<{ id: number; slot: Slot; delay: number }[]>([]);
   const flightId = useRef(0);
-  const [marks, setMarks] = useState<Record<string, string | undefined>>({});
+  const [fx, setFx] = useState<FxItem[]>([]);
   const prevS = useRef<UnoState | null>(null);
   const seenHand = useRef<Set<string>>(new Set());
   const { banner, show } = useBanner(1600);
@@ -127,7 +128,15 @@ export default function Uno() {
     return () => window.clearInterval(id);
   }, [unoAt]);
 
-  // Sucesos: sonidos y avisos sencillos (sin cinemáticas ni vuelos).
+  // Capa de efectos cinéticos: cada uno se retira solo al acabar su animación.
+  const addFx = useCallback((f: FxInput) => {
+    const id = ++flightId.current;
+    const item = { ...f, id } as FxItem;
+    setFx((l) => [...l.slice(-7), item]);
+    gameTimeout(() => setFx((l) => l.filter((x) => x.id !== id)), fxLife(item));
+  }, []);
+
+  // Sucesos: sonidos, avisos y efectos.
   useEffect(() => {
     const e = s?.event;
     const key = `${e?.seq}:${e?.by}:${e?.text}`;
@@ -137,11 +146,6 @@ export default function Uno() {
     else if (e.kind === 'uno') feedback('trick');
     else if (e.text !== 'Roba una carta') feedback('deal');
     if (e.text !== 'Roba una carta') show(e.text);
-    const flash = (id: string | undefined, text: string): void => {
-      if (!id) return;
-      setMarks((m) => ({ ...m, [id]: text }));
-      gameTimeout(() => setMarks((m) => (m[id] === text ? { ...m, [id]: undefined } : m)), text === 'Ø' ? 650 : 1400);
-    };
     // cartas que salen del mazo hacia el asiento que roba (una cada 90 ms)
     const fly = (id: string | undefined, count: number): void => {
       const p = s.players.find((q) => q.id === id);
@@ -154,9 +158,28 @@ export default function Uno() {
       }
     };
     if (e.text === 'Roba una carta') fly(e.by, 1);
-    if (e.text === 'Salta turno') { const i = s.players.findIndex((p) => p.id === e.by); flash(s.players[(i + s.dir + s.players.length) % s.players.length]?.id, 'Ø'); }
-    else if (e.kind === 'draw') { const v = s.players.find((p) => e.text.endsWith(p.name) || e.text.includes(`caza a ${p.name}`) || e.text.startsWith(p.name)); const n4 = e.text.includes('+4'); flash(v?.id, n4 ? '+4' : '+2'); fly(v?.id, n4 ? 4 : 2); if (!e.text.includes('no cantó') && !e.text.includes('caza')) setShake((k) => k + 1); }
-  }, [s, show]);
+    const top = s.discard[s.discard.length - 1]!;
+    if (e.text === 'Salta turno') {
+      // el saltado es el siguiente en el sentido que llevaba la partida (el sentido no cambia con un «Salta»)
+      const i = s.players.findIndex((p) => p.id === e.by);
+      const skipped = s.players[(i + s.dir + s.players.length) % s.players.length];
+      if (skipped) addFx({ kind: 'skip', slot: slotOfPlayer(s, me, skipped.id) });
+    } else if (e.text === 'Cambio de sentido') {
+      addFx({ kind: 'reverse', color: s.color });
+    } else if (e.kind === 'draw') {
+      const v = s.players.find((p) => e.text.endsWith(p.name) || e.text.includes(`caza a ${p.name}`) || e.text.startsWith(p.name));
+      const n4 = e.text.includes('+4');
+      const byBot = e.by !== me;
+      if (v) addFx({ kind: 'attack', n: n4 ? 4 : 2, slot: slotOfPlayer(s, me, v.id), color: s.color, delay: n4 && byBot ? 0.25 : 0 });
+      if (n4 && byBot) addFx({ kind: 'prism' }); // el prisma de un +4 propio ya salió al abrir el selector de color
+      if (!e.text.includes('no cantó') && !e.text.includes('caza')) setShake((k) => k + 1);
+    }
+    // comodín jugado (por ti o por un bot): onda del nuevo color desde el descarte
+    if ((top.kind === 'wild' || top.kind === 'wild4') && /^(\+4 para|Color )/.test(e.text)) addFx({ kind: 'wave', color: s.color });
+  }, [s, show, me, addFx]);
+
+  // +4 propio: destello prismático de los 4 colores justo antes de elegir color
+  useEffect(() => { if (pickFor?.kind === 'wild4') addFx({ kind: 'prism' }); }, [pickFor, addFx]);
 
   // Quién tiró la carta que acaba de caer (para que vuele desde su lado)
   useEffect(() => { prevS.current = s; });
@@ -238,7 +261,7 @@ export default function Uno() {
   const topCard = s.discard[s.discard.length - 1]!;
   const pv = prevS.current;
   const byPrev = pv && s.discard.length > pv.discard.length ? pv.players[pv.turn] : undefined;
-  const from = byPrev ? reach(slotOfPlayer(s, me, byPrev.id)) : { x: 0, y: -10 };
+  const from = byPrev ? seatOffset(slotOfPlayer(s, me, byPrev.id)) : { x: 0, y: -10 };
   const tilt = (Number(topCard.id.slice(1)) % 21) - 10;
   const seat = (slot: 'top' | 'left' | 'right') => {
     const k = slots.indexOf(slot);
@@ -249,13 +272,13 @@ export default function Uno() {
     if (slot === 'top') {
       // asiento superior compacto en horizontal (< 48 px de alto): avatar a la izquierda, nombre y mini-cartas a la derecha
       return (
-        <div className="flex h-11 items-center gap-2 rounded-full border border-white/10 bg-black/35 py-1 pl-1 pr-3" style={{ opacity: s.turn === i && !s.winner ? 1 : 0.8 }}>
+        <div data-uno="seat-top" className="flex h-11 items-center gap-2 rounded-full border border-white/10 bg-black/35 py-1 pl-1 pr-3" style={{ opacity: s.turn === i && !s.winner ? 1 : 0.8 }}>
           <span className={`rounded-full ${s.turn === i && !s.winner ? 'ring-2 ring-amber-200/90 shadow-[0_0_10px_rgba(242,202,112,.6)]' : ''}`}><TableAvatar name={p.name} tone="them" className="size-8 text-[13px]" /></span>
-          <span className="grid min-w-0 leading-tight"><b className="truncate text-[12px] text-stone-100">{p.name}</b><span className="flex items-center gap-1 text-[10px] tabular-nums text-amber-200/90"><span className="inline-block h-3 w-2 rounded-[2px] border border-white/70 bg-[#15151a]" />×{n}{marks[p.id] ? ` · ${marks[p.id]}` : ''}</span></span>
+          <span className="grid min-w-0 leading-tight"><b className="truncate text-[12px] text-stone-100">{p.name}</b><span className="flex items-center gap-1 text-[10px] tabular-nums text-amber-200/90"><span className="inline-block h-3 w-2 rounded-[2px] border border-white/70 bg-[#15151a]" />×{n}</span></span>
         </div>
       );
     }
-    return <SeatBadge info={info(i, `${p.name} · ${n}`)} tone="them" mano={false} turn={s.turn === i && !s.winner} deadline={null} cards={n} aura={n === 1} badge={marks[p.id]} alert={marks[p.id] === 'Ø' || marks[p.id]?.startsWith('+')} />;
+    return <div data-uno={`seat-${slot}`}><SeatBadge info={info(i, `${p.name} · ${n}`)} tone="them" mano={false} turn={s.turn === i && !s.winner} deadline={null} cards={n} aura={n === 1} /></div>;
   };
 
   const choose = (color: Color) => {
@@ -282,6 +305,7 @@ export default function Uno() {
   const felt = (
     <>
       <motion.div key={shake} animate={shake ? { y: [0, 5, -3, 0] } : undefined} transition={{ duration: 0.22 }} className="relative mx-auto flex h-full max-h-[320px] w-full flex-col justify-between p-2 sm:max-h-[370px] sm:p-4 lg:max-h-[420px] lg:p-6">
+        <AmbientGlow color={s.color} />
         {/* 1 · franja superior: asiento compacto */}
         <div className="z-20 flex w-full shrink-0 items-center justify-center">{seat('top')}</div>
         {/* 2 · zona central: mazo, descarte y anillo centrados en el espacio libre; 3 · laterales centrados en vertical */}
@@ -290,15 +314,10 @@ export default function Uno() {
         <div className="relative z-10 flex items-center justify-center gap-5 sm:gap-8">
           <div className="grid justify-items-center gap-3">
             <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-2">
-              {/* anillo luminoso del color activo con el sentido de giro */}
-              <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[999px] border-2 transition-[border-color,box-shadow] duration-200" style={{ borderColor: UNO_HEX[s.color], boxShadow: `0 0 14px 1px ${UNO_HEX[s.color]}99, inset 0 0 14px ${UNO_HEX[s.color]}55` }} />
-              <motion.span key={`w-${s.color}-${s.dir}`} aria-hidden className="pointer-events-none absolute inset-0 rounded-[999px] border-2" style={{ borderColor: UNO_HEX[s.color] }} initial={{ scale: 0.92, opacity: 0.8 }} animate={{ scale: 1.5, opacity: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }} />
-              <motion.span key={s.dir} aria-hidden className="pointer-events-none absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full border border-white/70 text-white" style={{ background: UNO_HEX[s.color] }}
-                initial={{ rotate: s.dir === 1 ? 180 : -180, opacity: 0.4 }} animate={{ rotate: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 14 }}>
-                {s.dir === 1 ? <RotateCcw size={14} strokeWidth={2} /> : <RotateCw size={14} strokeWidth={2} />}
-              </motion.span>
+              {/* anillo orbital permanente: gira en el sentido del turno y cambia al color activo */}
+              <OrbitRing dir={s.dir} color={s.color} />
               <div className="relative grid justify-items-center gap-1">
-                <div role="button" tabIndex={canDraw ? 0 : -1} aria-label="Mazo: robar carta" aria-disabled={!canDraw}
+                <div data-uno="deck" role="button" tabIndex={canDraw ? 0 : -1} aria-label="Mazo: robar carta" aria-disabled={!canDraw}
                   onClick={canDraw ? () => { feedback('draw'); act({ k: 'draw' }); } : undefined}
                   onKeyDown={canDraw ? (e) => { if (e.key === 'Enter' || e.key === ' ') { feedback('draw'); act({ k: 'draw' }); } } : undefined}
                   className={`relative w-[clamp(46px,min(14vw,9dvh),74px)] [@media(max-height:500px)]:w-[40px]! touch-manipulation rounded-xl ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
@@ -321,12 +340,15 @@ export default function Uno() {
                 </div>
                 <span className="font-mono text-[10px] text-amber-200/80">{s.drawPile.length}</span>
               </div>
-              <div className="relative aspect-[2/3] w-[clamp(46px,min(14vw,9dvh),74px)] [@media(max-height:500px)]:w-[40px]!">
+              <div data-uno="discard" className="relative aspect-[2/3] w-[clamp(46px,min(14vw,9dvh),74px)] [@media(max-height:500px)]:w-[40px]!">
+                {s.discard.length > 2 && (
+                  <div className="absolute inset-0" style={{ transform: 'rotate(15deg) translate(3px, 1px)' }}><UnoCardView card={s.discard[s.discard.length - 3]!} style={{ width: '100%' }} /></div>
+                )}
                 {s.discard.length > 1 && (
-                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} style={{ width: '100%' }} /></div>
+                  <div className="absolute inset-0" style={{ transform: 'rotate(-12deg) translate(-3px, 1px)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} style={{ width: '100%' }} /></div>
                 )}
                 {/* entrada rápida y limpia de la carta jugada */}
-                <motion.div key={topCard.id} className="absolute inset-0" initial={{ x: from.x, y: from.y, opacity: 0.6, scale: 1.1, rotate: tilt * 2 }} animate={{ x: 0, y: 0, opacity: 1, scale: [1.1, 1], rotate: tilt }} transition={{ duration: 0.22, ease: EASE }}>
+                <motion.div key={topCard.id} className="absolute inset-0" initial={{ x: from.x, y: from.y, opacity: 0.7, scale: 1.15, rotate: tilt + (from.x >= 0 ? 70 : -70) }} animate={{ x: 0, y: 0, opacity: 1, scale: [1.15, 0.94, 1], rotate: tilt }} transition={{ duration: 0.3, ease: EASE, scale: { duration: 0.3, times: [0, 0.8, 1] } }}>
                   <UnoCardView card={topCard} style={{ width: '100%' }} glow />
                 </motion.div>
               </div>
@@ -348,7 +370,7 @@ export default function Uno() {
     <>
       <div className="relative flex w-full items-center justify-between gap-2 [@media(max-height:500px)]:pointer-events-none [@media(max-height:500px)]:absolute [@media(max-height:500px)]:left-1 [@media(max-height:500px)]:top-0 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:w-auto">
         <div className="flex min-w-0 items-center gap-2">
-          <TableAvatar name="Tú" tone="me" active={myTurn} className="size-9 text-[15px]" />
+          <span data-uno="seat-bottom" className="inline-grid"><TableAvatar name="Tú" tone="me" active={myTurn} className="size-9 text-[15px]" /></span>
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>Tú</b>
           <span className="whitespace-nowrap rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{myHand.length} {myHand.length === 1 ? 'carta' : 'cartas'}</span>
         </div>
@@ -370,11 +392,13 @@ export default function Uno() {
       {/* Regla oficial de los 5 s: cantar el tuyo o pillar al rival que no lo ha cantado */}
       {unoPending && (
         <motion.button type="button" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 18 }} onClick={pressUno} aria-label={unoPending.pid === me ? 'Cantar UNO' : 'Pillar UNO'}
-          className={`relative flex min-h-12 overflow-hidden ${remaining < 2000 ? 'animate-pulse' : ''} w-full max-w-sm touch-manipulation items-center justify-center gap-3 rounded-full border-2 border-amber-100/80 px-6 text-[17px] font-black tracking-wide text-white active:scale-95`}
+          className="relative flex min-h-12 w-full max-w-sm touch-manipulation items-center justify-center gap-3 overflow-hidden rounded-full border-2 border-amber-100/80 py-0.5 pl-6 pr-3 text-[17px] font-black tracking-wide text-white active:scale-95"
           style={{ background: 'linear-gradient(180deg,#F87171,#B91C1C)', boxShadow: '0 4px 14px rgba(0,0,0,.5)' }}>
-          <span>{unoPending.pid === me ? '¡CANTAR UNO!' : '¡PILLAR UNO! (+2)'}</span>
-          <span className="rounded-full bg-black/35 px-2.5 py-0.5 font-mono text-[15px] tabular-nums">{(remaining / 1000).toFixed(1)}s</span>
-          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 origin-left bg-white/70" style={{ transform: `scaleX(${remaining / UNO_WINDOW})` }} />
+          {remaining < 2000 && (
+            <motion.span aria-hidden className="pointer-events-none absolute inset-0 bg-white" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.38, 0] }} transition={{ duration: 0.45, repeat: Infinity, ease: 'easeInOut' }} />
+          )}
+          <span className="relative">{unoPending.pid === me ? '¡CANTAR UNO!' : '¡PILLAR UNO! (+2)'}</span>
+          <CountdownRing remaining={remaining} total={UNO_WINDOW} urgent={remaining < 2000} />
         </motion.button>
       )}
       <PillBar pills={pills} />
@@ -417,6 +441,7 @@ export default function Uno() {
       overlays={
         <>
           <PhaseCinematic cine={cine} />
+          <UnoFx items={fx} />
           <AnimatePresence>
             {winner && (
               <ResultOverlay
