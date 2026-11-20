@@ -61,7 +61,7 @@ export function generateRoomCode(): string {
 
 export function inviteLink(code: string, gameId: string): string {
   // Enlace viral: al abrirlo (WhatsApp…) la app entra directa en la sala.
-  return `${shareBase()}#/?join=${code}&game=${gameId}`;
+  return `${shareBase()}#/play/${gameId}?room=${code}`;
 }
 
 // ─── Tipos públicos ──────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { WelcomeGate } from './components/ui/WelcomeGate.tsx';
 import { ClubBackground } from './components/ui/ClubBackground.tsx';
 import { SocialRoot } from './components/ui/SocialRoot.tsx';
@@ -37,6 +37,15 @@ try {
   if (q.has('sala') || q.has('join')) window.history.replaceState(null, '', `${window.location.pathname}#/?${q.toString()}`);
 } catch { /* sin history */ }
 
+/** Un enlace de sala `#/play/JUEGO?room=CODIGO` abre el lobby con la sala online y entra directo, sin teclear el código. */
+function RoomLinkGate({ children }: { children: React.ReactNode }) {
+  const loc = useLocation();
+  const m = /^\/play\/([^/]+)/.exec(loc.pathname);
+  const room = new URLSearchParams(loc.search).get('room');
+  if (m && room) return <Navigate replace to={`/?join=${encodeURIComponent(room)}&game=${m[1]}`} />;
+  return <>{children}</>;
+}
+
 // HashRouter: funciona en hosting estático, PWA y dentro de Capacitor sin reescrituras de servidor.
 export default function App() {
   return (
@@ -46,6 +55,7 @@ export default function App() {
     <HashRouter>
       <SocialRoot />
       <ChipRainHost />
+      <RoomLinkGate>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/play/mus" element={<MusPlay />} />
@@ -76,6 +86,7 @@ export default function App() {
         <Route path="/play/buscaminas" element={<Buscaminas />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </RoomLinkGate>
     </HashRouter>
     </WelcomeGate>
     </ErrorBoundary>

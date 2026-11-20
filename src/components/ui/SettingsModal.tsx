@@ -2,7 +2,9 @@ import { Portal } from './Portal.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useId, useState } from 'react';
-import { Check, ChevronRight, Gauge, HelpCircle, Languages, Lock, LogOut, ScrollText, Smartphone, Trash2, Volume2, X, type LucideIcon } from 'lucide-react';
+import { Check, ChevronRight, Coffee, Download, Gauge, HelpCircle, Lock, LogOut, ScrollText, Share, Smartphone, SquarePlus, Trash2, Volume2, X, type LucideIcon } from 'lucide-react';
+import { LegalModal } from './LegalModal.tsx';
+import { promptInstall, useInstallKind } from '../../services/pwaInstall.ts';
 import { themeUnlocked, useCosmetics } from '../../store/cosmetics.ts';
 import { useT } from '../../i18n/index.ts';
 import { feedback, setSettings, THEMES, useSettings, type AnimSpeed, type Lang, type ThemeId } from '../../store/settings.ts';
@@ -100,7 +102,9 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
   useBackClose(open, onClose);
   const acc = useAccount();
   useCosmetics(); // se repinta al comprar un tapete
-  const [legal, setLegal] = useState<'privacidad' | 'terminos' | null>(null);
+  const [legal, setLegal] = useState(false);
+  const [howTo, setHowTo] = useState(false);
+  const install = useInstallKind();
   const [confirmReset, setConfirmReset] = useState(false);
   const t = useT();
   const speeds: { id: AnimSpeed; label: string }[] = [{ id: 'normal', label: t('set.normal') }, { id: 'rapida', label: t('set.fast') }];
@@ -151,17 +155,38 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
         </Group>
       )}
 
+      {install !== 'installed' && (
+        <Group title="Aplicación">
+          <Row icon={Download} title="Instalar App en tu móvil" sub={install === 'native' ? 'Un toque y queda en tu pantalla de inicio' : 'Cómo añadirla a la pantalla de inicio'}
+            onClick={() => { if (install === 'native') { void promptInstall(); } else setHowTo((v) => !v); }}><ChevronRight size={16} strokeWidth={1.75} className="text-white/30" aria-hidden /></Row>
+          {howTo && install !== 'native' && (
+            <ol className="grid gap-2.5 px-3.5 py-3 text-[13px] text-white/75">
+              {install === 'ios' ? (
+                <>
+                  <li className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><Share size={16} strokeWidth={1.75} aria-hidden /></span>Abre STACKS en <b>Safari</b> y pulsa <b>Compartir</b>.</li>
+                  <li className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><SquarePlus size={16} strokeWidth={1.75} aria-hidden /></span>Elige <b>Añadir a pantalla de inicio</b>.</li>
+                  <li className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[#FCE38A]"><Check size={16} strokeWidth={1.75} aria-hidden /></span>Pulsa <b>Añadir</b>: se abrirá como una app a pantalla completa.</li>
+                </>
+              ) : (
+                <>
+                  <li>Abre el menú del navegador (⋮ en Chrome).</li>
+                  <li>Elige <b>Instalar app</b> o <b>Añadir a pantalla de inicio</b>.</li>
+                  <li>Confirma y la encontrarás junto a tus otras apps.</li>
+                </>
+              )}
+            </ol>
+          )}
+        </Group>
+      )}
+
       <Group title={t('lg.title')}>
-        <Row icon={ScrollText} title={t('lg.privacy')} onClick={() => setLegal(legal === 'privacidad' ? null : 'privacidad')}><ChevronRight size={16} strokeWidth={1.75} className="text-white/30" aria-hidden /></Row>
-        <Row icon={Languages} title={t('lg.terms')} onClick={() => setLegal(legal === 'terminos' ? null : 'terminos')}><ChevronRight size={16} strokeWidth={1.75} className="text-white/30" aria-hidden /></Row>
-        {legal && (
-          <div className="max-h-44 overflow-y-auto px-3.5 py-3 text-[11.5px] leading-relaxed text-white/60">
-            <p className="mb-1 font-semibold text-[#FCE38A]">{t('lg.template')}</p>
-            <p>{legal === 'privacidad' ? t('lg.privacyText') : t('lg.termsText')}</p>
-          </div>
-        )}
+        <Row icon={ScrollText} title="Privacidad y Términos" onClick={() => setLegal(true)}><ChevronRight size={16} strokeWidth={1.75} className="text-white/30" aria-hidden /></Row>
+        <a href="https://ko-fi.com/cipri_11" target="_blank" rel="noopener noreferrer" className="flex w-full touch-manipulation items-center gap-3 px-3.5 py-3 text-left active:bg-white/[0.06]">
+          <RowIcon icon={Coffee} /><span className="min-w-0 flex-1"><b className="block truncate text-[14.5px] font-semibold text-[#FCE38A]">Apoyar el proyecto (Ko-fi)</b><small className="block truncate text-[12px] text-white/50">Gracias por ayudar a que STACKS siga creciendo</small></span>
+        </a>
         <p className="px-3.5 py-2.5 text-[11.5px] text-white/50">{t('lg.notice')}</p>
       </Group>
+      <LegalModal open={legal} onClose={() => setLegal(false)} />
 
       <Group>
         <button type="button" onClick={() => { if (!confirmReset) { setConfirmReset(true); window.setTimeout(() => setConfirmReset(false), 4000); return; } try { localStorage.clear(); sessionStorage.clear(); } catch { /* sin almacenamiento */ } window.location.reload(); }}

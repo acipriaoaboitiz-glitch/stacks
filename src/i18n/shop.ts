@@ -1,5 +1,6 @@
 /** Tienda «Club VIP» ampliada: pestañas, nuevos dorsos, tapetes, marcos de avatar y juegos de fichas y dados. */
 export const shopEs: Record<string, string> = {
+  'room.shareLink': 'Invitar por WhatsApp / Compartir',
   'vip.tab.backs': 'Dorsos', 'vip.tab.mats': 'Tapetes', 'vip.tab.frames': 'Avatares y Marcos', 'vip.tab.sets': 'Fichas y Dados',
   'cb.obsidiana': 'Obsidiana Dragón', 'cb.marmol': 'Mármol & Oro', 'cb.purpura': 'Púrpura Real', 'cb.lauburu': 'Lauburu Dorado',
   'tp.azul': 'Azul Montecarlo', 'tp.cuero': 'Cuero Coñac', 'tp.pizarra': 'Pizarra Imperial',
@@ -8,6 +9,7 @@ export const shopEs: Record<string, string> = {
   'cs.clasico': 'Casino Clásico', 'cs.lingote': 'Lingote de Oro', 'cs.ebano': 'Ébano & Marfil', 'cs.cristal': 'Cristal Esmeralda',
 };
 export const shopEn: Record<string, string> = {
+  'room.shareLink': 'Invite via WhatsApp / Share',
   'vip.tab.backs': 'Card backs', 'vip.tab.mats': 'Table cloths', 'vip.tab.frames': 'Avatars & Frames', 'vip.tab.sets': 'Chips & Dice',
   'cb.obsidiana': 'Dragon Obsidian', 'cb.marmol': 'Marble & Gold', 'cb.purpura': 'Royal Purple', 'cb.lauburu': 'Golden Lauburu',
   'tp.azul': 'Monte Carlo Blue', 'tp.cuero': 'Cognac Leather', 'tp.pizarra': 'Imperial Slate',
@@ -16,6 +18,7 @@ export const shopEn: Record<string, string> = {
   'cs.clasico': 'Classic Casino', 'cs.lingote': 'Gold Bar', 'cs.ebano': 'Ebony & Ivory', 'cs.cristal': 'Emerald Crystal',
 };
 export const shopFr: Record<string, string> = {
+  'room.shareLink': 'Inviter par WhatsApp / Partager',
   'vip.tab.backs': 'Dos de cartes', 'vip.tab.mats': 'Tapis', 'vip.tab.frames': 'Avatars et cadres', 'vip.tab.sets': 'Jetons et dés',
   'cb.obsidiana': 'Obsidienne Dragon', 'cb.marmol': 'Marbre et or', 'cb.purpura': 'Pourpre royal', 'cb.lauburu': 'Lauburu doré',
   'tp.azul': 'Bleu Monte-Carlo', 'tp.cuero': 'Cuir cognac', 'tp.pizarra': 'Ardoise impériale',
@@ -24,6 +27,7 @@ export const shopFr: Record<string, string> = {
   'cs.clasico': 'Casino classique', 'cs.lingote': "Lingot d'or", 'cs.ebano': 'Ébène et ivoire', 'cs.cristal': 'Cristal émeraude',
 };
 export const shopDe: Record<string, string> = {
+  'room.shareLink': 'Per WhatsApp einladen / Teilen',
   'vip.tab.backs': 'Kartenrücken', 'vip.tab.mats': 'Spieltücher', 'vip.tab.frames': 'Avatare & Rahmen', 'vip.tab.sets': 'Chips & Würfel',
   'cb.obsidiana': 'Drachen-Obsidian', 'cb.marmol': 'Marmor & Gold', 'cb.purpura': 'Königspurpur', 'cb.lauburu': 'Goldenes Lauburu',
   'tp.azul': 'Monte-Carlo-Blau', 'tp.cuero': 'Cognac-Leder', 'tp.pizarra': 'Kaiserschiefer',
