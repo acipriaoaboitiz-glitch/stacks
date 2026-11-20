@@ -1,7 +1,8 @@
 /** Tienda «Club VIP» ampliada: pestañas, nuevos dorsos, tapetes, marcos de avatar y juegos de fichas y dados. */
 export const shopEs: Record<string, string> = {
   'room.shareLink': 'Invitar por WhatsApp / Compartir',
-  'vip.tab.backs': 'Dorsos', 'vip.tab.mats': 'Tapetes', 'vip.tab.frames': 'Marcos', 'vip.tab.sets': 'Fichas y Dados', 'vip.tab.avatars': 'Avatares', 'vip.tab.wins': 'Victorias', 'vip.tab.titles': 'Títulos', 'vip.tab.reacts': 'Reacciones',
+  'vip.tab.backs': 'Dorsos', 'vip.tab.mats': 'Tapetes', 'vip.tab.frames': 'Marcos', 'vip.tab.sets': 'Fichas y Dados', 'vip.locker': 'Taquilla', 'vip.shop': 'Tienda Club VIP', 'lk.showcase': 'Tu combinación', 'lk.test': 'Probar Victoria', 'lk.random': 'Aleatorio', 'lk.all': 'Todas', 'lk.loadout': 'Equipo activo', 'lk.filter': 'Filtrar por rareza', 'lk.initial': 'Inicial', 'lk.inMenu': 'en tu menú', 'lk.getMore': 'Conseguir más en Club VIP', 'lk.none': 'Aún no tienes artículos de esta rareza aquí.',
+  'vip.tab.avatars': 'Avatares', 'vip.tab.wins': 'Victorias', 'vip.tab.titles': 'Títulos', 'vip.tab.reacts': 'Reacciones',
   'vip.deal': 'Oferta del día', 'vip.dealOff': '-25% HOY', 'vip.chest': 'Cofre Misterioso VIP', 'vip.chestInfo': 'Un artículo Raro, Épico o Legendario que aún no tengas', 'vip.chestOpen': 'Abrir cofre', 'vip.chestRefund': 'Ya lo tienes todo: te devolvemos', 'vip.preview': 'Vista previa', 'vip.previewHint': 'Toca un artículo para verlo aquí', 'vip.owned': 'Tuyo', 'vip.inMenu': 'En tu menú', 'vip.new': 'Nuevo',
   'rar.comun': 'Común', 'rar.raro': 'Raro', 'rar.epico': 'Épico', 'rar.legendario': 'Legendario',
   'cb.obsidiana': 'Obsidiana Dragón', 'cb.marmol': 'Mármol & Oro', 'cb.purpura': 'Púrpura Real', 'cb.lauburu': 'Lauburu Dorado',
@@ -14,7 +15,8 @@ export const shopEs: Record<string, string> = {
 };
 export const shopEn: Record<string, string> = {
   'room.shareLink': 'Invite via WhatsApp / Share',
-  'vip.tab.backs': 'Card backs', 'vip.tab.mats': 'Table cloths', 'vip.tab.frames': 'Frames', 'vip.tab.sets': 'Chips & Dice', 'vip.tab.avatars': 'Avatars', 'vip.tab.wins': 'Victories', 'vip.tab.titles': 'Titles', 'vip.tab.reacts': 'Reactions',
+  'vip.tab.backs': 'Card backs', 'vip.tab.mats': 'Table cloths', 'vip.tab.frames': 'Frames', 'vip.tab.sets': 'Chips & Dice', 'vip.locker': 'Locker', 'vip.shop': 'VIP Club Shop', 'lk.showcase': 'Your look', 'lk.test': 'Test Victory', 'lk.random': 'Random', 'lk.all': 'All', 'lk.loadout': 'Active loadout', 'lk.filter': 'Filter by rarity', 'lk.initial': 'Initial', 'lk.inMenu': 'in your menu', 'lk.getMore': 'Get more in VIP Club', 'lk.none': 'You have no items of this rarity here yet.',
+  'vip.tab.avatars': 'Avatars', 'vip.tab.wins': 'Victories', 'vip.tab.titles': 'Titles', 'vip.tab.reacts': 'Reactions',
   'vip.deal': 'Deal of the day', 'vip.dealOff': '-25% TODAY', 'vip.chest': 'VIP Mystery Chest', 'vip.chestInfo': 'A Rare, Epic or Legendary item you do not own yet', 'vip.chestOpen': 'Open chest', 'vip.chestRefund': 'You own everything: refund', 'vip.preview': 'Live preview', 'vip.previewHint': 'Tap an item to see it here', 'vip.owned': 'Owned', 'vip.inMenu': 'In your menu', 'vip.new': 'New',
   'rar.comun': 'Common', 'rar.raro': 'Rare', 'rar.epico': 'Epic', 'rar.legendario': 'Legendary',
   'tp.montecarlo': 'Classic Monte Carlo', 'tp.txoko': 'Txoko Wood', 'tp.terciopelo': 'Purple Velvet', 'tp.estrellada': 'Starry Night', 'tp.arena': 'VIP Golden Sand',

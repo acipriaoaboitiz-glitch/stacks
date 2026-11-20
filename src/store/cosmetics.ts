@@ -214,6 +214,7 @@ function addOwned(kind: Kind, id: string, equip: boolean): void {
 
 /** Equipa un artículo que ya tienes. */
 function equip(kind: Kind, id: string): void {
+  if (kind === 'avatars' && id === 'default') { set({ ...state, avatar: null }); return; } // vuelve a la letra inicial
   if (!owns(kind, id)) return;
   switch (kind) {
     case 'backs': set({ ...state, back: id as BackId }); break;
@@ -255,6 +256,14 @@ export const cosmetics = {
     return true;
   },
   equip,
+  /** Taquilla: equipa al azar un artículo de cada categoría entre los que ya posees. */
+  randomize(): void {
+    const kinds: Kind[] = ['backs', 'mats', 'frames', 'avatars', 'wins', 'titles', 'sets'];
+    for (const k of kinds) {
+      const mine = CATALOG.filter((x) => x.kind === k && owns(k, x.id));
+      if (mine.length > 0) equip(k, mine[Math.floor(Math.random() * mine.length)]!.id);
+    }
+  },
   /** Cofre Misterioso VIP: un artículo Raro, Épico o Legendario que aún no tengas; si ya lo tienes todo, devuelve fichas. */
   openChest(): ChestResult | null {
     if (!wallet.spend(CHEST_PRICE)) return null;

@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Gem, Gift, Globe, HelpCircle, Play, Trophy, Users, X } from 'lucide-react';
+import { Backpack, ChevronLeft, ChevronRight, Gem, Gift, Globe, HelpCircle, Play, Trophy, Users, X } from 'lucide-react';
 import { Portal } from '../components/ui/Portal.tsx';
 import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
@@ -113,6 +113,8 @@ export default function Home() {
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [boardOpen, setBoardOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const [vipView, setVipView] = useState<'locker' | 'shop'>('shop');
+  const openVip = (v: 'locker' | 'shop'): void => { setVipView(v); setShopOpen(true); };
   const [hostRoom, setHostRoom] = useState<Room | null>(null);
   const soc = useSocial();
   const wal = useWallet();
@@ -246,7 +248,8 @@ export default function Home() {
     </span>
   );
   const boardBtn = <IconBtn label={t('lb.title')} onClick={() => setBoardOpen(true)}><Trophy size={17} /></IconBtn>;
-  const shopBtn = <IconBtn label={t('vip.title')} onClick={() => setShopOpen(true)}><Gem size={17} /></IconBtn>;
+  const shopBtn = <IconBtn label={t('vip.title')} onClick={() => openVip('shop')}><Gem size={17} /></IconBtn>;
+  const lockerBtn = <IconBtn label={t('vip.locker')} onClick={() => openVip('locker')}><Backpack size={17} /></IconBtn>;
   void online$;
 
   return (
@@ -260,7 +263,7 @@ export default function Home() {
           <div className="sm:hidden" />
         </div>
         <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-2 justify-self-end sm:col-start-3">
-          <span className="hidden items-center gap-1.5 sm:flex">{friendsBtn}{boardBtn}{shopBtn}</span>
+          <span className="hidden items-center gap-1.5 sm:flex">{friendsBtn}{boardBtn}{lockerBtn}{shopBtn}</span>
           <ChipBalance onPlus={() => setShowRefill(true)} alert={chestReady} />
           <span className="max-sm:hidden"><QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} /></span>
           <span className="sm:hidden"><QuickButtons onSettings={() => setSettings(true)} /></span>
@@ -276,7 +279,7 @@ export default function Home() {
       <EconomyModal open={showRefill} onClose={() => setShowRefill(false)} />
       <FriendsDrawer open={friendsOpen} onClose={() => setFriendsOpen(false)} onInvite={(f) => { void inviteFriend(f); }} />
       <LeaderboardModal open={boardOpen} onClose={() => setBoardOpen(false)} />
-      <VipShopModal open={shopOpen} onClose={() => setShopOpen(false)} />
+      <VipShopModal open={shopOpen} initialView={vipView} onClose={() => setShopOpen(false)} />
 
       <div className="desk-zoom relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between px-4 pt-3 pb-[calc(76px+var(--safe-b))] md:max-w-none md:pb-[calc(14px+var(--safe-b))]" >
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
@@ -366,12 +369,13 @@ export default function Home() {
       </div>
 
       {/* Barra de navegación inferior nativa (solo móvil) */}
-      <nav aria-label="Navegación" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-white/10 bg-[#071510]/95 pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Navegación" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/10 bg-[#071510]/95 pb-[env(safe-area-inset-bottom)] md:hidden">
         {([
           ['Jugar', Play, !friendsOpen && !boardOpen && !shopOpen, () => { setFriendsOpen(false); setBoardOpen(false); setShopOpen(false); }, false],
           ['Amigos', Users, friendsOpen, () => setFriendsOpen(true), soc.incoming.length > 0 || friendsOnline > 0],
           ['Ranking', Trophy, boardOpen, () => setBoardOpen(true), false],
-          ['Club VIP', Gem, shopOpen, () => setShopOpen(true), false],
+          ['Taquilla', Backpack, shopOpen && vipView === 'locker', () => openVip('locker'), false],
+          ['Club VIP', Gem, shopOpen && vipView === 'shop', () => openVip('shop'), false],
         ] as const).map(([label, Icon, on, go, dot]) => (
           <button key={label} type="button" aria-current={on} onClick={() => { feedback('tap'); go(); }} className={`relative flex h-[58px] touch-manipulation flex-col items-center justify-center gap-0.5 text-[11px] font-bold active:scale-95 ${on ? 'text-[#FCE38A]' : 'text-white/55'}`}>
             {on && <motion.span layoutId="mobile-nav" aria-hidden className="absolute inset-x-6 top-0 h-[3px] rounded-b-full bg-[#FCE38A]" transition={{ type: 'spring', stiffness: 420, damping: 32 }} />}
