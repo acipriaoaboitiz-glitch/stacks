@@ -231,6 +231,15 @@ export default function Uno() {
     const i = (myIdx + k) % nPlayers;
     const p = s.players[i]!;
     const n = s.hands[p.id]!.length;
+    if (slot === 'top') {
+      // asiento superior compacto en horizontal (< 48 px de alto): avatar a la izquierda, nombre y mini-cartas a la derecha
+      return (
+        <div className="flex h-11 items-center gap-2 rounded-full border border-white/10 bg-black/35 py-1 pl-1 pr-3" style={{ opacity: s.turn === i && !s.winner ? 1 : 0.8 }}>
+          <span className={`rounded-full ${s.turn === i && !s.winner ? 'ring-2 ring-amber-200/90 shadow-[0_0_10px_rgba(242,202,112,.6)]' : ''}`}><TableAvatar name={p.name} tone="them" className="size-8 text-[13px]" /></span>
+          <span className="grid min-w-0 leading-tight"><b className="truncate text-[12px] text-stone-100">{p.name}</b><span className="flex items-center gap-1 text-[10px] tabular-nums text-amber-200/90"><span className="inline-block h-3 w-2 rounded-[2px] border border-white/70 bg-[#15151a]" />×{n}{marks[p.id] ? ` · ${marks[p.id]}` : ''}</span></span>
+        </div>
+      );
+    }
     return <SeatBadge info={info(i, `${p.name} · ${n}`)} tone="them" mano={false} turn={s.turn === i && !s.winner} deadline={null} cards={n} aura={n === 1} badge={marks[p.id]} alert={marks[p.id] === 'Ø' || marks[p.id]?.startsWith('+')} />;
   };
 
@@ -257,12 +266,12 @@ export default function Uno() {
 
   const felt = (
     <>
-      <div className="relative h-full">
+      <div className="relative h-full min-h-[340px] lg:min-h-[400px]">
         <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2">{seat('top')}</div>
         <div className="absolute left-3 top-1/2 z-20 -translate-y-1/2">{seat('left')}</div>
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
+        <div className="absolute inset-x-0 top-[60%] z-10 flex -translate-y-1/2 items-center justify-center">
           <div className="grid justify-items-center gap-3">
-            <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-3">
+            <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-2">
               {/* anillo luminoso del color activo con el sentido de giro */}
               <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[999px] border-2 transition-[border-color,box-shadow] duration-200" style={{ borderColor: UNO_HEX[s.color], boxShadow: `0 0 14px 1px ${UNO_HEX[s.color]}99, inset 0 0 14px ${UNO_HEX[s.color]}55` }} />
               <motion.span key={s.dir} aria-hidden className="pointer-events-none absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full border border-white/70 text-white" style={{ background: UNO_HEX[s.color] }}

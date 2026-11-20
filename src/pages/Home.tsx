@@ -230,14 +230,15 @@ export default function Home() {
         <div className="col-start-1 row-start-1 min-w-0 justify-self-start"><ProfileCard /></div>
         {/* Fila central: STACKS siempre en el centro exacto (columnas 1fr · auto · 1fr); en móvil, a sus lados van Amigos/Ranking y Club VIP */}
         <div className="col-span-2 row-start-2 grid grid-cols-[1fr_auto_1fr] items-center sm:col-span-1 sm:col-start-2 sm:row-start-1">
-          <div className="flex items-center justify-start gap-1.5 sm:hidden">{friendsBtn}{boardBtn}</div>
+          <div className="sm:hidden" />
           <h1 aria-label="STACKS"><Wordmark size={20} /></h1>
-          <div className="flex items-center justify-end gap-1.5 sm:hidden">{shopBtn}</div>
+          <div className="sm:hidden" />
         </div>
         <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-2 justify-self-end sm:col-start-3">
           <span className="hidden items-center gap-1.5 sm:flex">{friendsBtn}{boardBtn}{shopBtn}</span>
           <ChipBalance onPlus={() => setShowRefill(true)} alert={chestReady} />
-          <QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} />
+          <span className="max-sm:hidden"><QuickButtons onRules={() => setPicker(true)} onSettings={() => setSettings(true)} /></span>
+          <span className="sm:hidden"><QuickButtons onSettings={() => setSettings(true)} /></span>
         </div>
       </header>
       <EconomyModal open={showRefill} onClose={() => setShowRefill(false)} />
@@ -245,7 +246,7 @@ export default function Home() {
       <LeaderboardModal open={boardOpen} onClose={() => setBoardOpen(false)} />
       <VipShopModal open={shopOpen} onClose={() => setShopOpen(false)} />
 
-      <div className="desk-zoom relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between px-4 pt-3 md:max-w-none" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
+      <div className="desk-zoom relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between px-4 pt-3 pb-[calc(76px+var(--safe-b))] md:max-w-none md:pb-[calc(14px+var(--safe-b))]" >
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
         {/* Barra de secciones con selector deslizante */}
@@ -267,7 +268,7 @@ export default function Home() {
         <div aria-hidden className="pointer-events-none absolute left-1/2 top-[44%] z-0 size-[min(90vw,620px)] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background] duration-500" style={{ background: `radial-gradient(circle, ${HALO[game.category]}30 0%, ${HALO[game.category]}00 66%)` }} />
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
-        <motion.div key={cat} className="relative z-10 h-[min(40dvh,360px)] w-full lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
+        <motion.div key={cat} className="relative z-10 h-[min(36dvh,340px)] w-full md:h-[min(40dvh,360px)] lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
           <div ref={scroller} onScroll={onScroll} role="group" aria-label="Juegos"
             className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain] lg:gap-3 lg:px-[calc(50%-calc(190px/var(--z,1)))] xl:px-[calc(50%-calc(210px/var(--z,1)))]">
             {LIST.map((g, i) => (
@@ -317,7 +318,7 @@ export default function Home() {
           )}
         </div>
         {/* acceso rápido: recompensa diaria y reglas del juego elegido */}
-        <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/10 bg-[#081711]/90 p-1">
+        <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/10 bg-[#081711]/90 p-1 max-md:hidden">
           <button type="button" onClick={() => { feedback('tap'); setShowRefill(true); }} className="relative flex h-9 touch-manipulation items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold text-stone-200 active:scale-95">
             <Gift size={15} strokeWidth={1.75} aria-hidden />Recompensa diaria
             {chestReady && <span aria-hidden className="absolute right-1.5 top-1.5 size-2 animate-pulse rounded-full bg-[#FCE38A] shadow-[0_0_6px_#FCE38A]" />}
@@ -326,6 +327,22 @@ export default function Home() {
           <button type="button" onClick={() => { feedback('tap'); setRules(game); }} className="flex h-9 touch-manipulation items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold text-stone-200 active:scale-95"><HelpCircle size={15} strokeWidth={1.75} aria-hidden />Reglas</button>
         </div>
       </div>
+
+      {/* Barra de navegación inferior nativa (solo móvil) */}
+      <nav aria-label="Navegación" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-white/10 bg-[#071510]/95 pb-[env(safe-area-inset-bottom)] md:hidden">
+        {([
+          ['Jugar', Play, !friendsOpen && !boardOpen && !shopOpen, () => { setFriendsOpen(false); setBoardOpen(false); setShopOpen(false); }, false],
+          ['Amigos', Users, friendsOpen, () => setFriendsOpen(true), soc.incoming.length > 0 || friendsOnline > 0],
+          ['Ranking', Trophy, boardOpen, () => setBoardOpen(true), false],
+          ['Club VIP', Gem, shopOpen, () => setShopOpen(true), false],
+        ] as const).map(([label, Icon, on, go, dot]) => (
+          <button key={label} type="button" aria-current={on} onClick={() => { feedback('tap'); go(); }} className={`relative flex h-[58px] touch-manipulation flex-col items-center justify-center gap-0.5 text-[11px] font-bold active:scale-95 ${on ? 'text-[#FCE38A]' : 'text-white/55'}`}>
+            {on && <span aria-hidden className="absolute inset-x-6 top-0 h-[3px] rounded-b-full bg-[#FCE38A]" />}
+            <span className="relative"><Icon size={21} strokeWidth={1.75} aria-hidden />{dot && <span aria-hidden className="absolute -right-1 -top-0.5 size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />}</span>
+            {label}
+          </button>
+        ))}
+      </nav>
 
       <OnlineLobbyModal game={online} initialCode={inviteCode} existing={hostRoom} onClose={() => { setHostRoom(null); closeOnline(); }} onStart={startOnline} />
       <RulesPicker open={picker} onClose={() => setPicker(false)} onPick={(g) => { setPicker(false); setRules(g); }} />
