@@ -36,6 +36,36 @@ function bestFive(hole: PokerState['community'], community: PokerState['communit
 }
 const PHASE: Record<string, string> = { preflop: 'PRE-FLOP', flop: 'FLOP', turn: 'TURN', river: 'RIVER', showdown: 'SHOWDOWN' };
 
+/** Asiento compacto para la mesa vertical de móvil: avatar, nombre y stack, 2 mini-cartas y la apuesta debajo. */
+function MobileSeat({ s, i, top }: { s: PokerState; i: number; top?: boolean }) {
+  const x = s.seats[i]!;
+  const turn = s.phase === 'betting' && s.turn === i;
+  const shown = !!s.result?.shown[i];
+  const win = s.result?.wins.find((w) => w.seat === i);
+  const short = `J${i === 0 ? 0 : i}`;
+  return (
+    <div className={`grid justify-items-center gap-0.5 ${x.out ? 'opacity-30' : x.folded ? 'opacity-55' : ''}`} aria-label={`${s.players[i]!.name}, ${x.stack} fichas`}>
+      <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 py-0.5 pl-0.5 pr-2">
+        <span className={`relative rounded-full ${turn ? 'ring-2 ring-[#D4AF37] shadow-[0_0_10px_rgba(212,175,55,.7)]' : ''}`}>
+          <TableAvatar name={s.players[i]!.name} tone="them" className="size-8 text-[12px]" />
+          {s.button === i && !x.out && <span className="absolute -right-1 -top-1 grid size-[15px] place-items-center rounded-full border border-[#0b211a] bg-white text-[8px] font-extrabold text-zinc-900">D</span>}
+        </span>
+        <span className="grid leading-tight"><b className={`text-[11px] ${turn ? 'text-amber-200' : 'text-stone-100'}`}>{short}</b><span className="font-mono text-[11px] font-bold tabular-nums text-amber-200">{x.out ? 'OUT' : x.stack}</span></span>
+        {!x.out && !x.folded && (
+          <span className="flex pl-0.5">
+            {x.hole.map((c, k) => <span key={c.id} style={{ marginLeft: k ? -8 : 0 }}><FaceCard card={c} faceDown={!shown} scale={0.3} glow={!!win} /></span>)}
+          </span>
+        )}
+      </div>
+      <div className={`flex items-center gap-1 ${top ? '' : ''}`}>
+        {x.bet > 0 && !x.out && !x.folded && <span className="rounded-full bg-amber-300 px-2 py-[1px] text-[10px] font-extrabold tabular-nums text-amber-950">{x.bet}</span>}
+        {x.folded && !x.out && <span className="text-[10px] font-semibold text-stone-400">Retirado</span>}
+        {win && <span className="rounded-full bg-emerald-600 px-2 py-[1px] text-[10px] font-extrabold text-white">+{win.amount}</span>}
+      </div>
+    </div>
+  );
+}
+
 function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
   const x = s.seats[i]!;
   const turn = s.phase === 'betting' && s.turn === i;
@@ -257,7 +287,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   const flip = (c: PokerState['community'][number], k: number) => (
     <motion.div key={c.id} style={{ perspective: 600 }} initial={{ rotateY: 90, y: -24, opacity: 0 }} animate={{ rotateY: 0, y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 160, damping: 18, delay: k >= 3 ? 0 : k * 0.12 }}>
-      <FaceCard card={c} scale={wide ? 0.78 : 0.5} glow={s.phase === 'handOver' && s.result?.reason === 'showdown' && winCards.has(c.id)} />
+      <FaceCard card={c} scale={wide ? 0.78 : 0.6} glow={s.phase === 'handOver' && s.result?.reason === 'showdown' && winCards.has(c.id)} />
     </motion.div>
   );
   const at = (x: number, y: number): React.CSSProperties => ({ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' });
@@ -267,6 +297,44 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     const pos = (wide ? POS : POSM)[n]?.[k];
     return pos ? { k, i: (myIdx + k) % n, pos } : null;
   }).filter((v): v is { k: number; i: number; pos: [number, number] } => v !== null);
+  // Mesa vertical de móvil: 3 niveles (J2 arriba · laterales a media altura · bote y 5 cartas en la franja central exclusiva)
+  const mobPlace: Record<number, Record<number, string>> = {
+    2: { 1: 'top' },
+    3: { 1: 'right', 2: 'left' },
+    4: { 1: 'right', 2: 'top', 3: 'left' },
+    6: { 1: 'rlow', 2: 'right', 3: 'top', 4: 'left', 5: 'llow' },
+  };
+  const placeCls: Record<string, string> = {
+    top: 'left-1/2 top-3 -translate-x-1/2',
+    right: 'right-2.5 top-[24%]',
+    left: 'left-2.5 top-[24%]',
+    rlow: 'right-2.5 bottom-3',
+    llow: 'left-2.5 bottom-3',
+  };
+  const mobileFelt = (
+    <div className="h-full w-full p-1.5">
+      <div className="relative h-full w-full rounded-[64px] border-[6px] border-[#13241c] ring-1 ring-[#D4AF37]/35" style={{ background: 'radial-gradient(ellipse at 50% 52%, #14543a 0%, #0B2E20 45%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55), 0 14px 26px rgba(0,0,0,.55)' }}>
+        <span aria-hidden className="pointer-events-none absolute inset-3 rounded-[52px] border border-[#D4AF37]/30" />
+        {Array.from({ length: n - 1 }, (_, i) => i + 1).map((k) => {
+          const where = mobPlace[n]?.[k];
+          if (!where) return null;
+          const i = (myIdx + k) % n;
+          return <div key={k} className={`absolute z-10 ${placeCls[where]}`}><MobileSeat s={s} i={i} top={where === 'top'} /></div>;
+        })}
+        <span className="pointer-events-none absolute left-1/2 top-[10px] hidden" aria-hidden />
+        <div className="absolute inset-x-0 top-[56%] z-[6] grid -translate-y-1/2 justify-items-center gap-2">
+          <span className="font-mono flex items-center gap-1.5 rounded-full border border-[#D4AF37]/50 bg-black/55 px-3 py-0.5 text-[13px] font-bold tabular-nums text-amber-200"><span className="text-[10px] font-extrabold tracking-[.14em] text-[#FCE38A]">BOTE</span>{total}</span>
+          <div className="grid w-full grid-cols-5 justify-items-center gap-1.5 px-3" aria-label="Cartas comunitarias">
+            {Array.from({ length: 5 }, (_, k) => {
+              const c = s.community[k];
+              return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] rounded-[4px] border border-[#D4AF37]/30 bg-black/15" style={{ width: 'calc(var(--card-w) * 0.6)' }} />;
+            })}
+          </div>
+        </div>
+      </div>
+      <Banner text={banner} />
+    </div>
+  );
   const felt = (
     <>
       <div className="h-full w-full">
@@ -384,7 +452,18 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
             </button>
           </div>
         </div>
-      ) : <PillBar pills={pills} idle={status} />}
+      ) : (
+        <>
+          {myTurn && lg && lg.canRaise && raising === null && (
+            <div className="flex items-center justify-center gap-2" role="group" aria-label="Atajos de apuesta">
+              {([['½ Bote', () => clampTo(s.currentBet + total / 2)], ['Bote', () => clampTo(s.currentBet + total)], ['All-In', () => lg.maxTo]] as const).map(([lab, fn]) => (
+                <button key={lab} type="button" onClick={() => setRaising(fn())} className="min-h-[36px] touch-manipulation rounded-full border border-white/15 bg-white/10 px-3.5 text-[12px] font-bold text-stone-100 active:scale-95">{lab}</button>
+              ))}
+            </div>
+          )}
+          <PillBar pills={pills} idle={status} />
+        </>
+      )}
       <div className="flex items-end justify-center gap-[min(2vw,10px)] pt-[min(1.4dvh,10px)]" role="group" aria-label="Tus cartas">
         {me.hole.map((c, i) => (
           <FaceCard key={c.id} card={c} deal={i} scale={0.92} rotate={i === 0 ? -4 : 4} dim={me.folded} />
@@ -400,13 +479,9 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
       gameId="poker" feltTone="emerald"
       strip={(
         <>
-          <div className="grid grid-cols-3 gap-1.5 tabular-nums lg:hidden" role="group" aria-label={t('sc.pot')}>
-            {([['BOTE', String(total), 'text-amber-200'], [PHASE[s.street] ?? '', `${BB / 2}/${BB}`, 'text-teal-300'], ['TU STACK', String(me.stack), 'text-orange-300']] as const).map(([lab, val, tone]) => (
-              <div key={lab} className="min-w-0 rounded-[13px] border border-white/10 bg-gradient-to-br from-white/[0.06] to-black/30 px-2.5 py-1">
-                <p className={`truncate text-[8.5px] font-extrabold uppercase tracking-[.05em] ${tone}`}>{lab}</p>
-                <b className="block truncate text-[14px] leading-tight">{val}</b>
-              </div>
-            ))}
+          <div className="flex items-center justify-between gap-2 px-1 text-[12px] font-bold tabular-nums text-stone-300 lg:hidden" role="group" aria-label={t('sc.pot')}>
+            <span>Ciegas {BB / 2}/{BB} · <span className="text-[#FCE38A]">{(PHASE[s.street] ?? '').replace('-', '-')}</span></span>
+            <span className="text-amber-200">Tu stack: {me.stack}</span>
           </div>
           <div className="hidden items-center justify-between gap-2 px-1 text-[11px] font-bold tabular-nums text-stone-300 lg:flex" role="group" aria-label={t('sc.pot')}>
             <span className="text-amber-200">{t('sc.pot')} {pot(s)}</span>
@@ -418,7 +493,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
       onExit={online ? exit : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
       header={<><p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300 lg:hidden">Póker</p><div className="no-scrollbar hidden min-w-0 flex-1 overflow-x-auto lg:block"><ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} /></div></>}
-      felt={felt}
+      felt={wide ? felt : mobileFelt}
       bottom={bottom}
       overlays={
         <>
