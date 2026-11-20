@@ -3,9 +3,9 @@ import { useThrow } from '../shared/useThrow.ts';
 import { cardLabel, type Color, type UnoCard as UnoCardData } from './engine.ts';
 
 /** Colores oficiales del set. */
-const HEX: Record<Color | 'wild', string> = { red: '#DC2626', yellow: '#EAB308', green: '#16A34A', blue: '#2563EB', wild: '#18181B' };
+const HEX: Record<Color | 'wild', string> = { red: '#E11D48', yellow: '#EAB308', green: '#16A34A', blue: '#2563EB', wild: '#111827' };
 /** Acabado satinado: luz arriba a la izquierda y tono más profundo abajo a la derecha. */
-const SATIN: Record<Color | 'wild', [string, string]> = { red: ['#E23232', '#C21F1F'], yellow: ['#F2C21A', '#D9A406'], green: ['#22B455', '#12873F'], blue: ['#3B76F0', '#1F4FD0'], wild: ['#2A2A2F', '#111114'] };
+const SATIN: Record<Color | 'wild', [string, string]> = { red: ['#E11D48', '#BE123C'], yellow: ['#F2C21A', '#D9A406'], green: ['#22B455', '#12873F'], blue: ['#3B76F0', '#1F4FD0'], wild: ['#1F2937', '#111827'] };
 
 
 // ─── Set vectorial opcional: /public/cards/uno/{color}_{valor}.svg ───────────────────────────────
@@ -109,7 +109,7 @@ const cornerLabel = (card: UnoCardData): string =>
 function Corner({ card }: { card: UnoCardData }) {
   return (
     <g>
-      <text textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="900" fontStyle="italic" fontSize="58" fill="#000" stroke="#000" strokeWidth="7" x="2" y="3">{cornerLabel(card)}</text>
+      <text textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="900" fontStyle="italic" fontSize="58" fill="#000" stroke="#000" strokeWidth="9" x="2" y="4">{cornerLabel(card)}</text>
       <text textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="900" fontStyle="italic" fontSize="58" fill="#fff">{cornerLabel(card)}</text>
     </g>
   );
@@ -155,7 +155,6 @@ interface Props {
   /** Se puede jugar: solo brilla. */
   playable?: boolean;
   selected?: boolean;
-  dim?: boolean;
   glow?: boolean;
   /** Bajo el dedo/cursor: sube un poco (-translate-y-3). */
   lifted?: boolean;
@@ -163,7 +162,7 @@ interface Props {
 }
 
 /** Carta de UNO: borde blanco, color vivo y números grandes. Sin animaciones complejas: solo sube un poco al señalarla. */
-export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, lifted, style }: Props) {
+export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, glow, lifted, style }: Props) {
   const vectors = useVectorSet();
   const interactive = Boolean(onClick);
   const { handlers, click } = useThrow(() => onClick?.(), interactive);
@@ -176,10 +175,10 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
       {...(interactive ? handlers : {})}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl border-[3px] border-white bg-white shadow-md transition-transform duration-150 ${lifted || selected ? '-translate-y-3' : ''} ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl border-[3px] border-white bg-white shadow-md transition-transform duration-150 ${lifted || selected ? '-translate-y-3' : playable ? '-translate-y-2.5' : ''} ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         width: `calc(var(--card-w) * ${scale})`,
-        boxShadow: lit ? '0 0 0 2px #f0c35f, 0 3px 8px rgba(0,0,0,.5)' : undefined,
+        boxShadow: lit ? '0 0 0 2px #FCE38A, 0 0 8px 1px rgba(255,255,255,.7), 0 3px 8px rgba(0,0,0,.5)' : undefined,
         ...(interactive ? { touchAction: 'pan-x' } : {}),
         ...style,
       }}
@@ -187,7 +186,6 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
       {vectors
         ? <img src={`${BASE}${faceDown ? 'back.svg' : unoFile(card)}`} alt="" draggable={false} className="size-full object-contain" />
         : faceDown ? <UnoBack /> : <UnoFace card={card} />}
-      {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/45" />}
     </button>
   );
 });

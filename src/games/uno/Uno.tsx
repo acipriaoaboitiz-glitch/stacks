@@ -43,6 +43,14 @@ const slotOfPlayer = (st: UnoState, me: string, id: string): Slot => {
   return SLOT[n as 2 | 3 | 4][(st.players.findIndex((p) => p.id === id) - myI + n) % n]!;
 };
 
+/** Desde dónde sale (en px respecto al descarte) la carta que tira cada lado. */
+const reach = (slot: Slot): { x: number; y: number } => {
+  const W = typeof window === 'undefined' ? 360 : window.innerWidth;
+  const H = typeof window === 'undefined' ? 640 : window.innerHeight;
+  return slot === 'top' ? { x: 0, y: -H * 0.26 } : slot === 'left' ? { x: -W * 0.33, y: -H * 0.03 } : slot === 'right' ? { x: W * 0.33, y: -H * 0.03 } : { x: 0, y: H * 0.32 };
+};
+const EASE = [0.22, 1, 0.36, 1] as const;
+
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
 
 export default function Uno() {
@@ -54,6 +62,9 @@ export default function Uno() {
   const [s, setS] = useState<UnoState | null>(null);
   const [pickFor, setPickFor] = useState<UnoCard | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [marks, setMarks] = useState<Record<string, string | undefined>>({});
+  const prevS = useRef<UnoState | null>(null);
+  const seenHand = useRef<Set<string>>(new Set());
   const { banner, show } = useBanner(1600);
   const { cine, show: showCine } = useCine();
   const paid = useRef(false);
@@ -127,7 +138,17 @@ export default function Uno() {
     else if (e.kind === 'uno') feedback('trick');
     else if (e.text !== 'Roba una carta') feedback('deal');
     if (e.text !== 'Roba una carta') show(e.text);
+    const flash = (id: string | undefined, text: string): void => {
+      if (!id) return;
+      setMarks((m) => ({ ...m, [id]: text }));
+      gameTimeout(() => setMarks((m) => (m[id] === text ? { ...m, [id]: undefined } : m)), 1400);
+    };
+    if (e.text === 'Salta turno') { const i = s.players.findIndex((p) => p.id === e.by); flash(s.players[(i + s.dir + s.players.length) % s.players.length]?.id, 'Ø'); }
+    else if (e.kind === 'draw') { const v = s.players.find((p) => e.text.endsWith(p.name) || e.text.includes(`caza a ${p.name}`) || e.text.startsWith(p.name)); flash(v?.id, e.text.includes('+4') ? '+4' : '+2'); }
   }, [s, show]);
+
+  // Quién tiró la carta que acaba de caer (para que vuele desde su lado)
+  useEffect(() => { prevS.current = s; });
 
   // Al mejor de 3 rondas: gana la ronda quien se queda sin cartas; la serie, quien llegue a 2 estrellas.
   const series = useSeries();
@@ -146,6 +167,9 @@ export default function Uno() {
 
   const myHand = s?.hands[me] ?? [];
   const sorted = useMemo(() => sortHand(myHand), [myHand]);
+  const fresh = new Set(sorted.filter((c) => !seenHand.current.has(c.id)).map((c) => c.id));
+  const dealing = seenHand.current.size === 0;
+  useEffect(() => { seenHand.current = new Set(sorted.map((c) => c.id)); });
 
   // Abanico: un único manejador en el contenedor para levantar la carta señalada.
   const [hot, setHot] = useState(-1);
@@ -201,13 +225,17 @@ export default function Uno() {
   const playable = myTurn ? new Set(playableCards(s, me).map((c) => c.id)) : new Set<string>();
   const canDraw = myTurn && !s.drawn && playable.size === 0;
   const topCard = s.discard[s.discard.length - 1]!;
+  const pv = prevS.current;
+  const byPrev = pv && s.discard.length > pv.discard.length ? pv.players[pv.turn] : undefined;
+  const from = byPrev ? reach(slotOfPlayer(s, me, byPrev.id)) : { x: 0, y: -10 };
+  const tilt = (Number(topCard.id.slice(1)) % 21) - 10;
   const seat = (slot: 'top' | 'left' | 'right') => {
     const k = slots.indexOf(slot);
     if (k === -1) return null;
     const i = (myIdx + k) % nPlayers;
     const p = s.players[i]!;
     const n = s.hands[p.id]!.length;
-    return <SeatBadge info={info(i, `${p.name} · ${n}`)} tone="them" mano={false} turn={s.turn === i && !s.winner} deadline={null} cards={n} aura={n === 1} />;
+    return <SeatBadge info={info(i, `${p.name} · ${n}`)} tone="them" mano={false} turn={s.turn === i && !s.winner} deadline={null} cards={n} aura={n === 1} badge={marks[p.id]} alert={marks[p.id] === 'Ø' || marks[p.id]?.startsWith('+')} />;
   };
 
   const choose = (color: Color) => {
@@ -238,7 +266,13 @@ export default function Uno() {
         <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat('left')}</div>
         <div className="col-start-2 row-start-2 grid min-h-0 place-items-center">
           <div className="grid justify-items-center gap-3">
-            <div className="relative flex items-center gap-[min(4vw,18px)]">
+            <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-3">
+              {/* anillo luminoso del color activo con el sentido de giro */}
+              <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[999px] border-2 transition-[border-color,box-shadow] duration-200" style={{ borderColor: UNO_HEX[s.color], boxShadow: `0 0 14px 1px ${UNO_HEX[s.color]}99, inset 0 0 14px ${UNO_HEX[s.color]}55` }} />
+              <motion.span key={s.dir} aria-hidden className="pointer-events-none absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full border border-white/70 text-white" style={{ background: UNO_HEX[s.color] }}
+                initial={{ rotate: s.dir === 1 ? 180 : -180, opacity: 0.4 }} animate={{ rotate: 0, opacity: 1 }} transition={{ duration: 0.25, ease: EASE }}>
+                {s.dir === 1 ? <RotateCcw size={14} strokeWidth={2} /> : <RotateCw size={14} strokeWidth={2} />}
+              </motion.span>
               <div className="relative grid justify-items-center gap-1">
                 <div role="button" tabIndex={canDraw ? 0 : -1} aria-label="Mazo: robar carta" aria-disabled={!canDraw}
                   onClick={canDraw ? () => { feedback('draw'); act({ k: 'draw' }); } : undefined}
@@ -256,10 +290,10 @@ export default function Uno() {
               </div>
               <div className="relative" style={{ width: 'calc(var(--card-w) * 1.05)', height: 'calc(var(--card-w) * 0.9 * 1.5)' }}>
                 {s.discard.length > 1 && (
-                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} scale={1.05} dim /></div>
+                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} scale={1.05} /></div>
                 )}
                 {/* entrada rápida y limpia de la carta jugada */}
-                <motion.div key={topCard.id} className="absolute inset-0" initial={{ opacity: 0, y: -10, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.16 }}>
+                <motion.div key={topCard.id} className="absolute inset-0" initial={{ x: from.x, y: from.y, opacity: 0.6, scale: 1.1, rotate: tilt * 2 }} animate={{ x: 0, y: 0, opacity: 1, scale: [1.1, 1], rotate: tilt }} transition={{ duration: 0.22, ease: EASE }}>
                   <UnoCardView card={topCard} scale={1.05} glow />
                 </motion.div>
               </div>
@@ -313,8 +347,10 @@ export default function Uno() {
         className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.4dvh,18px)]" style={{ touchAction: scrollable ? 'pan-x' : 'none' }} role="group" aria-label="Tu mano">
         <div className="mx-auto flex w-max items-end px-2 [--uno-hand-w:54px] sm:[--uno-hand-w:68px]">
           {sorted.map((c, i) => (
-            <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : sorted.length > 9 ? -26 : sorted.length > 6 ? -18 : -12, zIndex: hot === i ? 60 : i }}>
-              <UnoCardView card={c} scale={0.86} style={{ width: 'var(--uno-hand-w)' }} playable={playable.has(c.id)} lifted={hot === i} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
+            <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : sorted.length > 11 ? -26 : sorted.length > 8 ? -20 : sorted.length > 5 ? -14 : -8, zIndex: hot === i ? 60 : i }}>
+              <motion.div initial={!dealing && fresh.has(c.id) ? { y: -90, opacity: 0 } : false} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.2, ease: EASE }}>
+              <UnoCardView card={c} scale={0.86} style={{ width: 'var(--uno-hand-w)' }} playable={playable.has(c.id)} lifted={hot === i} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
+              </motion.div>
             </div>
           ))}
         </div>

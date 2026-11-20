@@ -33,7 +33,7 @@ export function CornerIndex({ card }: { card: { deck?: 'es' | 'fr'; rank: number
     glyph = <SpanishGlyph suit={suit} />;
   }
   return (
-    <span aria-hidden="true" className="pointer-events-none absolute left-[3%] top-[2%] z-[3] flex flex-col items-center gap-[1px] rounded-[5px] bg-[#fffdf5]/95 px-[3px] py-[2px] text-base font-black leading-none tracking-tight shadow-[0_1px_2px_rgba(0,0,0,.45)] ring-1 ring-black/25 sm:text-xl" style={{ color }}>
+    <span aria-hidden="true" className="pointer-events-none absolute left-[5%] top-[3%] z-[3] flex flex-col items-center gap-[1px] text-base font-black leading-none tracking-tight sm:text-xl" style={{ color, textShadow: '0 0 2px #fffdf5, 0 0 3px #fffdf5, 0 0 5px #fffdf5', filter: 'drop-shadow(0 0 1px #fffdf5)' }}>
       <span className="tabular-nums">{label}</span>
       {glyph}
     </span>
