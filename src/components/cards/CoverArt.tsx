@@ -202,54 +202,45 @@ export function CoverBody({ id }: { id: string }) {
         </g>
       );
     case 'bingo': {
-      const Ball3 = ({ x, y, r, c2, n, dark }: { x: number; y: number; r: number; c2: string; n: string; dark?: boolean }) => (
+      const grid = (nums: number[][], marked: number[]) => (
         <g>
-          <ellipse cx={x + 1} cy={y + r + 1.5} rx={r * 0.9} ry={r * 0.28} fill="#000" opacity=".5" />
-          <circle cx={x} cy={y} r={r} fill={`url(#bb-${n})`} stroke={c2} strokeWidth=".8" />
-          <circle cx={x} cy={y} r={r * 0.52} fill="#fffbe8" opacity=".92" />
-          <text x={x} y={y + r * 0.22} textAnchor="middle" fontSize={r * 0.72} fontWeight="800" fill={dark ? '#3a2603' : c2} fontFamily="Outfit, system-ui, sans-serif">{n}</text>
-          <ellipse cx={x - r * 0.36} cy={y - r * 0.5} rx={r * 0.34} ry={r * 0.2} fill="#fff" opacity=".7" transform={`rotate(-30 ${x - r * 0.36} ${y - r * 0.5})`} />
+          <rect x="0" y="0" width="76" height="52" rx="5" fill="#FDF8EE" stroke="url(#ta-gold)" strokeWidth="2.2" />
+          <rect x="3" y="3" width="70" height="46" rx="3" fill="none" stroke="#D4AF37" strokeOpacity=".5" strokeWidth=".8" />
+          {[1, 2].map((r) => <line key={r} x1="3" x2="73" y1={3 + r * 15.3} y2={3 + r * 15.3} stroke="#D4AF37" strokeOpacity=".55" strokeWidth=".7" />)}
+          {Array.from({ length: 8 }, (_, i) => <line key={i} y1="3" y2="49" x1={3 + (i + 1) * 7.8} x2={3 + (i + 1) * 7.8} stroke="#D4AF37" strokeOpacity=".4" strokeWidth=".6" />)}
+          {nums.map((row, r) => row.map((n, cI) => n > 0 && (
+            <g key={`${r}-${cI}`}>
+              {marked.includes(n) && <circle cx={3 + cI * 7.8 + 3.9} cy={3 + r * 15.3 + 7.6} r="5.6" fill={r === 0 ? '#FCE38A' : '#fb7185'} opacity=".7" stroke="#8a6410" strokeWidth=".5" />}
+              <text x={3 + cI * 7.8 + 3.9} y={3 + r * 15.3 + 10} textAnchor="middle" fontSize="6.6" fontWeight="800" fill="#2a1d02" fontFamily="Outfit, system-ui, sans-serif">{n}</text>
+            </g>
+          )))}
+        </g>
+      );
+      const A = [[4, 0, 23, 0, 41, 0, 62, 0, 80], [0, 14, 0, 33, 0, 52, 0, 71, 0], [7, 0, 28, 0, 46, 0, 65, 0, 88]];
+      const B = [[0, 12, 0, 31, 0, 55, 0, 76, 90], [9, 0, 25, 0, 47, 0, 60, 0, 0], [0, 18, 0, 37, 0, 58, 0, 79, 0]];
+      const Ball3 = ({ x, y, r, n, dark }: { x: number; y: number; r: number; n: string; dark?: boolean }) => (
+        <g>
+          <ellipse cx={x + 2} cy={y + r + 2} rx={r * 0.95} ry={r * 0.3} fill="#000" opacity=".55" />
+          <circle cx={x} cy={y} r={r} fill={`url(#bb-${n})`} stroke="#000" strokeOpacity=".35" strokeWidth=".8" />
+          <circle cx={x} cy={y} r={r * 0.54} fill="#fffbe8" opacity=".95" />
+          <text x={x} y={y + r * 0.24} textAnchor="middle" fontSize={r * 0.78} fontWeight="800" fill={dark ? '#3a2603' : '#2a1d02'} fontFamily="Outfit, system-ui, sans-serif">{n}</text>
+          <ellipse cx={x - r * 0.38} cy={y - r * 0.52} rx={r * 0.36} ry={r * 0.2} fill="#fff" opacity=".8" transform={`rotate(-30 ${x - r * 0.38} ${y - r * 0.52})`} />
         </g>
       );
       return (
         <g>
           <defs>
-            {[['90', '#FFF3B0', '#D4AF37', '#8a6410'], ['11', '#ff8a9a', '#c3162c', '#5c0a14'], ['7', '#7ff0c0', '#0a8a5c', '#04382a'], ['22', '#8DB4FF', '#1D4FBF', '#0b2260']].map(([n, a1, a2, a3]) => (
+            {[['90', '#FFF3B0', '#D4AF37', '#8a6410'], ['15', '#ff8a9a', '#c3162c', '#5c0a14'], ['7', '#7ff0c0', '#0a8a5c', '#04382a']].map(([n, a1, a2, a3]) => (
               <radialGradient key={n} id={`bb-${n}`} cx=".34" cy=".28" r=".85"><stop offset="0" stopColor={a1} /><stop offset=".55" stopColor={a2} /><stop offset="1" stopColor={a3} /></radialGradient>
             ))}
-            <radialGradient id="bb-glass" cx=".38" cy=".3" r=".8"><stop offset="0" stopColor="#5fd6b0" stopOpacity=".5" /><stop offset=".6" stopColor="#0f5a42" stopOpacity=".35" /><stop offset="1" stopColor="#031a12" stopOpacity=".7" /></radialGradient>
-            <linearGradient id="bb-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#a0612c" /><stop offset="1" stopColor="#4a2610" /></linearGradient>
           </defs>
-          <ellipse cx="72" cy="140" rx="54" ry="6" fill="rgba(0,0,0,.55)" />
-          {/* peana de bronce */}
-          <path d="M40 130 L52 104 H92 L104 130 Z" fill="url(#ta-gold)" stroke="#5c430b" strokeWidth="1.4" />
-          <rect x="34" y="128" width="76" height="7" rx="3" fill="url(#ta-gold)" stroke="#5c430b" strokeWidth="1.2" />
-          {/* bombo: esfera de cristal con varillas doradas en perspectiva */}
-          <circle cx="72" cy="62" r="44" fill="url(#cv-felt)" />
-          <circle cx="72" cy="62" r="44" fill="url(#bb-glass)" />
-          {[0, 60, 120].map((r) => <ellipse key={r} cx="72" cy="62" rx="44" ry="14" fill="none" stroke="url(#ta-gold)" strokeWidth="2.4" transform={`rotate(${r} 72 62)`} />)}
-          <ellipse cx="72" cy="62" rx="14" ry="44" fill="none" stroke="url(#ta-gold)" strokeWidth="2.4" />
-          <circle cx="72" cy="62" r="44" fill="none" stroke="url(#ta-gold)" strokeWidth="4" />
-          {[[56, 50, '#e11d48'], [86, 56, '#2563eb'], [64, 78, '#16a34a'], [84, 80, '#eab308']].map(([x, y, col]) => <circle key={String(x)} cx={Number(x)} cy={Number(y)} r="8" fill={String(col)} stroke="#fff" strokeWidth="1.2" opacity=".9" />)}
-          <ellipse cx="56" cy="40" rx="17" ry="9" fill="#fff" opacity=".28" transform="rotate(-28 56 40)" />
-          {/* eje y manivela de madera */}
-          <circle cx="72" cy="62" r="6" fill="url(#ta-hub)" stroke="#5c430b" />
-          <path d="M116 62 H134" stroke="url(#ta-gold)" strokeWidth="4" strokeLinecap="round" />
-          <path d="M134 62 L138 40" stroke="url(#ta-gold)" strokeWidth="3.4" strokeLinecap="round" />
-          <rect x="133" y="30" width="10" height="13" rx="4" fill="url(#bb-wood)" stroke="#2a1306" strokeWidth="1" />
-          {/* rampa dorada y bolas en primer plano */}
-          <path d="M96 92 Q112 100 124 118 L112 122 Q104 106 92 100 Z" fill="url(#ta-gold)" stroke="#5c430b" strokeWidth="1.2" />
-          <Ball3 x={104} y={110} r={9} c2="#8a6410" n="90" dark />
-          <Ball3 x={118} y={122} r={10} c2="#8f0f22" n="11" />
-          <Ball3 x={22} y={116} r={11} c2="#04382a" n="7" />
-          <Ball3 x={42} y={126} r={9.5} c2="#0b2260" n="22" />
-          {/* esquina de cartón marfil con tres fichas */}
-          <g transform="translate(76 118) rotate(-6)">
-            <rect x="0" y="0" width="64" height="30" rx="4" fill="url(#ta-ivory)" stroke="url(#ta-gold)" strokeWidth="1.6" />
-            {[[8, '#FCE38A', '17'], [26, '#fb7185', '44'], [44, '#FCE38A', '63']].map(([x, col, n]) => (
-              <g key={String(n)}><text x={Number(x) + 6} y="19" textAnchor="middle" fontSize="11" fontWeight="800" fill="#2a1d02" fontFamily="Outfit, system-ui, sans-serif">{n}</text><circle cx={Number(x) + 6} cy="15" r="7.5" fill={String(col)} opacity=".6" stroke="#8a6410" strokeWidth=".6" /></g>
-            ))}
-          </g>
+          <ellipse cx="75" cy="138" rx="58" ry="7" fill="rgba(0,0,0,.55)" />
+          <g transform="translate(18 26) rotate(-12 38 26)" style={{ filter: 'drop-shadow(0 6px 5px rgba(0,0,0,.55))' }}>{grid(A, [23, 52, 65])}</g>
+          <g transform="translate(56 22) rotate(10 38 26)" style={{ filter: 'drop-shadow(0 6px 5px rgba(0,0,0,.55))' }}>{grid(B, [12, 31, 55])}</g>
+          <Ball3 x={36} y={102} r={19} n="90" dark />
+          <Ball3 x={78} y={110} r={17} n="15" />
+          <Ball3 x={113} y={100} r={15} n="7" />
+          {[[22, 78], [122, 74], [100, 128], [52, 70]].map(([x, y], i) => <path key={i} d={`M${x} ${Number(y) - 4} l1.2 2.8 2.8 1.2 -2.8 1.2 -1.2 2.8 -1.2 -2.8 -2.8 -1.2 2.8 -1.2Z`} fill="#FCE38A" opacity=".9" />)}
         </g>
       );
     }

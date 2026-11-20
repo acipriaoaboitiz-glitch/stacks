@@ -266,13 +266,13 @@ export default function Uno() {
 
   const felt = (
     <>
-      <div className="flex h-full min-h-[310px] flex-col sm:min-h-[350px] lg:min-h-[390px]">
+      <div className="relative mx-auto flex h-full max-h-[320px] w-full flex-col justify-between p-2 sm:max-h-[370px] sm:p-4 lg:max-h-[420px] lg:p-6">
         {/* 1 · franja superior: asiento compacto */}
-        <div className="flex h-14 shrink-0 items-center justify-center">{seat('top')}</div>
+        <div className="z-20 flex w-full shrink-0 items-center justify-center">{seat('top')}</div>
         {/* 2 · zona central: mazo, descarte y anillo centrados en el espacio libre; 3 · laterales centrados en vertical */}
-        <div className="relative flex min-h-0 flex-1 items-center justify-center py-7">
-        <div className="absolute left-3 top-1/2 z-20 -translate-y-1/2 sm:left-7">{seat('left')}</div>
-        <div className="relative z-10 flex items-center justify-center gap-4 sm:gap-7">
+        <div className="relative z-10 my-auto flex min-h-0 w-full flex-1 items-center justify-center py-2">
+        <div className="absolute left-2 top-1/2 z-20 -translate-y-1/2 sm:left-6">{seat('left')}</div>
+        <div className="relative z-10 flex items-center justify-center gap-5 sm:gap-8">
           <div className="grid justify-items-center gap-3">
             <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-2">
               {/* anillo luminoso del color activo con el sentido de giro */}
@@ -285,7 +285,7 @@ export default function Uno() {
                 <div role="button" tabIndex={canDraw ? 0 : -1} aria-label="Mazo: robar carta" aria-disabled={!canDraw}
                   onClick={canDraw ? () => { feedback('draw'); act({ k: 'draw' }); } : undefined}
                   onKeyDown={canDraw ? (e) => { if (e.key === 'Enter' || e.key === ' ') { feedback('draw'); act({ k: 'draw' }); } } : undefined}
-                  className={`relative w-[54px] touch-manipulation rounded-xl sm:w-[74px] ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
+                  className={`relative w-[clamp(46px,min(14vw,9dvh),74px)] touch-manipulation rounded-xl ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
                   style={{ aspectRatio: '2 / 3', marginRight: 8, marginTop: 8 }}>
                   {[4, 3, 2, 1, 0].map((k) => (
                     <span key={k} className="pointer-events-none absolute inset-0 block overflow-hidden rounded-xl border-[3px] border-white" style={{ transform: `translate(${k * 1.6}px, ${-k * 1.6}px)`, boxShadow: k === 0 ? '0 3px 8px rgba(0,0,0,.5)' : undefined }}>
@@ -296,7 +296,7 @@ export default function Uno() {
                 </div>
                 <span className="font-mono text-[10px] text-amber-200/80">{s.drawPile.length}</span>
               </div>
-              <div className="relative aspect-[2/3] w-[54px] sm:w-[74px]">
+              <div className="relative aspect-[2/3] w-[clamp(46px,min(14vw,9dvh),74px)]">
                 {s.discard.length > 1 && (
                   <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} style={{ width: '100%' }} /></div>
                 )}
@@ -312,7 +312,7 @@ export default function Uno() {
             </div>
           </div>
         </div>
-        <div className="absolute right-3 top-1/2 z-20 -translate-y-1/2 sm:right-7">{seat('right')}</div>
+        <div className="absolute right-2 top-1/2 z-20 -translate-y-1/2 sm:right-6">{seat('right')}</div>
         </div>
       </div>
       <Banner text={banner} />

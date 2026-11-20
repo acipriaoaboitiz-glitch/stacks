@@ -165,6 +165,8 @@ export default function Home() {
   curRef.current = cur;
   const game = LIST[Math.min(cur, N - 1)]!;
   const scroller = useRef<HTMLDivElement>(null);
+  const wheelAt = useRef(0);
+  const dragX = useRef<number | null>(null);
   /** Distancia entre el centro de una tarjeta y la siguiente (ancho + hueco). */
   const stepOf = (el: HTMLDivElement): number => {
     const a = el.children[0] as HTMLElement | undefined;
@@ -185,11 +187,11 @@ export default function Home() {
       const d = Math.max(-2, Math.min(2, i - pos));
       const a = Math.abs(d);
       const w = window.innerWidth;
-      const wide = w >= 1280;
-      c.style.transform = `scale(${1 - Math.min(1, a) * (wide ? 0.14 : 0.1)})`;
+      const wide = w >= 1024;
+      c.style.transform = `scale(${1 - Math.min(1, a) * (wide ? 0.32 : 0.1)})`;
       // Las vecinas solo asoman en monitores muy anchos o en móvil; en tablet/PC normal se desvanecen sin franjas cortadas
-      const hideSides = w >= 640 && w < 1280;
-      c.style.opacity = String(a < 0.5 ? 1 : hideSides ? Math.max(0, 1 - a * 2) : wide ? Math.max(0.45, 1 - a * 0.9) : Math.max(0.35, 1 - a * 0.5));
+      const hideSides = w >= 640 && w < 1024;
+      c.style.opacity = String(a < 0.5 ? 1 : hideSides ? Math.max(0, 1 - a * 2) : wide ? (a < 0.5 ? 1 : a < 1.5 ? 0.55 : 0) : Math.max(0.35, 1 - a * 0.5));
       c.style.zIndex = String(10 - Math.round(a));
     });
   }, []);
@@ -283,10 +285,13 @@ export default function Home() {
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
         <motion.div key={cat} className="relative z-10 h-[min(36dvh,340px)] w-full max-md:h-auto max-md:max-h-[46dvh] max-md:min-h-0 max-md:flex-1 md:h-[min(40dvh,360px)] lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
           <div ref={scroller} onScroll={onScroll} role="group" aria-label="Juegos"
-            className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain] lg:gap-3 lg:px-[calc(50%-calc(190px/var(--z,1)))] xl:px-[calc(50%-calc(210px/var(--z,1)))]">
+            onWheel={(e) => { if (window.innerWidth < 1024) return; const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX; const now = Date.now(); if (Math.abs(d) < 20 || now - wheelAt.current < 350) return; wheelAt.current = now; goTo(curRef.current + (d > 0 ? 1 : -1)); }}
+            onPointerDown={(e) => { if (e.pointerType === 'mouse') dragX.current = e.clientX; }}
+            onPointerUp={(e) => { if (e.pointerType === 'mouse' && dragX.current !== null) { const dx = e.clientX - dragX.current; dragX.current = null; if (Math.abs(dx) > 70) goTo(curRef.current + (dx < 0 ? 1 : -1)); } }}
+            className="no-scrollbar flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth px-[calc(50%-min(31vw,120px))] touch-pan-x [overscroll-behavior-x:contain] lg:gap-3 lg:px-[calc(50%-calc(210px/var(--z,1)))] xl:px-[calc(50%-calc(230px/var(--z,1)))]">
             {LIST.map((g, i) => (
               <div key={g.id} ref={(n) => { cards.current[i] = n; }}
-                className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform lg:h-[calc(min(430px,50dvh)/var(--z,1))] lg:w-[calc(380px/var(--z,1))] xl:h-[calc(min(470px,54dvh)/var(--z,1))] xl:w-[calc(420px/var(--z,1))]"
+                className="relative h-[94%] w-[min(62vw,240px)] shrink-0 snap-center will-change-transform lg:h-[calc(min(430px,50dvh)/var(--z,1))] lg:w-[calc(420px/var(--z,1))] xl:h-[calc(min(460px,54dvh)/var(--z,1))] xl:w-[calc(460px/var(--z,1))]"
                 role="group" aria-label={t(`g.${g.id}.name`)} aria-current={i === cur} onClick={() => { if (i !== cur) { feedback('tap'); goTo(i); } }}>
                 <div ref={(n) => { inner.current[i] = n; }} className="group h-full w-full rounded-[28px] border border-transparent transition-[box-shadow,transform,border-color] duration-[220ms] ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-1.5 hover:border-[#D4AF37]/70"
                   style={{ boxShadow: i === cur ? `0 0 0 1px ${g.accent}aa, 0 14px 34px rgba(0,0,0,.55), 0 0 30px ${g.accent}44` : '0 8px 18px rgba(0,0,0,.5)' }}>
@@ -297,12 +302,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <button type="button" aria-label="←" onClick={() => goTo(curRef.current - 1)} className="absolute left-0 max-sm:hidden top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronLeft size={18} /></button>
-          <button type="button" aria-label="→" onClick={() => goTo(curRef.current + 1)} className="absolute max-sm:hidden right-0 top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronRight size={18} /></button>
+          <button type="button" aria-label="←" onClick={() => goTo(curRef.current - 1)} className="absolute left-0 max-sm:hidden lg:left-[max(4px,calc(50%-calc(660px/var(--z,1))))] top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronLeft size={18} /></button>
+          <button type="button" aria-label="→" onClick={() => goTo(curRef.current + 1)} className="absolute max-sm:hidden right-0 lg:right-[max(4px,calc(50%-calc(660px/var(--z,1))))] top-1/2 z-20 grid size-9 -translate-y-1/2 touch-manipulation place-items-center rounded-full border border-amber-200/20 bg-black/70 text-stone-100"><ChevronRight size={18} /></button>
         </motion.div>
 
         {/* Acciones del juego elegido: multijugador (IA o sala) o individual (modo + Jugar ahora) */}
-        <div className="relative z-10 grid w-full max-w-sm gap-2 lg:max-w-[calc(380px/var(--z,1))] xl:max-w-[calc(420px/var(--z,1))]">
+        <div className="relative z-10 grid w-full max-w-sm gap-2 lg:max-w-[calc(460px/var(--z,1))]">
           {game.solo ? (
             <>
               <Segmented value={modes[game.id] && game.solo.modes.includes(modes[game.id]!) ? modes[game.id]! : game.solo.def}
@@ -336,6 +341,8 @@ export default function Home() {
             <Gift size={15} strokeWidth={1.75} aria-hidden />Recompensa diaria
             {chestReady && <span aria-hidden className="absolute right-1.5 top-1.5 size-2 animate-pulse rounded-full bg-[#FCE38A] shadow-[0_0_6px_#FCE38A]" />}
           </button>
+          <span aria-hidden className="h-4 w-px bg-white/15 max-md:hidden" />
+          <button type="button" onClick={() => { feedback('tap'); setShowRefill(true); }} className="flex h-9 touch-manipulation items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold text-stone-200 active:scale-95 max-md:hidden"><Trophy size={15} strokeWidth={1.75} aria-hidden />Misiones del día</button>
           <span aria-hidden className="h-4 w-px bg-white/15" />
           <button type="button" onClick={() => { feedback('tap'); setRules(game); }} className="flex h-9 touch-manipulation items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold text-stone-200 active:scale-95"><HelpCircle size={15} strokeWidth={1.75} aria-hidden />Reglas</button>
         </div>
