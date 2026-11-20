@@ -181,3 +181,11 @@ alter table public.stacks_game_invites add constraint stacks_game_invites_status
 -- Juegos soportados en salas y presencia (20): mus, brisca, escoba, chinchon, tute, blackjack, poker, seises, presidente, uno,
 -- domino, mentiroso, ruleta, bingo, tres, cuatro, flota, parchis, ajedrez, damas. `stacks_game_invites.game` y las salas
 -- aceptan cualquier id de esta lista (no hay restricción CHECK: añadir un juego nuevo no requiere migración).
+
+-- ── Multijugador online: matchmaking y reconexión (migración, ejecutable varias veces) ──────────────────────────────────
+-- is_public: salas abiertas a «Partida rápida». game_id: alias de lectura de game_type (el código usa game_type).
+-- game_state: instantánea JSONB de la partida que guarda el anfitrión para que quien recarga recupere asiento, mano y turno.
+alter table public.stacks_rooms add column if not exists is_public boolean not null default false;
+alter table public.stacks_rooms add column if not exists game_id text generated always as (game_type) stored;
+create index if not exists stacks_rooms_matchmaking_idx on public.stacks_rooms (game_type, updated_at desc) where is_public and status = 'waiting';
+create index if not exists stacks_rooms_game_idx on public.stacks_rooms (game_id);

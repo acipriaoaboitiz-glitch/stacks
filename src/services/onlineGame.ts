@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, type Dispatch, type SetStateAction } from 'react';
 import { getActiveRoom, type Room, type RoomSnapshot } from './multiplayer.ts';
+import { dbSaveState } from './roomsDb.ts';
 
 /**
  * Sincronización de partidas en sala: el ANFITRIÓN es la autoridad.
@@ -65,8 +66,52 @@ export function useReplica<S, A>(
     if (room && stateRef.current) room.sendGame({ t: 'state', s: stateRef.current } satisfies Wire<S, A>);
   }, [room]);
 
-  // Anfitrión: difunde cada cambio de estado.
+  // Anfitrión que vuelve tras recargar: aplica una sola vez la instantánea guardada en la base de datos
+  const restoredOnce = useRef(false);
+  useEffect(() => {
+    if (!online || !isHost || !room || restoredOnce.current || !room.restored || !state) return;
+    restoredOnce.current = true;
+    setState(room.restored as S);
+    room.restored = null;
+  }, [online, isHost, room, state, setState]);
+
+  // Anfitrión: difunde cada cambio de estado y guarda una instantánea (como mucho cada 1,5 s) para reconectar.
   useEffect(() => { if (online && isHost && state) broadcast(); }, [online, isHost, state, broadcast]);
+  const saveAt = useRef(0);
+  useEffect(() => {
+    if (!online || !isHost || !room || !state) return;
+    const wait = Math.max(0, 1500 - (Date.now() - saveAt.current));
+    const id = window.setTimeout(() => { saveAt.current = Date.now(); void dbSaveState(room.code, state); }, wait);
+    return () => window.clearTimeout(id);
+  }, [online, isHost, room, state]);
+
+  // Relevo de IA: si un humano lleva más de 20 s desconectado, la IA juega sus turnos hasta que vuelva.
+  const away = useRef(new Map<string, number>());
+  const humanKey = seating.humans.map((h) => h.peerId).join();
+  useEffect(() => {
+    if (!online || !isHost) return;
+    const check = (): void => {
+      const here = new Set(seating.humans.map((h) => h.peerId));
+      setState((cur) => {
+        const ps = (cur as unknown as { players?: { id: string; human: boolean; peerId?: string }[] } | null)?.players;
+        if (!cur || !Array.isArray(ps)) return cur;
+        let changed = false;
+        const next = ps.map((p) => {
+          if (!p.peerId) return p;
+          if (here.has(p.peerId)) { away.current.delete(p.peerId); if (!p.human) { changed = true; return { ...p, human: true }; } return p; }
+          const since = away.current.get(p.peerId) ?? Date.now();
+          away.current.set(p.peerId, since);
+          if (p.human && Date.now() - since >= 20_000) { changed = true; return { ...p, human: false }; }
+          return p;
+        });
+        return changed ? ({ ...cur, players: next } as S) : cur;
+      });
+    };
+    check();
+    const id = window.setInterval(check, 2000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, isHost, humanKey, setState]);
 
   // Mensajes entrantes.
   useEffect(() => {

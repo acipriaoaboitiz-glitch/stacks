@@ -3,7 +3,7 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase.ts';
 import { useSyncExternalStore } from 'react';
 import { shareBase } from './env.ts';
 import { getIdent } from '../store/identity.ts';
-import { dbCloseRoom, dbCreateRoom, dbUpdateRoom } from './roomsDb.ts';
+import { dbCloseRoom, dbCreateRoom, dbFindPublic, dbLoadState, dbRoomOpen, dbUpdateRoom } from './roomsDb.ts';
 
 /**
  * Multijugador en tiempo real para cualquier juego de STACKS.
@@ -222,6 +222,16 @@ function resolveSeats(peers: PeerMeta[], capacity: number): Map<string, number> 
 }
 
 const randomId = (): string => crypto.randomUUID();
+/** Id de jugador estable dentro de una sala: al recargar la página recuperas tu asiento (y el anfitrión te devuelve tu mano). */
+function stablePeerId(code: string): string {
+  const key = `stacks.peer.${code}`;
+  try { const v = sessionStorage.getItem(key); if (v) return v; const id = randomId(); sessionStorage.setItem(key, id); return id; } catch { return randomId(); }
+}
+const RESUME_KEY = 'stacks.resume';
+interface Resume { code: string; gameId: string; host: boolean; name: string }
+const saveResume = (r: Resume | null): void => { try { if (r) sessionStorage.setItem(RESUME_KEY, JSON.stringify(r)); else sessionStorage.removeItem(RESUME_KEY); } catch { /* sin almacenamiento */ } };
+export const readResume = (): Resume | null => { try { return JSON.parse(sessionStorage.getItem(RESUME_KEY) ?? 'null') as Resume | null; } catch { return null; } };
+export const clearResume = (): void => saveResume(null);
 
 export class Room {
   readonly code: string;
@@ -243,13 +253,16 @@ export class Room {
   private gameCbs = new Set<(from: string, data: unknown) => void>();
   private timers: number[] = [];
   private snap: RoomSnapshot;
+  /** Instantánea del estado de la partida recuperada de la base de datos (el anfitrión que vuelve la aplica una vez). */
+  restored: unknown | null = null;
+  private known = new Set<string>();
 
   constructor(code: string, gameId: string, name: string, isHost: boolean) {
     this.code = code;
     this.gameId = gameId;
     this.layout = layoutFor(gameId);
     this.transport = this.makeTransport();
-    this.meta = { id: randomId(), name, ready: isHost, seat: -1, joinedAt: Date.now(), isHost };
+    this.meta = { id: stablePeerId(code), name, ready: isHost, seat: -1, joinedAt: Date.now(), isHost };
     this.peers = [this.meta];
     this.snap = this.build();
   }
@@ -334,6 +347,7 @@ export class Room {
   }
   private registryTimer = 0;
   leave(): void {
+    saveResume(null);
     window.clearTimeout(this.registryTimer);
     if (this.meta.isHost) void dbCloseRoom(this.code); // sin salas colgadas en la base de datos
     this.timers.forEach((t) => window.clearInterval(t));
@@ -352,6 +366,9 @@ export class Room {
   private onPeers(list: PeerMeta[]): void {
     if (this.meta.isHost && !this.started) { window.clearTimeout(this.registryTimer); this.registryTimer = window.setTimeout(() => this.registry('waiting'), 900); }
     this.peers = list.some((p) => p.id === this.meta.id) ? list : [...list, this.meta];
+    // Si alguien entra (o vuelve) con la partida ya en marcha, el anfitrión le reenvía el inicio para que abra la mesa
+    if (this.meta.isHost && this.started) for (const p of this.peers) if (!this.known.has(p.id)) this.transport.send({ ev: 'start', fillBots: this.fillBots });
+    for (const p of this.peers) this.known.add(p.id);
     // Mi propio meta es la fuente de verdad para mí.
     this.peers = this.peers.map((p) => (p.id === this.meta.id ? this.meta : p));
     const hosts = this.peers.filter((p) => p.isHost);
@@ -381,6 +398,7 @@ export class Room {
   private handleStart(fillBots: boolean): void {
     if (this.started) return;
     this.started = true;
+    saveResume({ code: this.code, gameId: this.gameId, host: this.meta.isHost, name: this.meta.name });
     window.clearTimeout(this.registryTimer);
     this.registry('playing');
     this.publish();
@@ -416,10 +434,11 @@ export class Room {
   }
 }
 
-export const createRoom = async (gameId: string, name: string, code?: string): Promise<Room> => {
+export const createRoom = async (gameId: string, name: string, code?: string, isPublic = false): Promise<Room> => {
   const room = new Room(code ?? generateRoomCode(), gameId, name, true);
   await room.connect();
-  void dbCreateRoom(room.code, gameId, getIdent().uid, layoutFor(gameId).capacity);
+  if (isPublic) publicCodes.add(room.code);
+  void dbCreateRoom(room.code, gameId, getIdent().uid, layoutFor(gameId).capacity, isPublic);
   return room;
 };
 export const joinRoom = async (code: string, gameId: string, name: string): Promise<Room> => {
@@ -442,18 +461,54 @@ export const setActiveRoom = (r: Room | null): void => {
 };
 export const getActiveRoom = (): Room | null => activeRoom;
 
-// ─── Partida pública ─────────────────────────────────────────────────────────────────────
-/** Código fijo por juego: quien llega primero crea la sala pública y los demás entran en ella. */
+// ─── Partida pública (matchmaking) ───────────────────────────────────────────────────────
+/** Códigos de las salas públicas en las que estoy (para mostrar la espera con bots). */
+const publicCodes = new Set<string>();
+/** Código fijo por juego: respaldo cuando no hay base de datos que consultar. */
 export function publicRoomCode(gameId: string): string {
   let h = 7;
   for (const ch of gameId) h = (h * 31 + ch.charCodeAt(0)) % 99991;
   return 'P' + Array.from({ length: ROOM_CODE_LENGTH - 1 }, (_, i) => ALPHABET[Math.floor(h / 31 ** i) % ALPHABET.length]).join('');
 }
-export const isPublicRoom = (code: string, gameId: string): boolean => code === publicRoomCode(gameId);
-/** Entra en la sala pública del juego o, si no hay nadie, la abre. */
+export const isPublicRoom = (code: string, gameId: string): boolean => publicCodes.has(code) || code === publicRoomCode(gameId);
+/**
+ * Partida rápida: busca en `stacks_rooms` una sala pública abierta del juego con huecos y entra; si no hay ninguna, abre una pública
+ * nueva. Sin base de datos, usa el código fijo por juego como antes.
+ */
 export async function joinPublic(gameId: string, name: string): Promise<Room> {
-  const code = publicRoomCode(gameId);
-  try { return await joinRoom(code, gameId, name); } catch { return createRoom(gameId, name, code); }
+  const found = await dbFindPublic(gameId);
+  if (typeof found === 'string') {
+    try { const r = await joinRoom(found, gameId, name); publicCodes.add(r.code); return r; } catch { /* sala llena o cerrada: se abre otra */ }
+  }
+  if (found === undefined) {
+    const code = publicRoomCode(gameId);
+    try { const r = await joinRoom(code, gameId, name); publicCodes.add(code); return r; } catch { return createRoom(gameId, name, code, true); }
+  }
+  return createRoom(gameId, name, undefined, true);
 }
 /** Segundos de espera en una partida pública antes de completar los huecos con bots. */
-export const PUBLIC_WAIT_SECONDS = 12;
+export const PUBLIC_WAIT_SECONDS = 10;
+
+// ─── Reconexión ──────────────────────────────────────────────────────────────────────────
+/**
+ * Tras recargar la página: vuelve a la sala en la que estabas. El anfitrión recupera la instantánea de `stacks_rooms.game_state` y la
+ * aplica; un invitado vuelve a su asiento y el anfitrión le reenvía el estado. Devuelve la sala lista (con la partida empezada) o null.
+ */
+export async function resumeRoom(): Promise<Room | null> {
+  const r = readResume();
+  if (!r) return null;
+  try {
+    if (r.host) {
+      const state = await dbLoadState(r.code);
+      if (!state) { clearResume(); return null; }
+      const room = await createRoom(r.gameId, r.name, r.code);
+      room.restored = state;
+      room.start();
+      return room;
+    }
+    if ((await dbRoomOpen(r.code)) === false) { clearResume(); return null; }
+    const room = await joinRoom(r.code, r.gameId, r.name);
+    await new Promise<void>((done) => { const off = room.onStart(() => { off(); done(); }); window.setTimeout(done, 6000); });
+    return room.getSnapshot().started ? room : (room.leave(), null);
+  } catch { clearResume(); return null; }
+}

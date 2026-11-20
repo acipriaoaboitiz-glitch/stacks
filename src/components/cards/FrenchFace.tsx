@@ -4,7 +4,6 @@ import { FRENCH_RANK_LABEL, frenchFileName } from '../../engine/deck.ts';
 import { APP_NAME } from '../../config.ts';
 import { Bust, Frame, GOLD, H, SvgDefs, W } from './art.tsx';
 import { useCardBack, type BackVariant } from '../../store/cosmetics.ts';
-import { CornerIndex } from './CornerIndex.tsx';
 
 const RED = '#b3141c';
 const INK = '#0f1218';
@@ -172,12 +171,12 @@ export function CardBackArt({ variant: forced, seal = APP_NAME }: { variant?: Ba
 /** Carta francesa real: carga `/cards/french/${rank}_of_${suit}.svg`; si falta el archivo, se dibuja una equivalente. */
 export function FrenchFace({ card }: { card: FrenchCard }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return <span className="relative block h-full w-full"><FrenchFaceDrawn card={card} /><CornerIndex card={card} /></span>;
+  if (failed) return <span className="relative block h-full w-full"><FrenchFaceDrawn card={card} /></span>;
   return (
     <span className="relative block h-full w-full">
       <img src={`${import.meta.env.BASE_URL}cards/french/${frenchFileName(card)}`} alt="" draggable={false} onError={() => setFailed(true)}
         style={{ width: '100%', height: '100%', display: 'block', objectFit: 'fill' }} />
-      <CornerIndex card={card} />
+      
     </span>
   );
 }

@@ -9,7 +9,7 @@ import { IconBtn, QuickButtons } from '../components/ui/QuickButtons.tsx';
 import { FriendsDrawer } from '../components/ui/FriendsDrawer.tsx';
 import { LeaderboardModal } from '../components/ui/LeaderboardModal.tsx';
 import { VipShopModal } from '../components/ui/VipShopModal.tsx';
-import { createRoom, getActiveRoom, setActiveRoom } from '../services/multiplayer.ts';
+import { clearResume, createRoom, getActiveRoom, readResume, resumeRoom, setActiveRoom } from '../services/multiplayer.ts';
 import { social, useSocial, type Friend } from '../store/social.ts';
 import { canClaimDaily, useWallet } from '../store/wallet.ts';
 import { claimableMissions, useMissions } from '../store/progression.ts';
@@ -227,6 +227,16 @@ export default function Home() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [goTo]);
+  // Reconexión: si recargaste en mitad de una partida online, se ofrece volver a ella
+  const [resume, setResume] = useState(() => (getActiveRoom() ? null : readResume()));
+  const [resuming, setResuming] = useState(false);
+  const rejoin = async (): Promise<void> => {
+    setResuming(true);
+    const room = await resumeRoom();
+    setResuming(false);
+    const g = resume ? findGame(resume.gameId) : undefined;
+    if (room && g) { setActiveRoom(room); setResume(null); nav(g.route); } else { clearResume(); setResume(null); }
+  };
   const badge = (n: number, tone: string) => (n > 0 ? <span className={`pointer-events-none absolute -right-1 -top-1 grid min-w-[16px] place-items-center rounded-full px-1 text-[10px] font-extrabold leading-4 tabular-nums text-white ${tone}`}>{n}</span> : null);
   const friendsBtn = (
     <span className="relative">
@@ -256,6 +266,13 @@ export default function Home() {
           <span className="sm:hidden"><QuickButtons onSettings={() => setSettings(true)} /></span>
         </div>
       </header>
+      {resume && (
+        <div role="alert" className="fixed inset-x-3 top-3 z-[60] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-amber-300/40 bg-[#091511]/95 p-3 shadow-2xl">
+          <p className="min-w-0 flex-1 text-[13px] font-bold text-stone-100">Tienes una partida online en curso ({findGame(resume.gameId)?.name ?? resume.gameId})</p>
+          <button type="button" disabled={resuming} onClick={() => { void rejoin(); }} className="h-9 touch-manipulation rounded-full bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] px-4 text-[12.5px] font-extrabold text-[#2a1d02] active:scale-95 disabled:opacity-50">{resuming ? '…' : 'Volver'}</button>
+          <button type="button" onClick={() => { clearResume(); setResume(null); }} className="h-9 touch-manipulation rounded-full bg-white/10 px-3 text-[12.5px] font-bold text-stone-200 active:scale-95">Descartar</button>
+        </div>
+      )}
       <EconomyModal open={showRefill} onClose={() => setShowRefill(false)} />
       <FriendsDrawer open={friendsOpen} onClose={() => setFriendsOpen(false)} onInvite={(f) => { void inviteFriend(f); }} />
       <LeaderboardModal open={boardOpen} onClose={() => setBoardOpen(false)} />

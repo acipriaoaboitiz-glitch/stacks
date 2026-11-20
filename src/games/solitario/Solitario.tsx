@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Club, Diamond, Heart, RotateCcw, Spade, Undo2, Zap, type LucideIcon } from 'lucide-react';
 import { FRENCH_ASPECT, frenchFileName, type FrenchCard } from '../../engine/deck.ts';
-import { CornerIndex } from '../../components/cards/CornerIndex.tsx';
 import { useT } from '../../i18n/index.ts';
 import { exitMatch } from '../../services/exitMatch.ts';
 import { gameInterval, gameTimeout } from '../../services/timers.ts';
@@ -26,7 +25,7 @@ const SolCard = memo(function SolCard({ card, up, w, h, selected }: { card: Fren
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[5px]" style={{ width: w, height: h, boxShadow: selected ? '0 0 0 2.5px #FCE38A, 0 0 12px rgba(252,227,138,.8)' : '0 1.5px 3px rgba(0,0,0,.5)' }}>
       {up
-        ? <><img src={`${BASE}${frenchFileName(card)}`} alt="" draggable={false} className="block h-full w-full" style={{ objectFit: 'fill', background: '#fdfbf7' }} /><CornerIndex card={card} /></>
+        ? <><img src={`${BASE}${frenchFileName(card)}`} alt="" draggable={false} className="block h-full w-full" style={{ objectFit: 'fill', background: '#fdfbf7' }} /></>
         : <div className="h-full w-full" style={{ background: 'radial-gradient(circle at 50% 40%, #145a43, #0a2a1e)', boxShadow: 'inset 0 0 0 2px #D4AF37, inset 0 0 0 4px #0a2a1e, inset 0 0 0 5px rgba(212,175,55,.5)' }}>
           <svg viewBox="0 0 40 60" className="h-full w-full" shapeRendering="geometricPrecision" aria-hidden="true"><path d="M20 14 L30 30 L20 46 L10 30 Z" fill="none" stroke="#D4AF37" strokeOpacity=".6" strokeWidth="1.2" /><circle cx="20" cy="30" r="3" fill="#D4AF37" opacity=".7" /></svg>
         </div>}
