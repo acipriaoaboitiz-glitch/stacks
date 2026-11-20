@@ -123,14 +123,22 @@ export const CATALOG: Item[] = [
   ...SETS.map((x): Item => ({ kind: 'sets', id: x.id, name: x.name, price: x.price, rarity: x.rarity })),
 ];
 
+/** Conjunto guardado de la Taquilla: la combinación completa (la reacción no se equipa: todas las que tienes están en tu menú). */
+export interface Preset { back: BackId; theme: ThemeId; frame: FrameId; avatar: AvatarId | null; victory: VictoryId; title: string | null; set: SetId }
+export const PRESET_COUNT = 3;
+
 export interface State {
   backs: BackId[]; back: BackId; themes: ThemeId[]; frames: FrameId[]; frame: FrameId; sets: SetId[]; set: SetId;
   avatars: AvatarId[]; avatar: AvatarId | null; victories: VictoryId[]; victory: VictoryId; titles: TitleId[]; reactions: ReactionId[];
+  /** Tres conjuntos guardados (Taquilla). */
+  presets: (Preset | null)[];
+  /** Artículos recién conseguidos que aún no has tocado en la Taquilla («tipo:id»). */
+  fresh: string[];
 }
 const KEY = 'stacks.cosmetics.v1';
 const DEFAULT: State = {
   backs: ['esmeralda'], back: 'esmeralda', themes: ['esmeralda'], frames: ['aro'], frame: 'aro', sets: ['clasico'], set: 'clasico',
-  avatars: [], avatar: null, victories: ['destello'], victory: 'destello', titles: [], reactions: [],
+  avatars: [], avatar: null, victories: ['destello'], victory: 'destello', titles: [], reactions: [], presets: [null, null, null], fresh: [],
 };
 
 /** Filtra la lista guardada a ids válidos (y garantiza el elemento gratuito si lo hay). */
@@ -154,6 +162,17 @@ function normalize(p: Partial<State>): State {
     back: p.back && backs.includes(p.back) ? p.back : 'esmeralda',
     frame: p.frame && frames.includes(p.frame) ? p.frame : 'aro',
     set: p.set && sets.includes(p.set) ? p.set : 'clasico',
+    presets: Array.from({ length: PRESET_COUNT }, (_, i): Preset | null => {
+      const x = (Array.isArray(p.presets) ? p.presets[i] : null) as Partial<Preset> | null | undefined;
+      if (!x || typeof x !== 'object') return null;
+      return {
+        back: BACKS.some((b) => b.id === x.back) ? x.back! : 'esmeralda', theme: TAPETES.some((b) => b.id === x.theme) ? x.theme! : 'esmeralda',
+        frame: FRAMES.some((b) => b.id === x.frame) ? x.frame! : 'aro', avatar: AVATAR_ITEMS.some((b) => b.id === x.avatar) ? x.avatar! : null,
+        victory: VICTORIES.some((b) => b.id === x.victory) ? x.victory! : 'destello', title: typeof x.title === 'string' ? x.title : null,
+        set: SETS.some((b) => b.id === x.set) ? x.set! : 'clasico',
+      };
+    }),
+    fresh: (Array.isArray(p.fresh) ? p.fresh : []).filter((x): x is string => typeof x === 'string').slice(0, 80),
     avatar: p.avatar && avatars.includes(p.avatar) ? p.avatar : null,
     victory: p.victory && victories.includes(p.victory) ? p.victory : 'destello',
   };
@@ -210,6 +229,7 @@ function addOwned(kind: Kind, id: string, equip: boolean): void {
     }
     default: set({ ...state, reactions: [...state.reactions, id as ReactionId] });
   }
+  set({ ...state, fresh: [...state.fresh, `${kind}:${id}`] }); // etiqueta «NUEVO» hasta que lo toques en la Taquilla
 }
 
 /** Equipa un artículo que ya tienes. */
@@ -256,6 +276,26 @@ export const cosmetics = {
     return true;
   },
   equip,
+  /** Quita la etiqueta «NUEVO» de un artículo. */
+  markSeen(kind: Kind, id: string): void { const k = `${kind}:${id}`; if (state.fresh.includes(k)) set({ ...state, fresh: state.fresh.filter((x) => x !== k) }); },
+  /** Guarda lo que llevas puesto en el conjunto `i`. */
+  savePreset(i: number): void {
+    const p = getProfile();
+    const snap: Preset = { back: state.back, theme: getSettings().theme, frame: state.frame, avatar: state.avatar, victory: state.victory, title: p?.title ?? null, set: state.set };
+    set({ ...state, presets: state.presets.map((x, k) => (k === i ? snap : x)) });
+  },
+  /** Equipa el conjunto `i` entero (lo que ya no tengas se ignora). */
+  loadPreset(i: number): void {
+    const x = state.presets[i];
+    if (!x) return;
+    set({
+      ...state, back: state.backs.includes(x.back) ? x.back : state.back, frame: state.frames.includes(x.frame) ? x.frame : state.frame, set: state.sets.includes(x.set) ? x.set : state.set,
+      avatar: x.avatar === null || state.avatars.includes(x.avatar) ? x.avatar : state.avatar, victory: state.victories.includes(x.victory) ? x.victory : state.victory,
+    });
+    if (state.themes.includes(x.theme)) setSettings({ theme: x.theme });
+    const p = getProfile();
+    if (p && x.title) saveProfile({ ...p, title: x.title });
+  },
   /** Taquilla: equipa al azar un artículo de cada categoría entre los que ya posees. */
   randomize(): void {
     const kinds: Kind[] = ['backs', 'mats', 'frames', 'avatars', 'wins', 'titles', 'sets'];

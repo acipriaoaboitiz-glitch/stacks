@@ -111,9 +111,9 @@ export function VipShopModal({ open, onClose, initialView = 'shop' }: { open: bo
       {open && (
         <motion.div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={t('vip.title')}
-            className="w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/[0.08] bg-[#091511] p-4 shadow-2xl sm:max-w-xl sm:rounded-2xl lg:max-w-3xl" style={{ maxHeight: '92dvh', paddingBottom: 'calc(16px + var(--safe-b))' }}
+            className={`w-full border border-white/[0.08] bg-[#091511] p-4 shadow-2xl ${view === 'locker' ? 'flex h-[100dvh] max-w-md flex-col overflow-hidden sm:h-[min(92dvh,900px)] sm:max-w-3xl sm:rounded-2xl lg:max-w-6xl max-sm:rounded-none [@media(max-height:500px)]:max-w-3xl' : 'max-w-md overflow-y-auto rounded-t-2xl sm:max-w-xl sm:rounded-2xl lg:max-w-3xl'}`} style={view === 'locker' ? { paddingBottom: 'calc(12px + var(--safe-b))' } : { maxHeight: '92dvh', paddingBottom: 'calc(16px + var(--safe-b))' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', stiffness: 320, damping: 32 }} onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center gap-2">
+            <div className="mb-2 flex shrink-0 items-center gap-2">
               {view === 'locker' ? <Backpack size={20} strokeWidth={1.75} className="text-amber-300" aria-hidden /> : <Gem size={20} strokeWidth={1.75} className="text-amber-300" aria-hidden />}
               <h2 className="flex-1 truncate text-[19px] font-bold tracking-tight text-white">{view === 'locker' ? t('vip.locker') : t('vip.title')}</h2>
               <span className="font-mono text-sm font-bold tabular-nums text-amber-200">{money(w.chips)}</span>
@@ -121,7 +121,7 @@ export function VipShopModal({ open, onClose, initialView = 'shop' }: { open: bo
             </div>
 
             {/* conmutador: equipar lo que ya tienes | comprar más */}
-            <div className="mb-3 grid grid-cols-2 gap-1 rounded-full border border-white/10 bg-black/30 p-1" role="tablist" aria-label={t('vip.title')}>
+            <div className="mb-2 grid shrink-0 grid-cols-2 gap-1 rounded-full border border-white/10 bg-black/30 p-1" role="tablist" aria-label={t('vip.title')}>
               {([['locker', Backpack, t('vip.locker')], ['shop', Store, t('vip.shop')]] as const).map(([k, Icon, label]) => (
                 <button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => { setView(k); feedback('tap'); }}
                   className={`flex h-10 touch-manipulation items-center justify-center gap-1.5 rounded-full px-2 text-[13px] font-bold active:scale-95 ${view === k ? 'bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] text-[#2a1d02]' : 'text-stone-200'}`}>
