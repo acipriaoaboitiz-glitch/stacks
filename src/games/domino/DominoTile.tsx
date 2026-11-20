@@ -31,6 +31,8 @@ interface Props {
   size: string;
   selected?: boolean;
   dim?: boolean;
+  /** Ficha de la mano que se puede jugar ahora: borde dorado y elevada. */
+  playable?: boolean;
   /** Extremo jugable resaltado de la cadena. */
   glow?: boolean;
   faceDown?: boolean;
@@ -42,14 +44,14 @@ interface Props {
  * Ficha de dominó de marfil con grosor real (canto inferior y derecho en sombra de marfil), barra divisoria de oro metálico,
  * remache central de latón y puntos hundidos con aro de luz. Vectorial: nítida a cualquier tamaño.
  */
-export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selected, dim, glow, faceDown, onClick, className = '' }: Props) {
+export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selected, dim, playable, glow, faceDown, onClick, className = '' }: Props) {
   const long = `calc(${size} * 2)`;
   const edge = `calc(${size} * .09)`;
-  const lift = selected ? `0 0 0 2px #f0c35f, ` : glow ? `0 0 0 2.5px #FCE38A, 0 0 14px rgba(252,227,138,.7), ` : '';
+  const lift = selected ? `0 0 0 3px #FCE38A, 0 0 12px rgba(252,227,138,.6), ` : playable ? `0 0 0 2.5px #D4AF37, 0 0 10px rgba(212,175,55,.45), ` : glow ? `0 0 0 2.5px #FCE38A, 0 0 14px rgba(252,227,138,.7), ` : '';
   const body = faceDown ? '#0a2a1e' : '#8C816A';
   return (
     <button type="button" disabled={!onClick} onClick={onClick} aria-label={faceDown ? undefined : `${a}-${b}`}
-      className={`relative block shrink-0 touch-manipulation select-none rounded-[14%/28%] will-change-transform ${selected ? '-translate-y-2' : ''} ${glow ? 'dm-pulse' : ''} ${className}`}
+      className={`relative block shrink-0 touch-manipulation select-none rounded-[14%/28%] will-change-transform ${selected || playable ? '-translate-y-2' : ''} ${dim && !faceDown ? 'opacity-55' : ''} ${glow ? 'dm-pulse' : ''} ${className}`}
       style={{
         width: vertical ? size : long, height: vertical ? long : size,
         // grosor: canto inferior (y derecho) del marfil + sombra de contacto sobre el fieltro
@@ -80,7 +82,6 @@ export const DominoTile = memo(function DominoTile({ a, b, vertical, size, selec
             <Face n={b} x={50} />
           </>)}
       </svg>
-      {dim && !faceDown && <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[14%/28%] bg-black/40" />}
     </button>
   );
 });

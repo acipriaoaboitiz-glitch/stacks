@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useChipSet, type SetId } from '../../store/cosmetics.ts';
 
 /** Rejilla de puntos en una cara de 100×100. */
 const G = { tl: [27, 27], tr: [73, 27], ml: [27, 50], mr: [73, 50], c: [50, 50], bl: [27, 73], br: [73, 73] } as const;
@@ -7,11 +8,12 @@ const PIPS: Record<number, (keyof typeof G)[]> = {
 };
 
 function Pips({ face }: { face: number }) {
+  const halo = useChipSet() === 'ebano' ? '#000' : '#fff';
   return (
     <>
       {PIPS[face]?.map((k) => (
         <g key={k}>
-          <circle cx={G[k][0] + 1.2} cy={G[k][1] + 1.8} r="11.5" fill="#fff" opacity=".55" />
+          <circle cx={G[k][0] + 1.2} cy={G[k][1] + 1.8} r="11.5" fill={halo} opacity=".55" />
           <circle cx={G[k][0]} cy={G[k][1]} r="10.4" fill={face === 1 ? 'url(#iso-pip-red)' : 'url(#iso-pip)'} />
         </g>
       ))}
@@ -20,13 +22,22 @@ function Pips({ face }: { face: number }) {
 }
 
 /** Degradados del dado isométrico (se declaran una vez en cada <svg shapeRendering="geometricPrecision"> que lo use). */
+/** Colores del dado según el juego de fichas y dados equipado: [cara superior, lateral izquierdo, lateral derecho, puntos]. */
+export const DICE: Record<SetId, { top: [string, string]; left: [string, string]; right: [string, string]; pip: [string, string, string] }> = {
+  clasico: { top: ['#FFFEF6', '#F2E8C6'], left: ['#E7DBB0', '#CDBE8C'], right: ['#C2B27E', '#9C8A55'], pip: ['#3a342a', '#0f0c07', '#000'] },
+  lingote: { top: ['#FFF3B8', '#E9C75A'], left: ['#E0B73F', '#B8860B'], right: ['#B8860B', '#7a5a0c'], pip: ['#5a3d06', '#2a1d02', '#120b00'] },
+  ebano: { top: ['#4a443c', '#2a2622'], left: ['#2a2622', '#17130f'], right: ['#17130f', '#0a0806'], pip: ['#fffdf0', '#efe3bf', '#cdbf8f'] },
+  cristal: { top: ['#d9fff0', '#7fe9c0'], left: ['#6fe0b4', '#2cb583'], right: ['#2cb583', '#0f7a58'], pip: ['#ffffff', '#e6fff6', '#a8ecd0'] },
+};
+
 export function IsoDefs() {
+  const d = DICE[useChipSet()];
   return (
     <defs>
-      <linearGradient id="iso-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FFFEF6" /><stop offset="1" stopColor="#F2E8C6" /></linearGradient>
-      <linearGradient id="iso-left" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#E7DBB0" /><stop offset="1" stopColor="#CDBE8C" /></linearGradient>
-      <linearGradient id="iso-right" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#C2B27E" /><stop offset="1" stopColor="#9C8A55" /></linearGradient>
-      <radialGradient id="iso-pip" cx=".38" cy=".34" r=".8"><stop offset="0" stopColor="#3a342a" /><stop offset=".6" stopColor="#0f0c07" /><stop offset="1" stopColor="#000" /></radialGradient>
+      <linearGradient id="iso-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={d.top[0]} /><stop offset="1" stopColor={d.top[1]} /></linearGradient>
+      <linearGradient id="iso-left" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={d.left[0]} /><stop offset="1" stopColor={d.left[1]} /></linearGradient>
+      <linearGradient id="iso-right" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={d.right[0]} /><stop offset="1" stopColor={d.right[1]} /></linearGradient>
+      <radialGradient id="iso-pip" cx=".38" cy=".34" r=".8"><stop offset="0" stopColor={d.pip[0]} /><stop offset=".6" stopColor={d.pip[1]} /><stop offset="1" stopColor={d.pip[2]} /></radialGradient>
       <radialGradient id="iso-pip-red" cx=".38" cy=".34" r=".8"><stop offset="0" stopColor="#c43a3a" /><stop offset=".6" stopColor="#7a1414" /><stop offset="1" stopColor="#3d0707" /></radialGradient>
     </defs>
   );

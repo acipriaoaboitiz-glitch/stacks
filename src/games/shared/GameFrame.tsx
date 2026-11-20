@@ -140,7 +140,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
             <div className="table-leather relative min-h-0 flex-1">
             <section
               ref={feltRef}
-              className={`table-felt relative h-full min-h-0 overflow-hidden ${slamFx ? 'animate-slam' : ''}`}
+              dir="ltr" className={`table-felt relative h-full min-h-0 overflow-hidden ${slamFx ? 'animate-slam' : ''}`}
               style={{ background: feltTone === 'emerald' ? EMERALD_FELT : FELT_BG }}
               aria-label="Mesa de juego"
             >
@@ -151,7 +151,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
               <div aria-hidden className="pointer-events-none absolute inset-0 z-[15]" style={{ background: 'radial-gradient(ellipse at 50% 44%, rgba(255,226,160,.17) 0%, rgba(255,226,160,.05) 38%, rgba(255,226,160,0) 62%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.5) 100%)' }} />
             </section>
             </div>
-            <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<div className="absolute right-0 top-0 z-20"><ReactionButton onSend={sendEmote} /></div><EmoteBubble text={emote} /><div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-1" aria-live="polite">{others.map((r) => <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>)}</div></section>
+            <section dir="ltr" className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">{bottom}<div className="absolute right-0 top-0 z-20"><ReactionButton onSend={sendEmote} /></div><EmoteBubble text={emote} /><div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-1" aria-live="polite">{others.map((r) => <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>)}</div></section>
           </div>
           {timer?.active && <div aria-hidden className="turn-glow pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20" style={{ background: 'linear-gradient(to top, rgba(240,195,95,.5), transparent)' }} />}
           {cinematic && <GameCinematic key={cinematic.id} title={cinematic.title} sub={cinematic.sub} tone={cinematic.tone} />}

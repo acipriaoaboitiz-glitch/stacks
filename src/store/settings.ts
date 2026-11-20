@@ -10,16 +10,21 @@ export const CAN_HOVER: boolean = typeof window !== 'undefined' && window.matchM
 
 export type AnimSpeed = 'normal' | 'rapida';
 export const SPEED_FACTOR: Record<AnimSpeed, number> = { normal: 1, rapida: 1.8 };
-export type Lang = 'es' | 'eu' | 'en' | 'fr' | 'de';
-export type ThemeId = 'esmeralda' | 'royal' | 'burdeos' | 'obsidiana' | 'purpura';
+export type Lang = 'es' | 'eu' | 'en' | 'fr' | 'de' | 'ru' | 'ar';
+/** Idiomas con escritura de derecha a izquierda (la interfaz de texto usa `dir="rtl"`; tableros y cartas siguen en `ltr`). */
+export const RTL_LANGS: readonly Lang[] = ['ar'];
+export type ThemeId = 'esmeralda' | 'royal' | 'burdeos' | 'obsidiana' | 'purpura' | 'azul' | 'cuero' | 'pizarra';
 
-/** Cinco tapetes: variables CSS del paño (las usan lobby, mesas y la mesa de Mus). */
+/** Ocho tapetes: variables CSS del paño (las usan lobby, mesas y la mesa de Mus). */
 export const THEMES: Record<ThemeId, { a: string; b: string; c: string; glow: string; swatch: string; hue: number }> = {
   esmeralda: { a: '#0E3323', b: '#061810', c: '#030D09', glow: 'rgba(18,83,60,.2)', swatch: 'from-emerald-950 via-emerald-900 to-slate-950', hue: .42 },
   royal: { a: 'rgba(10,44,92,.92)', b: '#0a1d3d', c: '#050f24', glow: 'rgba(40,120,200,.22)', swatch: 'from-blue-950 via-sky-900 to-slate-950', hue: .58 },
   burdeos: { a: 'rgba(96,18,36,.92)', b: '#3a0f18', c: '#1f0810', glow: 'rgba(170,50,64,.22)', swatch: 'from-rose-950 via-red-900 to-slate-950', hue: .98 },
   obsidiana: { a: 'rgba(38,38,42,.95)', b: '#18181b', c: '#09090b', glow: 'rgba(120,120,130,.14)', swatch: 'from-zinc-900 via-neutral-900 to-black', hue: .12 },
   purpura: { a: 'rgba(60,32,104,.92)', b: '#1e1245', c: '#0e0a28', glow: 'rgba(124,80,210,.2)', swatch: 'from-purple-950 via-indigo-950 to-slate-950', hue: .75 },
+  azul: { a: 'rgba(8,72,98,.95)', b: '#06384d', c: '#021520', glow: 'rgba(30,160,200,.22)', swatch: 'from-cyan-950 via-sky-900 to-slate-950', hue: .54 },
+  cuero: { a: 'rgba(116,66,30,.95)', b: '#4a2a12', c: '#1f1006', glow: 'rgba(200,130,60,.2)', swatch: 'from-amber-950 via-orange-900 to-stone-950', hue: .07 },
+  pizarra: { a: 'rgba(60,72,88,.95)', b: '#232b35', c: '#0d1015', glow: 'rgba(140,160,190,.16)', swatch: 'from-slate-700 via-slate-800 to-black', hue: .6 },
 };
 
 export interface Settings { sound: boolean; vibration: boolean; speed: AnimSpeed; theme: ThemeId; lang: Lang; help: boolean }
@@ -37,7 +42,7 @@ function load(): Settings {
       vibration: p.vibration !== false,
       speed: p.speed === 'rapida' ? 'rapida' : 'normal',
       theme: p.theme && p.theme in THEMES ? p.theme : 'esmeralda',
-      lang: p.lang === 'eu' || p.lang === 'en' || p.lang === 'fr' || p.lang === 'de' ? p.lang : 'es',
+      lang: p.lang === 'eu' || p.lang === 'en' || p.lang === 'fr' || p.lang === 'de' || p.lang === 'ru' || p.lang === 'ar' ? p.lang : 'es',
       help: p.help !== false,
     };
   } catch {
@@ -58,6 +63,7 @@ function apply(): void {
     root.style.setProperty('--tapete-c', th.c);
     root.style.setProperty('--tapete-glow', th.glow);
     root.lang = state.lang;
+    root.dir = RTL_LANGS.includes(state.lang) ? 'rtl' : 'ltr';
     setPref(PREFS.sound, state.sound); // la mesa de Mus Online comparte el interruptor de sonido
   } catch { /* sin DOM */ }
 }

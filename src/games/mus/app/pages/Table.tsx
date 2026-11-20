@@ -233,7 +233,7 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
   const falseAlarm = signaling.resolution?.result === 'false_alarm' ? signaling.resolution : null;
 
   return (
-    <main
+    <main dir="ltr"
       className="relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100 [--card-w:min(19vw,10.2dvh,118px)] lg:[--card-w:calc(min(125px,10.5dvh)/var(--z,1))]"
     >
       <div className="desk-zoom mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">

@@ -136,7 +136,7 @@ export default function Ajedrez() {
           <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, s.players[oppIdx]!.name, s.players[oppIdx]!.human)} tone="them" mano={false} turn={s.winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
           <div className="min-h-0 w-full flex-1 [container-type:size]">
             <div className="grid h-full place-items-center">
-              <div className="relative rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, calc(820px / var(--z, 1)))', padding: '4.6%', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
+              <div className="relative rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', padding: '4.6%', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
                 {/* coordenadas discretas en el marco */}
                 {Array.from({ length: 8 }, (_, k) => {
                   const file = flip ? 7 - k : k; const rank = flip ? k + 1 : 8 - k;

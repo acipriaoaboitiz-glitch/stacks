@@ -25,7 +25,7 @@ Stack: React 19 + TypeScript + Vite + Tailwind 4 + Framer Motion + Web Audio + S
 - 60 FPS: animar solo `transform` y `opacity`; sin `backdrop-filter` en móvil ni en `html.is-standalone`.
 
 ## Idiomas
-- ES, EN, FR, DE (EU cae al español). Textos en `src/i18n/*`; bots `Jugador/Player/Joueur/Spieler N`.
+- 7 idiomas: ES, EU, EN, FR, DE, RU, AR. Textos en `src/i18n/*` (`lang3.ts` = eu/ru/ar; lo que falta cae al inglés en ru/ar y al español en eu). Árabe con `dir="rtl"` en la interfaz y `dir="ltr"` en tableros y cartas (`GameFrame`). Bots `Jugador/Player/Joueur/Spieler N`.
 
 ## Flujo
 - No ejecutar `npm install` sin permiso. El usuario hace los commits y los push.

@@ -20,8 +20,8 @@ import { GOAL, SAFE, applyParchis, botPick, movesFor, newParchis, type PAction, 
 import { COLORS, GRID, LANE_XY, LOOP_XY, NEST_ORIGIN, NEST_SLOTS, pieceXY, type XY } from './geometry.ts';
 
 const WIN_BONUS = 120;
-/** Cada casilla del salto dura 90 ms. */
-const STEP_S = 0.09;
+/** Cada casilla del salto dura 85 ms. */
+const STEP_S = 0.085;
 const info = (i: number, name: string, human: boolean): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: !human, online: true });
 const CELL = 100 / GRID;
 const COLOR_SETS: Record<number, number[]> = { 2: [0, 2], 3: [0, 1, 2], 4: [0, 1, 2, 3] };
@@ -34,7 +34,7 @@ function star(cx: number, cy: number, r: number): string {
 }
 
 /** Tablero clásico estilizado: madera oscura, casillas de marfil, 4 casas en tonos joya, seguros con estrella dorada y meta central. */
-const BoardArt = memo(function BoardArt() {
+const BoardArt = memo(function BoardArt({ rot }: { rot: number }) {
   return (
     <svg viewBox={`0 0 ${GRID * 10} ${GRID * 10}`} className="absolute inset-0 h-full w-full" shapeRendering="geometricPrecision" aria-hidden="true">
       <defs>
@@ -56,7 +56,8 @@ const BoardArt = memo(function BoardArt() {
         return (
           <g key={i}>
             <rect x={x * 10 + 0.6} y={y * 10 + 0.6} width="8.8" height="8.8" rx="1.6" fill={isStart ? `url(#pc-c${k})` : 'url(#pc-ivory)'} stroke="#8a7a55" strokeOpacity=".7" strokeWidth=".4" />
-            {SAFE.has(i) && <polygon points={star(x * 10 + 5, y * 10 + 5, 3.3)} fill="url(#pc-gold)" stroke="#6b4a08" strokeWidth=".25" />}
+            {SAFE.has(i) && <polygon points={star(x * 10 + 5, y * 10 + 4.1, 2.9)} fill="url(#pc-gold)" stroke="#6b4a08" strokeWidth=".25" />}
+            <text x={x * 10 + 5} y={y * 10 + (SAFE.has(i) ? 8.6 : 6.1)} textAnchor="middle" fontSize={SAFE.has(i) ? 2.5 : 3.2} fontWeight="700" fontFamily="Outfit, sans-serif" fill={isStart ? '#fff' : '#6b5a33'} fillOpacity=".9" transform={`rotate(${-rot} ${x * 10 + 5} ${y * 10 + 5})`}>{i + 1}</text>
           </g>
         );
       })}
@@ -82,7 +83,7 @@ export default function Parchis() {
   const [rolling, setRolling] = useState(false);
   const [face, setFace] = useState(1);
   const [doneSeq, setDoneSeq] = useState(0);
-  const [burst, setBurst] = useState<{ x: number; y: number; key: number } | null>(null);
+  const [burst, setBurst] = useState<{ x: number; y: number; key: number; label: string } | null>(null);
   const lastEvent = useRef(0);
   const paid = useRef(false);
   const me = online ? s?.players.find((p) => p.peerId === seating.myPeerId)?.id ?? 'p0' : 'p0';
@@ -135,7 +136,7 @@ export default function Parchis() {
     const e = s.event;
     if (e && e.seq !== lastEvent.current) {
       lastEvent.current = e.seq;
-      if (e.kind === 'capture') { feedback('capture'); if (s.last) { const pl = s.players[s.last.player]!; const [bx, by] = pieceXY(pl.color, s.last.path[s.last.path.length - 1]!, 0); setBurst({ x: bx, y: by, key: e.seq }); } } else if (e.kind === 'goal') feedback('chip'); else if (e.kind === 'exit') feedback('wood');
+      if (e.kind === 'capture') { feedback('capture'); if (s.last) { const pl = s.players[s.last.player]!; const [bx, by] = pieceXY(pl.color, s.last.path[s.last.path.length - 1]!, 0); setBurst({ x: bx, y: by, key: e.seq, label: '+20' }); } } else if (e.kind === 'goal') { feedback('chip'); if (s.last) { const pl = s.players[s.last.player]!; const [bx, by] = pieceXY(pl.color, GOAL, 0); setBurst({ x: bx, y: by, key: e.seq, label: '+10' }); } } else if (e.kind === 'exit') feedback('wood');
     }
     if (last) { const id = gameTimeout(() => setDoneSeq(seq), 1000 * STEP_S * last.path.length + 140); return () => window.clearTimeout(id); }
   }, [seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -217,14 +218,14 @@ export default function Parchis() {
       )}
       felt={(
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
-          <div className="flex w-full items-start justify-around">
+          <div className="flex w-full items-start justify-around lg:absolute lg:left-4 lg:right-4 lg:top-3 lg:z-10 lg:w-auto lg:flex-col lg:gap-3 lg:items-start lg:justify-start lg:right-auto">
             {others.map(({ p, i }) => <SeatBadge key={p.id} info={info(i, p.name, p.human)} tone="them" mano={false} turn={s.phase !== 'over' && s.turn === i} deadline={null} cards={0} />)}
           </div>
           <div className="min-h-0 w-full flex-1 [container-type:size]">
             <div className="grid h-full place-items-center">
-              <div className="rounded-[14px] p-[1.6%]" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
+              <div className="rounded-[14px] p-[1.6%]" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
                 <div className="relative aspect-square overflow-hidden rounded-[6px]" style={{ transform: `rotate(${rot}deg)` }}>
-                  <BoardArt />
+                  <BoardArt rot={rot} />
                   {/* barreras: dos fichas en una casilla del recorrido llevan un aro dorado */}
                   {[...cellCount.entries()].filter(([, c]) => c >= 2).map(([key]) => {
                     const [bx, by] = key.split(',').map(Number) as [number, number];
@@ -233,6 +234,10 @@ export default function Parchis() {
                   {burst && (
                     <motion.span key={burst.key} aria-hidden className="pointer-events-none absolute rounded-full" style={{ left: `${(burst.x - 0.5) * CELL}%`, top: `${(burst.y - 0.5) * CELL}%`, width: `${CELL * 2}%`, height: `${CELL * 2}%`, zIndex: 8, background: 'radial-gradient(circle, rgba(255,246,196,.95) 0%, rgba(252,227,138,.8) 30%, rgba(212,175,55,.35) 55%, transparent 72%)', willChange: 'transform' }}
                       initial={{ scale: 0.2, opacity: 1 }} animate={{ scale: 2.2, opacity: 0 }} transition={{ delay: 0.05, duration: 0.65, ease: 'easeOut' }} />
+                  )}
+                  {burst && (
+                    <motion.span key={`t${burst.key}`} aria-hidden className="pointer-events-none absolute grid place-items-center font-[var(--font-display)] font-extrabold tabular-nums text-[#FFF0B0]" style={{ left: `${(burst.x - 1) * CELL}%`, top: `${(burst.y - 1) * CELL}%`, width: `${CELL * 3}%`, height: `${CELL * 2}%`, zIndex: 9, fontSize: 'clamp(12px, 2.4cqw, 22px)', textShadow: '0 1px 4px #000, 0 0 8px rgba(252,227,138,.9)', transform: `rotate(${-rot}deg)`, willChange: 'transform, opacity' }}
+                      initial={{ y: 0, opacity: 1 }} animate={{ y: -28, opacity: 0 }} transition={{ duration: 0.9, ease: 'easeOut' }}>{burst.label}</motion.span>
                   )}
                   {placed.map(({ pi, k, pos, x, y, n, color }) => {
                     const isFresh = fresh(pi, k);
@@ -247,8 +252,9 @@ export default function Parchis() {
                           : { x: `${(x + off) * 100}%`, y: `${y * 100}%`, scale: 1 }}
                         transition={{ duration: isFresh && path.length > 1 ? Math.min(2.4, STEP_S * (path.length - 1)) : 0.35, ease: 'linear' }}>
                         <button type="button" disabled={!can} onClick={() => dispatch(me, { k: 'move', piece: k })} aria-label={`${pi + 1}-${k + 1}`} className="relative block h-full w-full touch-manipulation" style={{ transform: `rotate(${-rot}deg)` }}>
-                          <span className="absolute inset-[12%] rounded-full" style={{ background: PIECE_BG[color], boxShadow: 'inset 0 -2px 3px rgba(0,0,0,.45), inset 0 1.5px 2px rgba(255,255,255,.6), 0 2px 3px rgba(0,0,0,.6)' }} />
-                          {can && <span className="absolute inset-[4%] rounded-full ring-[2.5px] ring-[#FCE38A] shadow-[0_0_8px_rgba(252,227,138,.9)]" />}
+                          <span className="absolute inset-x-[12%] top-[20%] bottom-[2%] rounded-full" style={{ background: COLORS[color]!.dark, boxShadow: '0 3px 4px rgba(0,0,0,.65)' }} />
+                          <span className="absolute inset-[11%] bottom-[10%] rounded-full" style={{ background: PIECE_BG[color], boxShadow: 'inset 0 -2px 3px rgba(0,0,0,.45), inset 0 2px 2px rgba(255,255,255,.65), 0 0 0 1px rgba(0,0,0,.35)' }}><span className="absolute inset-[24%] rounded-full" style={{ background: 'radial-gradient(circle at 38% 30%, rgba(255,255,255,.55), rgba(255,255,255,0) 70%)' }} /></span>
+                          {can && <span className="dm-pulse absolute inset-[2%] rounded-full ring-[3px] ring-[#FCE38A] shadow-[0_0_12px_rgba(252,227,138,1)]" />}
                         </button>
                       </motion.div>
                     );

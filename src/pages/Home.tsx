@@ -179,7 +179,10 @@ export default function Home() {
       const d = Math.max(-2, Math.min(2, i - pos));
       const a = Math.abs(d);
       c.style.transform = `scale(${1 - Math.min(1, a) * 0.1})`;
-      c.style.opacity = String(a < 0.5 ? 1 : Math.max(0.35, 1 - a * 0.5));
+      // Las vecinas solo asoman en monitores muy anchos o en móvil; en tablet/PC normal se desvanecen sin franjas cortadas
+      const w = window.innerWidth;
+      const hideSides = w >= 640 && w < 1536;
+      c.style.opacity = String(a < 0.5 ? 1 : hideSides ? Math.max(0, 1 - a * 2) : Math.max(0.35, 1 - a * 0.5));
       c.style.zIndex = String(10 - Math.round(a));
     });
   }, []);
@@ -236,14 +239,14 @@ export default function Home() {
       <LeaderboardModal open={boardOpen} onClose={() => setBoardOpen(false)} />
       <VipShopModal open={shopOpen} onClose={() => setShopOpen(false)} />
 
-      <div className="desk-zoom relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between overflow-hidden px-4 pt-3" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
+      <div className="desk-zoom relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col items-center justify-between px-4 pt-3 md:max-w-none" style={{ paddingBottom: 'calc(14px + var(--safe-b))' }}>
         <div aria-hidden className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(ellipse at 50% 38%, ${game.accent}33, transparent 62%)` }} />
 
         {/* Barra de secciones con selector deslizante */}
-        <div className="relative z-20 flex w-full justify-center"><div role="tablist" aria-label="Secciones" className="no-scrollbar inline-flex w-auto max-w-[96vw] items-center justify-center gap-1 rounded-full border border-white/10 bg-[#081711] p-1.5 no-scrollbar max-md:justify-start max-md:overflow-x-auto">
+        <div className="relative z-20 flex w-full justify-center"><div role="tablist" aria-label="Secciones" className="no-scrollbar inline-flex w-fit max-w-none items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#081711] p-1.5 no-scrollbar max-md:flex max-md:w-[94vw] max-md:justify-start max-md:gap-1 max-md:overflow-x-auto">
           {CATS.map((c) => (
             <button key={c.id} type="button" role="tab" aria-selected={cat === c.id} onClick={(e) => { e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); if (cat !== c.id) { feedback('tap'); setCat(c.id); } }}
-              className={`relative shrink-0 touch-manipulation whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold transition-colors lg:px-4 lg:py-2 lg:text-sm ${cat === c.id ? 'text-[#2a1d02]' : 'text-white/55 active:text-white'}`}>
+              className={`relative shrink-0 touch-manipulation whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold transition-colors md:px-4 md:py-2 md:text-sm ${cat === c.id ? 'text-[#2a1d02]' : 'text-white/55 active:text-white'}`}>
               {cat === c.id && <motion.span layoutId="lobby-category" aria-hidden className="absolute inset-0 rounded-full bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] shadow-[0_2px_10px_rgba(212,175,55,.35)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
               <span className="relative">{t(c.key)}</span>
             </button>
@@ -291,8 +294,12 @@ export default function Home() {
             </>
           ) : (
             <>
+              {game.levels && (
+                <Segmented value={modes[game.id] && game.levels.modes.includes(modes[game.id]!) ? modes[game.id]! : game.levels.def}
+                  options={game.levels.modes.map((m) => ({ id: m, label: t(`mode.${m}`) }))} onChange={(m) => pickMode(game.id, m)} label={t('mode.title')} />
+              )}
               <button type="button"
-                className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(game.route); }}>
+                className="gold-foil flex min-h-14 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold" onClick={() => { feedback('tap'); nav(game.levels ? `${game.route}?mode=${modes[game.id] && game.levels.modes.includes(modes[game.id]!) ? modes[game.id] : game.levels.def}` : game.route); }}>
                 <Play size={17} aria-hidden /> {t('lobby.playAi')}
               </button>
               <button type="button"

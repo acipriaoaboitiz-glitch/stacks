@@ -48,7 +48,7 @@ function Board({ s, canPlay, onCol, mine }: { s: CState; canPlay: boolean; onCol
   const [hover, setHover] = useState<number | null>(null);
   const landing = hover !== null && canPlay ? dropRow(s.board, hover) : -1;
   return (
-    <div className="rounded-[18px] p-[2.4%]" style={{ background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d 60%,#1c1008)', boxShadow: 'inset 0 1.5px 0 rgba(252,227,138,.35), inset 0 -3px 6px rgba(0,0,0,.6), 0 10px 20px rgba(0,0,0,.5)', width: 'min(100cqw, calc(100cqh * 7 / 6), calc(740px / var(--z, 1)))' }}>
+    <div className="rounded-[18px] p-[2.4%]" style={{ background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d 60%,#1c1008)', boxShadow: 'inset 0 1.5px 0 rgba(252,227,138,.35), inset 0 -3px 6px rgba(0,0,0,.6), 0 10px 20px rgba(0,0,0,.5)', width: 'min(100cqw, calc(100cqh * 7 / 6), calc((100dvh - 150px) * 7 / 6 / var(--z, 1)), calc(720px * 7 / 6 / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(880px / var(--z, 1)))' }}>
       <div className="relative" style={{ aspectRatio: `${COLS} / ${ROWS}` }}>
         {/* fondo del tablero (se ve por los huecos) y fichas que caen por detrás */}
         <div className="absolute inset-0 overflow-hidden rounded-[10px] bg-[#04110b]">

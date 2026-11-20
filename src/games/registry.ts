@@ -26,6 +26,8 @@ export interface GameInfo {
   rules: string[];
   /** Solo en juegos de un jugador. */
   solo?: SoloInfo;
+  /** Niveles de la IA (se eligen en el lobby y viajan como `?mode=`). */
+  levels?: SoloInfo;
 }
 
 export const GAMES: GameInfo[] = [
@@ -183,10 +185,10 @@ export const GAMES: GameInfo[] = [
     ],
   },
   {
-    id: 'flota', name: 'Hundir la Flota', tagline: 'Radar 7×7, duelo rápido', category: 'mesa', deck: 'none', players: '1v1',
-    icon: Ship, route: '/play/flota', playable: true, accent: '#34d399', tint: ['#08291f', '#0d1a12'],
+    id: 'flota', name: 'Hundir la Flota', tagline: 'Radar PRO 8×8, cinco barcos', category: 'mesa', deck: 'none', players: '1v1',
+    icon: Ship, route: '/play/flota', playable: true, accent: '#34d399', tint: ['#08291f', '#0d1a12'], levels: { modes: ['easy', 'normal', 'expert'], def: 'normal' },
     rules: [
-      'Cada jugador tiene 4 barcos de 4, 3, 2 y 2 casillas en un tablero de 7×7. Pulsa «Aleatorio» para recolocar tu flota y «Listo» cuando te guste.',
+      'Cada jugador tiene 5 barcos: Portaaviones (4), Acorazado (3), Submarino (3), Destructor (2) y Patrullera (2) en un tablero de 8×8 (10×10 en nivel Experto). Toca un barco y luego una casilla para moverlo, tócalo otra vez para girarlo o usa «Despliegue Aleatorio». Pulsa «Listo» al terminar.',
       'En tu turno toca una casilla del radar rival para disparar. Una onda azul indica agua y un destello oro y carmesí indica tocado.',
       'Si tocas un barco repites disparo; si fallas, pasa el turno. Un barco con todas sus casillas tocadas queda hundido.',
       'Gana quien hunda primero toda la flota rival. Partidas de 2 a 3 minutos.',
@@ -204,7 +206,7 @@ export const GAMES: GameInfo[] = [
   },
   {
     id: 'ajedrez', name: 'Ajedrez', tagline: 'Reglas completas, tres niveles', category: 'mesa', deck: 'none', players: '1v1',
-    icon: Castle, route: '/play/ajedrez', playable: true, accent: '#d4af37', tint: ['#2b2411', '#0d1a12'],
+    icon: Castle, route: '/play/ajedrez', playable: true, accent: '#d4af37', tint: ['#2b2411', '#0d1a12'], levels: { modes: ['easy', 'normal', 'expert'], def: 'normal' },
     rules: [
       'Reglas oficiales: cada pieza se mueve a su manera y el objetivo es dar jaque mate al rey rival.',
       'Toca una pieza para ver sus casillas válidas. Hay enroque, captura al paso y coronación del peón (elige pieza en la barra inferior).',

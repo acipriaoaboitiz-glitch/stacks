@@ -16,8 +16,8 @@
   --color-felt: #0f3d2e;
   --color-ok: #34d399;
   --color-bad: #f87171;
-  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
-  --font-sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Fraunces', 'Noto Sans', 'Noto Sans Arabic', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-sans: 'Outfit', 'Noto Sans', 'Noto Sans Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
@@ -300,3 +300,7 @@ html.is-standalone.table-lock body { position: fixed; inset: 0; width: 100%; hei
 @keyframes dm-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
 .dm-pulse { animation: dm-pulse 1s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .dm-pulse { animation: none; } }
+
+@keyframes dm-pop { from { opacity: 0; scale: .55; } to { opacity: 1; scale: 1; } }
+.dm-pop { animation: dm-pop 260ms cubic-bezier(.2, .9, .3, 1.2) backwards; }
+@media (prefers-reduced-motion: reduce) { .dm-pop { animation: none; } }

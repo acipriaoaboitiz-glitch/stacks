@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { AvatarFrame } from '../../../../components/ui/AvatarFrame.tsx';
 export type AvatarTone = 'us' | 'them' | 'me' | 'neutral';
 
 const TONE: Record<AvatarTone, string> = {
@@ -13,7 +14,7 @@ export const TableAvatar = memo(function TableAvatar({ name, tone = 'neutral', c
   // «Jugador 1» → J1, «Player 2» → P2, «Joueur 3» → J3, «Spieler 1» → S1; si no, la primera letra (ignora emojis de rol delante del nombre)
   const bot = /^(\p{L})\p{L}* (\d)(?!\d)/u.exec(name);
   const initial = (bot ? bot[1]! + bot[2]! : (/\p{L}/u.exec(name)?.[0] ?? '?')).toUpperCase();
-  return (
+  const circle = (
     <span
       aria-hidden="true"
       className={`grid aspect-square select-none place-items-center rounded-full border-2 shadow-[0_3px_8px_rgba(0,0,0,.5),inset_0_2px_3px_rgba(255,255,255,.22),inset_0_-4px_8px_rgba(0,0,0,.4)] font-[var(--font-display)] text-[1.1em] font-bold ${TONE[tone]} ${active ? 'ring-2 ring-amber-300' : ''} ${className}`}
@@ -21,4 +22,6 @@ export const TableAvatar = memo(function TableAvatar({ name, tone = 'neutral', c
       {initial}
     </span>
   );
+  if (tone !== 'me') return circle;
+  return <span className="relative inline-grid" style={{ width: 'fit-content' }}>{circle}<AvatarFrame /></span>;
 });

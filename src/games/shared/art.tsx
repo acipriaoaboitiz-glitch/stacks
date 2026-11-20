@@ -15,38 +15,99 @@ export function MetalDefs() {
   );
 }
 
+export type ShipKind = 'carrier' | 'battleship' | 'submarine' | 'destroyer' | 'patrol';
+
+/** Parte del casco compartida: en horizontal, proa a la derecha. */
+function Hull({ W, hull, sunk, tail = 30 }: { W: number; hull: string; sunk?: boolean; tail?: number }) {
+  return (
+    <>
+      <ellipse cx={W / 2} cy="88" rx={W / 2 - 14} ry="7" fill="#000" opacity=".4" />
+      <path d={`M10 50 H${W - 12} L${W - 44} 84 H${tail} Q10 84 10 66 Z`} fill={hull} stroke="#1b232a" strokeWidth="3" />
+      <path d={`M16 63 H${W - 22}`} stroke={sunk ? '#ef4444' : 'url(#mt-brass)'} strokeWidth="3.4" strokeLinecap="round" opacity=".95" />
+      <path d={`M18 54 H${W - 24}`} stroke="#fff" strokeOpacity=".5" strokeWidth="2.2" strokeLinecap="round" />
+    </>
+  );
+}
+
 /**
- * Silueta de barco de guerra en acero con detalles de latón. Se dibuja horizontal (proa a la derecha) en un rectángulo de
- * `len * 100` × 100 con origen arriba a la izquierda; `vertical` lo gira para que ocupe `len` casillas hacia abajo.
+ * Siluetas de barcos en acero con detalles de latón (Portaaviones, Acorazado, Submarino, Destructor, Patrullera). Se dibujan
+ * horizontales (proa a la derecha) en un rectángulo de `len * 100` × 100 con origen arriba a la izquierda; `vertical` los gira
+ * para que ocupen `len` casillas hacia abajo.
  */
-export const ShipArt = memo(function ShipArt({ len, x, y, vertical, sunk }: { len: number; x: number; y: number; vertical: boolean; sunk?: boolean }) {
+export const ShipArt = memo(function ShipArt({ len, x, y, vertical, sunk, kind }: { len: number; x: number; y: number; vertical: boolean; sunk?: boolean; kind?: ShipKind }) {
   const W = len * 100;
   const hull = sunk ? 'url(#mt-wreck)' : 'url(#mt-steel)';
   const deck = sunk ? '#5a1620' : 'url(#mt-steel-d)';
-  const turrets = len >= 4 ? [0.26, 0.5, 0.74] : len === 3 ? [0.3, 0.7] : [0.5];
+  const k: ShipKind = kind ?? (len >= 4 ? 'carrier' : len === 3 ? 'battleship' : 'destroyer');
+  const ink = '#1b232a';
+  let body: React.ReactNode;
+  if (k === 'carrier') {
+    body = (
+      <>
+        <Hull W={W} hull={hull} sunk={sunk} />
+        <rect x="14" y="38" width={W - 34} height="18" rx="4" fill={deck} stroke={ink} strokeWidth="2.4" />
+        <path d={`M26 47 H${W - 40}`} stroke="#fff" strokeOpacity=".75" strokeWidth="2.4" strokeDasharray="16 12" strokeLinecap="round" />
+        <rect x={W * 0.62} y="18" width="46" height="22" rx="5" fill={deck} stroke={ink} strokeWidth="2.4" />
+        <rect x={W * 0.62 + 6} y="24" width="34" height="7" rx="2.5" fill={sunk ? '#2a0a0f' : '#1f2a31'} />
+        <path d={`M${W * 0.62 + 23} 18 V4`} stroke="url(#mt-brass)" strokeWidth="3.4" strokeLinecap="round" />
+        <path d={`M${W * 0.62 + 12} 9 H${W * 0.62 + 34}`} stroke="url(#mt-brass)" strokeWidth="2.6" strokeLinecap="round" />
+        {[0.16, 0.34].map((t) => <path key={t} d={`M${W * t} 47 h22 M${W * t + 9} 38 v18`} stroke={sunk ? '#ef4444' : '#FCE38A'} strokeWidth="3.4" strokeLinecap="round" />)}
+      </>
+    );
+  } else if (k === 'battleship') {
+    body = (
+      <>
+        <Hull W={W} hull={hull} sunk={sunk} />
+        <rect x={W * 0.38} y="30" width="58" height="24" rx="5" fill={deck} stroke={ink} strokeWidth="2.4" />
+        <rect x={W * 0.38 + 6} y="35" width="46" height="7" rx="2.5" fill={sunk ? '#2a0a0f' : '#1f2a31'} />
+        <rect x={W * 0.38 + 14} y="14" width="12" height="18" rx="2" fill={deck} stroke={ink} strokeWidth="2" />
+        <path d={`M${W * 0.38 + 20} 14 V3`} stroke="url(#mt-brass)" strokeWidth="3.4" strokeLinecap="round" />
+        {[0.2, 0.78].map((t, i) => (
+          <g key={t}>
+            <circle cx={W * t} cy="46" r="12" fill="url(#mt-brass)" stroke="#5c430b" strokeWidth="2" />
+            <rect x={W * t - (i === 0 ? 34 : 0)} y="43" width="34" height="6" rx="3" fill={deck} stroke={ink} strokeWidth="1.6" />
+          </g>
+        ))}
+      </>
+    );
+  } else if (k === 'submarine') {
+    body = (
+      <>
+        <ellipse cx={W / 2} cy="88" rx={W / 2 - 14} ry="6" fill="#000" opacity=".4" />
+        <path d={`M14 66 Q14 46 40 46 H${W - 40} Q${W - 10} 46 ${W - 10} 66 Q${W - 10} 84 ${W - 40} 84 H40 Q14 84 14 66 Z`} fill={sunk ? 'url(#mt-wreck)' : 'url(#mt-steel-d)'} stroke={ink} strokeWidth="3" />
+        <path d={`M30 56 H${W - 34}`} stroke="#fff" strokeOpacity=".35" strokeWidth="2.4" strokeLinecap="round" />
+        <path d={`M20 70 H${W - 20}`} stroke={sunk ? '#ef4444' : 'url(#mt-brass)'} strokeWidth="3" strokeLinecap="round" />
+        <rect x={W * 0.4} y="26" width="44" height="24" rx="10" fill={deck} stroke={ink} strokeWidth="2.4" />
+        <path d={`M${W * 0.4 + 30} 26 V10 H${W * 0.4 + 46}`} fill="none" stroke="url(#mt-brass)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={W * 0.4 + 12} cy="38" r="3.4" fill={sunk ? '#2a0a0f' : '#FCE38A'} />
+        <path d="M10 66 l-12 -12 v24 Z" fill="url(#mt-brass)" stroke="#5c430b" strokeWidth="1.6" />
+      </>
+    );
+  } else if (k === 'destroyer') {
+    body = (
+      <>
+        <Hull W={W} hull={hull} sunk={sunk} tail={26} />
+        <rect x={W * 0.3} y="32" width="46" height="22" rx="5" fill={deck} stroke={ink} strokeWidth="2.4" />
+        {[0.34, 0.56].map((t) => <rect key={t} x={W * t} y="18" width="11" height="16" rx="2.5" fill={sunk ? '#3a0b11' : '#2f3a42'} stroke={ink} strokeWidth="2" />)}
+        <circle cx={W * 0.84} cy="46" r="9" fill="url(#mt-brass)" stroke="#5c430b" strokeWidth="2" />
+        <rect x={W * 0.84} y="43.6" width="20" height="5" rx="2.4" fill={deck} stroke={ink} strokeWidth="1.6" />
+      </>
+    );
+  } else {
+    body = (
+      <>
+        <Hull W={W} hull={hull} sunk={sunk} tail={26} />
+        <rect x={W * 0.34} y="30" width="40" height="24" rx="8" fill={deck} stroke={ink} strokeWidth="2.4" />
+        <rect x={W * 0.34 + 6} y="35" width="28" height="8" rx="3" fill={sunk ? '#2a0a0f' : '#1f2a31'} />
+        <path d={`M${W * 0.34 + 20} 30 V12`} stroke="url(#mt-brass)" strokeWidth="3.2" strokeLinecap="round" />
+        <circle cx={W * 0.34 + 20} cy="12" r="4" fill="url(#mt-brass)" stroke="#5c430b" strokeWidth="1.4" />
+        <circle cx={W * 0.8} cy="46" r="7" fill="url(#mt-brass)" stroke="#5c430b" strokeWidth="1.6" />
+      </>
+    );
+  }
   return (
     <g transform={vertical ? `translate(${x + 100} ${y}) rotate(90)` : `translate(${x} ${y})`} strokeLinejoin="round">
-      <g transform="translate(0 -10)">
-      <ellipse cx={W / 2} cy="88" rx={W / 2 - 14} ry="7" fill="#000" opacity=".4" />
-      {/* casco con proa afilada y línea de flotación de latón */}
-      <path d={`M10 50 H${W - 12} L${W - 44} 84 H30 Q10 84 10 66 Z`} fill={hull} stroke="#1b232a" strokeWidth="3" />
-      <path d={`M16 63 H${W - 22}`} stroke={sunk ? '#ef4444' : 'url(#mt-brass)'} strokeWidth="3.4" strokeLinecap="round" opacity=".95" />
-      <path d={`M18 54 H${W - 24}`} stroke="#fff" strokeOpacity=".5" strokeWidth="2.2" strokeLinecap="round" />
-      {/* cubierta y puente */}
-      <rect x={W * 0.34} y="30" width={Math.max(30, W * 0.2)} height="24" rx="5" fill={deck} stroke="#1b232a" strokeWidth="2.4" />
-      <rect x={W * 0.34 + 6} y="35" width={Math.max(18, W * 0.2 - 12)} height="7" rx="2.5" fill={sunk ? '#2a0a0f' : '#1f2a31'} />
-      {len >= 3 && <><rect x={W * 0.34 + 10} y="18" width="9" height="14" rx="2" fill={deck} stroke="#1b232a" strokeWidth="2" /><rect x={W * 0.34 + 24} y="22" width="9" height="10" rx="2" fill={deck} stroke="#1b232a" strokeWidth="2" /></>}
-      {/* torretas con cañones */}
-      {turrets.map((t, i) => (
-        <g key={i}>
-          <circle cx={W * t} cy="46" r="10.5" fill="url(#mt-brass)" stroke="#5c430b" strokeWidth="2" />
-          <rect x={W * t} y="43.6" width="24" height="5" rx="2.4" fill={deck} stroke="#1b232a" strokeWidth="1.6" transform={i === 0 && len >= 3 ? `rotate(180 ${W * t} 46)` : undefined} />
-        </g>
-      ))}
-      {/* mástil */}
-      <path d={`M${W * 0.44} 30 V12`} stroke="url(#mt-brass)" strokeWidth="3.4" strokeLinecap="round" />
-      <path d={`M${W * 0.44 - 8} 17 H${W * 0.44 + 8}`} stroke="url(#mt-brass)" strokeWidth="2.6" strokeLinecap="round" />
-      </g>
+      <g transform="translate(0 -10)">{body}</g>
     </g>
   );
 });

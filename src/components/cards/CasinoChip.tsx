@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { CAN_HOVER } from '../../store/settings.ts';
+import { chipLook, useChipSet } from '../../store/cosmetics.ts';
 
 /** Fichas numeradas de póker: blanca 1, roja 5, azul 10, verde 25 y negra 100. */
 export const CASINO_VALUES = [1, 5, 10, 25, 100] as const;
@@ -15,7 +16,9 @@ const LOOK: Record<CasinoValue, { base: string; stripe: string; ink: string; rin
 
 /** Ficha tipo Las Vegas: borde estriado, aro interior y número en el centro. */
 export function CasinoChip({ value, size = 40, onClick, disabled, label }: { value: CasinoValue; size?: number; onClick?: () => void; disabled?: boolean; label?: string }) {
-  const c = LOOK[value];
+  const set = useChipSet();
+  const lk = LOOK[value];
+  const c = { ...lk, ...chipLook(set, CASINO_VALUES.indexOf(value), { base: lk.base, ring: lk.ring, ink: lk.ink }), stripe: set === 'clasico' ? lk.stripe : chipLook(set, CASINO_VALUES.indexOf(value), { base: lk.base, ring: lk.ring, ink: lk.ink }).ring };
   const svg = (
     <svg shapeRendering="geometricPrecision" width={size} height={size} viewBox="0 0 100 100" aria-hidden style={{ display: 'block' }}>
       <circle cx="50" cy="50" r="48" fill={c.base} stroke="#000" strokeOpacity=".45" strokeWidth="2" />

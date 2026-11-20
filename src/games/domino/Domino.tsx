@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Download, SkipForward } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, SkipForward } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { botName, tr, useT } from '../../i18n/index.ts';
 import { juice } from '../../services/juice.ts';
@@ -17,6 +17,7 @@ import { GameFrame } from '../shared/GameFrame.tsx';
 import { PhaseCinematic, ResultOverlay, useCine } from '../shared/kit.tsx';
 import { SeriesGems, useSeries } from '../shared/series.tsx';
 import { DominoTile } from './DominoTile.tsx';
+import { bestLayout, type Cell } from './layout.ts';
 import {
   applyDominoAction, botMove, ends, handPips, newRound, playableTiles, sidesFor, teamOf, tileId,
   type DPlayer, type DominoAction, type DominoState, type Tile,
@@ -25,56 +26,58 @@ import {
 const WIN_BONUS = 100;
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 const SLOT: Record<2 | 4, Slot[]> = { 2: ['bottom', 'top'], 4: ['bottom', 'right', 'top', 'left'] };
-const SIZE = 'calc(var(--card-w) * 0.56)';
 /** Fichas de la mano: caben las 7 a lo ancho de cualquier pantalla. */
 const HAND = 'min(calc(var(--card-w) * 0.56), calc((100vw / var(--z, 1) - 28px) / 7.4))';
 const info = (i: number, name: string): SeatInfo => ({ seat: (i % 4) as SeatInfo['seat'], userId: null, name, isBot: true, online: true });
 const makePlayers = (n: 2 | 4): DPlayer[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: i === 0 ? tr('g.you') : botName(i), human: i === 0 }));
 
-/** Dominó: la cadena se reparte en filas y se reescala sola para que nunca se salga de la mesa (móvil o PC). */
-function Chain({ s, selSides, onEnd }: { s: DominoState; selSides: ('L' | 'R')[]; onEnd: (side: 'L' | 'R') => void }) {
+/** Dominó: la cadena serpentea con giros de 90° y se reescala sola para llenar la mesa (móvil o PC). */
+function Chain({ s, targets, onEnd }: { s: DominoState; targets: boolean; onEnd: (side: 'L' | 'R') => void }) {
   const box = useRef<HTMLDivElement>(null);
-  const inner = useRef<HTMLDivElement>(null);
-  const n = s.chain.length;
-  // Busca (por bisección sobre el DOM real) la escala mayor con la que toda la cadena cabe en la mesa, sin salir de la pantalla.
+  const [dim, setDim] = useState({ w: 0, h: 0 });
   useLayoutEffect(() => {
-    const fit = (): void => {
-      const el = box.current; const content = inner.current;
-      if (!el || !content) return;
-      const W = el.clientWidth; const H = el.clientHeight;
-      if (!W || !H) return;
-      let lo = 0.22; let hi = 1.3; let best = lo;
-      for (let i = 0; i < 10; i++) {
-        const mid = (lo + hi) / 2;
-        el.style.setProperty('--k', mid.toFixed(3));
-        if (content.offsetHeight <= H - 4 && content.scrollWidth <= W + 1) { best = mid; lo = mid; } else hi = mid;
-      }
-      el.style.setProperty('--k', best.toFixed(3));
-    };
-    fit();
-    const ro = new ResizeObserver(fit);
-    if (box.current) ro.observe(box.current);
+    const el = box.current;
+    if (!el) return;
+    const read = (): void => setDim({ w: el.clientWidth, h: el.clientHeight });
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
     return () => ro.disconnect();
-  }, [n]);
-  return (
-    <div ref={box} className="relative grid h-full w-full place-items-center overflow-hidden" style={{ ['--k' as string]: 1 }}>
-      <div ref={inner} className="flex max-w-full flex-wrap items-center justify-center" style={{ gap: 'calc(var(--k) * 3px) calc(var(--k) * 2px)' }}>
-        {s.chain.map((p, i) => {
-          const isL = i === 0 && selSides.includes('L');
-          const isR = i === n - 1 && selSides.includes('R');
-          const side: 'L' | 'R' | null = isL && isR ? null : isL ? 'L' : isR ? 'R' : null;
+  }, []);
+  const n = s.chain.length;
+  const fit = useMemo(() => (dim.w && dim.h && n ? bestLayout(s.chain, s.head ?? 0, dim.w - 8, dim.h - 8) : null), [s.chain, s.head, dim.w, dim.h, n]);
+  const e = ends(s);
+  const cell = fit ? Math.min(fit.cell, 64) : 0;
+  const px = (c: Cell, minCol: number, minRow: number, offX: number, offY: number) => ({ x: offX + (c.col - minCol) * cell, y: offY + (c.row - minRow) * cell });
+  let body: React.ReactNode = null;
+  if (fit && e && cell > 0) {
+    const { layout } = fit;
+    const offX = (dim.w - layout.cols * cell) / 2; const offY = (dim.h - layout.rows * cell) / 2;
+    const short = cell * 0.94;
+    body = (
+      <>
+        {layout.cells.map((c) => {
+          const { x, y } = px(c, layout.minCol, layout.minRow, offX, offY);
           return (
-            <DominoTile key={`${i}-${p.a}-${p.b}`} a={p.a} b={p.b} vertical={p.a === p.b} size={`calc(${SIZE} * var(--k))`} glow={isL || isR}
-              onClick={isL || isR ? (e) => {
-                if (side) return onEnd(side);
-                const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                onEnd(e.clientX < r.left + r.width / 2 ? 'L' : 'R'); // una sola ficha en mesa: la mitad tocada decide el extremo
-              } : undefined} />
+            <div key={`${c.i}-${c.va}-${c.vb}`} className="dm-pop pointer-events-none absolute left-0 top-0 grid place-items-center" style={{ width: c.w * cell, height: c.h * cell, transform: `translate3d(${x}px, ${y}px, 0)`, transition: 'transform .28s cubic-bezier(.2,.8,.25,1)' }}>
+              <DominoTile a={c.va} b={c.vb} vertical={c.vertical} size={`${short}px`} />
+            </div>
           );
         })}
-      </div>
-    </div>
-  );
+        {targets && ([['L', layout.ghostL, e.left], ['R', layout.ghostR, e.right]] as const).map(([side, g, num]) => {
+          const { x, y } = px(g, layout.minCol, layout.minRow, offX, offY);
+          return (
+            <button key={side} type="button" onClick={() => onEnd(side)} aria-label={`${side === 'L' ? '←' : '→'} ${num}`}
+              className="dm-pulse absolute left-0 top-0 grid touch-manipulation place-items-center rounded-[14%/28%] border-2 border-dashed border-[#FCE38A] bg-[#FCE38A]/15 shadow-[0_0_18px_rgba(252,227,138,.55)]"
+              style={{ width: g.w * cell * 0.98, height: g.h * cell * 0.98, transform: `translate3d(${x}px, ${y}px, 0)` }}>
+              <span className="font-[var(--font-display)] font-extrabold tabular-nums text-[#FCE38A]" style={{ fontSize: cell * 0.62 }}>{num}</span>
+            </button>
+          );
+        })}
+      </>
+    );
+  }
+  return <div ref={box} dir="ltr" className="relative h-full w-full overflow-hidden">{body}</div>;
 }
 
 export default function Domino() {
@@ -194,7 +197,8 @@ export default function Domino() {
     if (!myTurn) return;
     const sides = sidesFor(s, tile);
     if (sides.length === 0) { feedback('tap'); return; }
-    if (sides.length === 1) { dispatchMine({ k: 'play', id: tileId(tile), side: sides[0]! }); return; }
+    const open = ends(s);
+    if (sides.length === 1 || (open && open.left === open.right)) { dispatchMine({ k: 'play', id: tileId(tile), side: sides[sides.length - 1]! }); return; }
     feedback('tap');
     setSel((cur) => (cur === tileId(tile) ? null : tileId(tile)));
   };
@@ -213,12 +217,13 @@ export default function Domino() {
   const winnerMine = winnerIdx >= 0 && teamOf(s, winnerIdx) === teamOf(s, myIdx);
   const labels: [string, string] = n === 4 ? [t('ser.us'), t('ser.them')] : [t('ser.you'), botName(1)];
 
+  // Franja de asientos arriba (izquierda · arriba · derecha) y la cadena ocupa todo el ancho de la mesa debajo
   const felt = (
-    <div className="grid h-full grid-cols-[minmax(0,.6fr)_minmax(0,3.6fr)_minmax(0,.6fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
+    <div className="grid h-full grid-cols-[1fr_auto_1fr] grid-rows-[auto_minmax(0,1fr)] gap-x-1 p-[clamp(6px,2vw,16px)]">
+      <div className="col-start-1 row-start-1 self-start justify-self-start">{seat('left')}</div>
       <div className="col-start-2 row-start-1 justify-self-center">{seat('top')}</div>
-      <div className="col-start-1 row-span-2 row-start-1 self-center justify-self-center">{seat('left')}</div>
-      <div className="col-start-2 row-start-2 min-h-0"><Chain s={s} selSides={selSides} onEnd={playSide} /></div>
-      <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center">{seat('right')}</div>
+      <div className="col-start-3 row-start-1 self-start justify-self-end">{seat('right')}</div>
+      <div className="col-span-3 col-start-1 row-start-2 min-h-0"><Chain s={s} targets={selSides.length === 2} onEnd={playSide} /></div>
     </div>
   );
 
@@ -230,14 +235,14 @@ export default function Domino() {
       </div>
       {/* Action Rail: altura fija reservada para que la mesa nunca se mueva */}
       <div className="flex min-h-[48px] w-full items-center justify-center gap-2" role="group" aria-label={t('dm.actions')}>
-        {selSides.length === 2 && (
+        {selSides.length === 2 && e && (
           <>
-            <button type="button" onClick={() => playSide('L')} aria-label={t('dm.left')} className="btn flex touch-manipulation items-center gap-1"><ChevronLeft size={18} aria-hidden />{t('dm.left')}</button>
-            <button type="button" onClick={() => playSide('R')} aria-label={t('dm.right')} className="btn flex touch-manipulation items-center gap-1">{t('dm.right')}<ChevronRight size={18} aria-hidden /></button>
+            <button type="button" onClick={() => playSide('L')} className="btn btn--gold flex min-w-0 flex-1 touch-manipulation items-center justify-center gap-1.5 text-[13px] font-bold"><ArrowLeft size={18} strokeWidth={1.75} aria-hidden /><span className="truncate">{t('dm.putL')}</span><b className="tabular-nums">[{e.left}]</b></button>
+            <button type="button" onClick={() => playSide('R')} className="btn btn--gold flex min-w-0 flex-1 touch-manipulation items-center justify-center gap-1.5 text-[13px] font-bold"><b className="tabular-nums">[{e.right}]</b><span className="truncate">{t('dm.putR')}</span><ArrowRight size={18} strokeWidth={1.75} aria-hidden /></button>
           </>
         )}
-        {canDraw && <button type="button" onClick={() => dispatchMine({ k: 'draw' })} className="btn btn--gold flex touch-manipulation items-center gap-1.5"><Download size={16} aria-hidden />{t('dm.draw')} ({s.pool.length})</button>}
-        {canPass && <button type="button" onClick={() => dispatchMine({ k: 'pass' })} className="btn btn--gold flex touch-manipulation items-center gap-1.5"><SkipForward size={16} aria-hidden />{t('a.pass')}</button>}
+        {canDraw && selSides.length < 2 && <button type="button" onClick={() => dispatchMine({ k: 'draw' })} className="btn btn--gold flex w-full touch-manipulation items-center justify-center gap-1.5 text-[13px] font-bold"><Download size={16} strokeWidth={1.75} aria-hidden />{t('dm.drawPool', { n: s.pool.length })}</button>}
+        {canPass && <button type="button" onClick={() => dispatchMine({ k: 'pass' })} className="btn btn--gold flex w-full touch-manipulation items-center justify-center gap-1.5 text-[13px] font-bold"><SkipForward size={16} strokeWidth={1.75} aria-hidden />{t('dm.passTurn')}</button>}
       </div>
       <div className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-2" role="group" aria-label={t('dm.hand')}>
         <div className="mx-auto flex w-max items-end gap-[calc(var(--card-w)*0.06)] px-2">
@@ -245,7 +250,7 @@ export default function Domino() {
             const id = tileId(tile);
             return (
               <div key={id} className="deal-in" style={{ ['--d' as string]: i }}>
-                <DominoTile a={tile[0]} b={tile[1]} vertical size={HAND} selected={sel === id} dim={myTurn && !playable.has(id)} onClick={myTurn ? () => tapTile(tile) : undefined} />
+                <DominoTile a={tile[0]} b={tile[1]} vertical size={HAND} selected={sel === id} playable={myTurn && playable.has(id)} dim={myTurn && !playable.has(id)} onClick={myTurn ? () => tapTile(tile) : undefined} />
               </div>
             );
           })}

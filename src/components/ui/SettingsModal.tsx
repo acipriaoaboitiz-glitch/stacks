@@ -88,7 +88,11 @@ export function Sheet({ open, onClose, title, label, children, max = 'max-w-md' 
   );
 }
 
-const LANGS: { id: Lang; label: string }[] = [{ id: 'es', label: 'ES' }, { id: 'en', label: 'EN' }, { id: 'fr', label: 'FR' }, { id: 'de', label: 'DE' }];
+/** Nombres nativos: cada idioma se reconoce en su propia escritura. */
+const LANGS: { id: Lang; label: string; dir: 'ltr' | 'rtl' }[] = [
+  { id: 'es', label: 'Español', dir: 'ltr' }, { id: 'eu', label: 'Euskara', dir: 'ltr' }, { id: 'en', label: 'English', dir: 'ltr' }, { id: 'fr', label: 'Français', dir: 'ltr' },
+  { id: 'de', label: 'Deutsch', dir: 'ltr' }, { id: 'ru', label: 'Русский', dir: 'ltr' }, { id: 'ar', label: 'العربية', dir: 'rtl' },
+];
 
 /** Ajustes globales (engranaje): tapete, idioma y experiencia de juego, con efecto en tiempo real. */
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -104,7 +108,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
     <Sheet open={open} onClose={onClose} title={t('set.title')} label={t('set.title')}>
       <Group title={t('set.table')}>
         <div className="px-3.5 py-3">
-          <div className="grid grid-cols-5 gap-2.5" role="radiogroup" aria-label={t('set.table')}>
+          <div className="grid grid-cols-4 gap-2.5" role="radiogroup" aria-label={t('set.table')}>
             {(Object.keys(THEMES) as ThemeId[]).map((id) => (
               <button key={id} type="button" role="radio" aria-checked={s.theme === id} aria-label={t(`th.${id}`)} title={t(`th.${id}`)} disabled={!themeUnlocked(id)}
                 onClick={() => { if (!themeUnlocked(id)) return; setSettings({ theme: id }); feedback('tap'); }} className="grid touch-manipulation justify-items-center active:scale-90">
@@ -120,7 +124,12 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
       </Group>
 
       <Group title={t('set.lang')}>
-        <div className="px-3.5 py-3"><Segmented value={s.lang === 'eu' ? 'es' : s.lang} options={LANGS} onChange={(v) => setSettings({ lang: v })} label={t('set.lang')} /></div>
+        <div className="grid grid-cols-2 gap-2 px-3.5 py-3 sm:grid-cols-3" role="radiogroup" aria-label={t('set.lang')}>
+          {LANGS.map((l) => (
+            <button key={l.id} type="button" role="radio" aria-checked={s.lang === l.id} lang={l.id} dir={l.dir} onClick={() => { setSettings({ lang: l.id }); feedback('tap'); }}
+              className={`min-h-11 touch-manipulation rounded-xl border px-3 text-[14px] font-bold active:scale-95 ${s.lang === l.id ? 'border-[#FCE38A] bg-[#FCE38A]/15 text-[#FCE38A]' : 'border-white/10 bg-white/[0.06] text-stone-200'}`}>{l.label}</button>
+          ))}
+        </div>
       </Group>
 
       <Group title={t('set.game')}>

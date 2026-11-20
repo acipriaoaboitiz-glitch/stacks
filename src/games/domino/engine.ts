@@ -21,6 +21,8 @@ export interface DominoState {
   hands: Record<string, Tile[]>;
   pool: Tile[];
   chain: Placed[];
+  /** Fichas colocadas a la izquierda de la primera (ancla del trazado en serpiente). */
+  head: number;
   turn: number;
   phase: 'play' | 'roundOver';
   /** Pases seguidos (si todos pasan, la mesa se cierra). */
@@ -45,7 +47,7 @@ export function newRound(players: DPlayer[], round = 1, starter?: number): Domin
   const deck = shuffle(allTiles());
   const hands: Record<string, Tile[]> = {};
   players.forEach((p) => { hands[p.id] = deck.splice(0, 7).sort((x, y) => pips(y) - pips(x)); });
-  const s: DominoState = { players, hands, pool: players.length === 4 ? [] : deck, chain: [], turn: 0, phase: 'play', passes: 0, mustStart: null, round, event: null, result: null };
+  const s: DominoState = { players, hands, pool: players.length === 4 ? [] : deck, chain: [], head: 0, turn: 0, phase: 'play', passes: 0, mustStart: null, round, event: null, result: null };
   if (starter === undefined) {
     // El doble más alto; si nadie tiene dobles, la ficha de más puntos.
     let best = { i: 0, t: hands[players[0]!.id]![0]!, score: -1 };
@@ -91,9 +93,9 @@ export function playTile(prev: DominoState, pid: string, id: string, side: 'L' |
   const s = structuredClone(prev);
   s.hands[pid] = s.hands[pid]!.filter((t) => tileId(t) !== id);
   const e = ends(s);
-  if (!e) s.chain = [{ a: tile[0], b: tile[1] }];
+  if (!e) { s.chain = [{ a: tile[0], b: tile[1] }]; s.head = 0; }
   else if (side === 'R') s.chain.push(tile[0] === e.right ? { a: tile[0], b: tile[1] } : { a: tile[1], b: tile[0] });
-  else s.chain.unshift(tile[1] === e.left ? { a: tile[0], b: tile[1] } : { a: tile[1], b: tile[0] });
+  else { s.chain.unshift(tile[1] === e.left ? { a: tile[0], b: tile[1] } : { a: tile[1], b: tile[0] }); s.head = (s.head ?? 0) + 1; }
   s.mustStart = null;
   s.passes = 0;
   say(s, pid, `${tile[0]}-${tile[1]}`);

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { feedback } from '../../store/settings.ts';
+import { chipLook, useChipSet } from '../../store/cosmetics.ts';
 
 /** Rack de apuestas: blanca 5, roja 25, verde 100, negra 500 y dorada/púrpura 1.000. */
 export const CHIP_VALUES = [5, 25, 100, 500, 1000] as const;
@@ -18,7 +19,8 @@ const COLORS: Record<ChipValue, { base: string; ring: string; ink: string }> = {
 export function Chip({
   value, size = 56, onClick, disabled, label,
 }: { value: ChipValue; size?: number; onClick?: () => void; disabled?: boolean; label?: string }) {
-  const c = COLORS[value];
+  const set = useChipSet();
+  const c = chipLook(set, CHIP_VALUES.indexOf(value as (typeof CHIP_VALUES)[number]) + 1, COLORS[value]);
   const svg = (
     <svg shapeRendering="geometricPrecision" width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" style={{ display: 'block' }}>
       <defs>

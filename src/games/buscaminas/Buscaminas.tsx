@@ -14,7 +14,8 @@ import { ResultOverlay } from '../shared/kit.tsx';
 import { rewardSolo, useSoloMode } from '../shared/solo.ts';
 import { MODES, chord, dig, newMines, toggleFlag, type Cell, type MState } from './engine.ts';
 
-const NUM = ['', '#5aa8ff', '#3fe0a8', '#ff7a7a', '#b794ff', '#ffb454', '#2dd4bf', '#f1e7c6', '#9aa5a0'];
+/** Colores clásicos del buscaminas, aclarados para el fondo de obsidiana: 1 azul · 2 verde · 3 rojo · 4 índigo · 5 granate/naranja · 6 turquesa · 7 marfil · 8 gris. */
+const NUM = ['', '#4da3ff', '#3ecf6e', '#ff5a5a', '#8b94ff', '#ff8a3d', '#2dd4d4', '#f1e7c6', '#b0b8b4'];
 const mmss = (s: number): string => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
 interface CellProps { cell: Cell; boom: boolean; i: number; onTap: (i: number) => void; onPress: (i: number) => void; size: string; delay: number }
@@ -23,8 +24,14 @@ interface CellProps { cell: Cell; boom: boolean; i: number; onTap: (i: number) =
 const CellView = memo(function CellView({ cell, boom, i, onTap, onPress, size, delay }: CellProps) {
   const timer = useRef<number | null>(null);
   const long = useRef(false);
-  const down = (): void => { long.current = false; timer.current = gameTimeout(() => { long.current = true; onPress(i); }, 340); };
-  const up = (): void => { if (timer.current) window.clearTimeout(timer.current); timer.current = null; if (!long.current) onTap(i); };
+  // Solo el botón izquierdo (o el dedo) cava; el derecho solo pone bandera por «contextmenu». El pulso largo es solo táctil.
+  const down = (e: React.PointerEvent): void => {
+    if (e.button !== 0) return;
+    long.current = false;
+    if (e.pointerType === 'mouse') return;
+    timer.current = gameTimeout(() => { long.current = true; onPress(i); }, 340);
+  };
+  const up = (e: React.PointerEvent): void => { if (e.button !== 0) return; if (timer.current) window.clearTimeout(timer.current); timer.current = null; if (!long.current) onTap(i); };
   const cancel = (): void => { if (timer.current) window.clearTimeout(timer.current); timer.current = null; long.current = true; };
   const open = cell.open;
   return (
@@ -35,7 +42,7 @@ const CellView = memo(function CellView({ cell, boom, i, onTap, onPress, size, d
           ? { background: boom ? 'radial-gradient(circle, #c02626 0%, #5a0f0f 80%)' : 'linear-gradient(160deg,#0b1612,#050b08)', boxShadow: 'inset 0 3px 5px rgba(0,0,0,.75), inset 0 -1px 0 rgba(255,255,255,.05)', color: NUM[cell.adj] }
           : { background: 'linear-gradient(160deg,#21735a,#0e3f30 55%,#082a1f)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 3px rgba(0,0,0,.35), 0 3px 0 #030D08, 0 4px 5px rgba(0,0,0,.5)' }) }}>
         {open
-          ? (cell.mine ? <span className="block h-[86%] w-[86%]"><MineArt /></span> : cell.adj > 0 ? <span style={{ fontSize: `calc(${size} * .58)` }}>{cell.adj}</span> : null)
+          ? (cell.mine ? <span className="block h-[86%] w-[86%]"><MineArt /></span> : cell.adj > 0 ? <span style={{ fontSize: `calc(${size} * .68)`, textShadow: '0 1px 0 rgba(0,0,0,.6), 0 0 6px currentColor' }}>{cell.adj}</span> : null)
           : cell.flag ? <span className="block h-[88%] w-[88%]"><FlagArt /></span> : null}
       </span>
     </button>
@@ -82,7 +89,7 @@ export default function Buscaminas() {
   }, [flagMode]);
   const press = useCallback((i: number) => { setS((cur) => { const n = toggleFlag(cur, i); if (n) feedback('chip'); return n ?? cur; }); }, []);
 
-  const size = `min(calc(100cqw / ${s.w}), calc(100cqh / ${s.h}))`;
+  const size = `min(calc(100cqw / ${s.w}), calc(100cqh / ${s.h}), calc(min(calc(100vw - 40px), 880px) / var(--z, 1) / ${s.w}), calc(min(calc(100dvh - 150px), 720px) / var(--z, 1) / ${s.h}))`;
   return (
     <GameFrame
       gameId="buscaminas" feltTone="emerald"

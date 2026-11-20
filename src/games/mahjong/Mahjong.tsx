@@ -119,7 +119,9 @@ export default function Mahjong() {
   const doShuffle = (): void => { if (shuffles <= 0) return; setTiles((ts) => shuffleTiles(ts)); setShuffles((n) => n - 1); setSel(null); setHint(null); feedback('deal'); };
 
   // Medidas: 8 columnas de ficha y 6 filas, más el desfase de los niveles.
-  const w = dim.w ? Math.min((dim.w - 20) / 8.3, (dim.h - 24) / (6 * RATIO + 0.4)) : 0;
+  const zoom = typeof document === 'undefined' ? 1 : parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
+  const capW = Math.min(window.innerWidth - 40, 880) / zoom; const capH = Math.min(window.innerHeight - 150, 720) / zoom;
+  const w = dim.w ? Math.min((dim.w - 20) / 8.3, (dim.h - 24) / (6 * RATIO + 0.4), capW / 8.3, capH / (6 * RATIO + 0.4)) : 0;
   const bw = w * 8; const bh = w * RATIO * 6;
   const hintSet = new Set(hint ?? []);
 

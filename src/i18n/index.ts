@@ -6,6 +6,8 @@ import { olDe, olEn, olEs, olFr } from './ol.ts';
 import { MORE_RULES, moreDe, moreEn, moreEs, moreFr } from './more.ts';
 import { RULES } from './rules.ts';
 import { uiDe, uiEn, uiEs, uiFr } from './ui.ts';
+import { shopDe, shopEn, shopEs, shopFr } from './shop.ts';
+import { arCore, euCore, ruCore } from './lang3.ts';
 
 /** i18n sin recargar: español (fuente), euskera e inglés. Lo que falta en un idioma cae al español. */
 type Dict = Record<string, string>;
@@ -101,11 +103,13 @@ const eu: Dict = {
 };
 
 const DICTS: Record<Lang, Dict> = {
-  es: { ...es, ...uiEs, ...olEs, ...accEs, ...clubEs, ...catEs, ...setEs, ...moreEs },
-  en: { ...en, ...uiEn, ...olEn, ...accEn, ...clubEn, ...catEn, ...setEn, ...moreEn },
-  eu: { ...eu },
-  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr, ...clubFr, ...catFr, ...setFr, ...moreFr },
-  de: { ...coreDe, ...uiDe, ...olDe, ...accDe, ...clubDe, ...catDe, ...setDe, ...moreDe },
+  es: { ...es, ...uiEs, ...olEs, ...accEs, ...clubEs, ...catEs, ...setEs, ...moreEs, ...shopEs },
+  en: { ...en, ...uiEn, ...olEn, ...accEn, ...clubEn, ...catEn, ...setEn, ...moreEn, ...shopEn },
+  eu: { ...eu, ...euCore },
+  ru: { ...ruCore },
+  ar: { ...arCore },
+  fr: { ...coreFr, ...uiFr, ...olFr, ...accFr, ...clubFr, ...catFr, ...setFr, ...moreFr, ...shopFr },
+  de: { ...coreDe, ...uiDe, ...olDe, ...accDe, ...clubDe, ...catDe, ...setDe, ...moreDe, ...shopDe },
 };
 
 /** Sustituye `{n}`, `{h}`… en una traducción. */
@@ -119,7 +123,8 @@ export const rulesFor = (id: string, fallback: string[], lang: Lang = getSetting
 
 /** Traducción puntual (fuera de componentes). */
 export function tr(key: string, lang: Lang = getSettings().lang): string {
-  return DICTS[lang][key] ?? DICTS.es[key] ?? key;
+  // ru y ar: lo que aún no está traducido cae al inglés; eu, al español
+  return DICTS[lang][key] ?? (lang === 'ru' || lang === 'ar' ? DICTS.en[key] : undefined) ?? DICTS.es[key] ?? key;
 }
 
 /** Hook: `const t = useT(); t('a.pass')`. Re-renderiza al cambiar de idioma. */

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { animate, motion } from 'framer-motion';
 import { Crown, Diamond, Flame, Plus, Sparkles, Spade, Swords, Zap, type LucideIcon } from 'lucide-react';
 import { Chip } from '../cards/Chip.tsx';
+import { AvatarFrame } from './AvatarFrame.tsx';
 import { useProfile } from '../../store/profile.ts';
 import { useWallet } from '../../store/wallet.ts';
 
@@ -55,6 +56,7 @@ export function PlayerAvatar({ name, chips, size = 44, avatar, photo, onClick }:
           {pic ? <img src={pic} alt="" draggable={false} className="h-full w-full rounded-full object-cover" /> : a.icon ? <a.icon size={size * 0.5} /> : name.slice(0, 1).toUpperCase()}
         </div>
       </div>
+      {avatar === undefined && photo === undefined && <AvatarFrame />}
       <span className="font-mono absolute -bottom-1 -right-1 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px]"
         style={{ background: rank.color, color: '#0b0b0b', border: '1.5px solid #020a08' }} aria-label={`Nivel ${rank.level}`}>{rank.level}</span>
     </>

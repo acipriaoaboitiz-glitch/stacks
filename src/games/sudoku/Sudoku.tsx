@@ -87,7 +87,7 @@ export default function Sudoku() {
       felt={(
         <div className="h-full w-full p-[clamp(6px,2vw,16px)] [container-type:size]">
           <div className="grid h-full place-items-center">
-            <div className="relative grid rounded-[10px] bg-[linear-gradient(150deg,#0d1f19,#08110E_55%,#050b08)] shadow-[inset_0_1px_0_rgba(255,255,255,.12),inset_0_0_0_1.5px_rgba(212,175,55,.6),0_10px_22px_rgba(0,0,0,.5)]" style={{ width: 'min(100cqw, 100cqh, calc(740px / var(--z, 1)))', aspectRatio: '1', gridTemplateColumns: 'repeat(9, 1fr)', gridTemplateRows: 'repeat(9, 1fr)', padding: '0.6%' }} role="grid" aria-label="Sudoku">
+            <div className="relative grid rounded-[10px] bg-[linear-gradient(150deg,#0d1f19,#08110E_55%,#050b08)] shadow-[inset_0_1px_0_rgba(255,255,255,.12),inset_0_0_0_1.5px_rgba(212,175,55,.6),0_10px_22px_rgba(0,0,0,.5)]" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', aspectRatio: '1', gridTemplateColumns: 'repeat(9, 1fr)', gridTemplateRows: 'repeat(9, 1fr)', padding: '0.6%' }} role="grid" aria-label="Sudoku">
               {grid.map((v, i) => {
                 const r = Math.floor(i / 9); const c = i % 9;
                 const isSel = sel === i;
@@ -102,9 +102,9 @@ export default function Sudoku() {
                       borderBottom: r === 8 ? 'none' : `${r % 3 === 2 ? 1.6 : 0.6}px solid ${r % 3 === 2 ? 'rgba(212,175,55,.75)' : 'rgba(255,255,255,.10)'}`,
                     }}>
                     {v ? (
-                      <span className="grid h-full w-full place-items-center font-bold tabular-nums leading-none" style={{ fontSize: 'calc(min(100cqw, 100cqh, calc(740px / var(--z, 1))) / 9 * 0.56)', color: bad ? '#fb7185' : given(i) ? '#F8FAF9' : '#F0C35F' }}>{v}</span>
+                      <span className="grid h-full w-full place-items-center font-bold tabular-nums leading-none" style={{ fontSize: 'calc(min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1))) / 9 * 0.56)', color: bad ? '#fb7185' : given(i) ? '#F8FAF9' : '#F0C35F' }}>{v}</span>
                     ) : notes[i] ? (
-                      <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-[8%] text-white/55" style={{ fontSize: 'calc(min(100cqw, 100cqh, calc(740px / var(--z, 1))) / 9 * 0.2)' }}>
+                      <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-[8%] text-white/55" style={{ fontSize: 'calc(min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1))) / 9 * 0.2)' }}>
                         {Array.from({ length: 9 }, (_, k) => <span key={k} className="grid place-items-center leading-none tabular-nums">{notes[i]! & (1 << (k + 1)) ? k + 1 : ''}</span>)}
                       </span>
                     ) : null}

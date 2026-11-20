@@ -1,5 +1,6 @@
 import type { Card } from '@mus/engine';
 import { CardBackArt } from '../../../../components/cards/FrenchFace.tsx';
+import { CornerIndex } from '../../../../components/cards/CornerIndex.tsx';
 import { cardName } from '../game/describe.ts';
 import { useSettings } from '../../../../store/settings.ts';
 
@@ -23,6 +24,7 @@ export function CardFace({ card, eightKings = true }: { card: Card; eightKings?:
         alt={`${cardName(card)}${meaning}`}
         draggable={false}
       />
+      <CornerIndex card={{ deck: 'es', rank: card.rank, suit: card.suit }} />
       {eq && (
         <span
           aria-hidden="true"

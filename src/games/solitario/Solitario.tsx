@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Club, Diamond, Heart, RotateCcw, Spade, Undo2, Zap, type LucideIcon } from 'lucide-react';
 import { FRENCH_ASPECT, frenchFileName, type FrenchCard } from '../../engine/deck.ts';
+import { CornerIndex } from '../../components/cards/CornerIndex.tsx';
 import { useT } from '../../i18n/index.ts';
 import { exitMatch } from '../../services/exitMatch.ts';
 import { gameInterval, gameTimeout } from '../../services/timers.ts';
@@ -25,7 +26,7 @@ const SolCard = memo(function SolCard({ card, up, w, h, selected }: { card: Fren
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[5px]" style={{ width: w, height: h, boxShadow: selected ? '0 0 0 2.5px #FCE38A, 0 0 12px rgba(252,227,138,.8)' : '0 1.5px 3px rgba(0,0,0,.5)' }}>
       {up
-        ? <img src={`${BASE}${frenchFileName(card)}`} alt="" draggable={false} className="block h-full w-full" style={{ objectFit: 'fill', background: '#fdfbf7' }} />
+        ? <><img src={`${BASE}${frenchFileName(card)}`} alt="" draggable={false} className="block h-full w-full" style={{ objectFit: 'fill', background: '#fdfbf7' }} /><CornerIndex card={card} /></>
         : <div className="h-full w-full" style={{ background: 'radial-gradient(circle at 50% 40%, #145a43, #0a2a1e)', boxShadow: 'inset 0 0 0 2px #D4AF37, inset 0 0 0 4px #0a2a1e, inset 0 0 0 5px rgba(212,175,55,.5)' }}>
           <svg viewBox="0 0 40 60" className="h-full w-full" shapeRendering="geometricPrecision" aria-hidden="true"><path d="M20 14 L30 30 L20 46 L10 30 Z" fill="none" stroke="#D4AF37" strokeOpacity=".6" strokeWidth="1.2" /><circle cx="20" cy="30" r="3" fill="#D4AF37" opacity=".7" /></svg>
         </div>}
@@ -101,18 +102,25 @@ export default function Solitario() {
     const { w, h } = dim;
     if (!w || !h) return null;
     const pad = Math.max(4, Math.min(w, h) * 0.02);
-    // Tamaño de carta: 44 / 64 / 86 / 96 px físicos según pantalla (se divide entre el zoom de escritorio) y fila superior compacta
+    // Tamaño de carta: 48 / 70 / 92 / 104 px físicos según pantalla (se divide entre el zoom de escritorio); la fila superior ocupa como máximo el 24 % de la altura
     const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
     const vw = window.innerWidth;
-    const maxPhysical = vw >= 1280 ? 96 : vw >= 1024 ? 86 : vw >= 640 ? 64 : 44;
+    const maxPhysical = vw >= 1280 ? 104 : vw >= 1024 ? 92 : vw >= 640 ? 70 : 48;
     const byWidth = (w - pad * 2) / (7 + 6 * 0.1);
-    const cw = Math.min(byWidth, maxPhysical / z, (h * 0.24) / (1 / FRENCH_ASPECT));
-    const ch = cw / FRENCH_ASPECT;
+    const cap = Math.min(byWidth, maxPhysical / z, (h * 0.24) / (1 / FRENCH_ASPECT));
+    // Separaciones mínimas: boca abajo 4 px; boca arriba lo justo para ver el índice de esquina
+    const geo = (cw: number) => { const ch = cw / FRENCH_ASPECT; const tabY = pad + ch + Math.max(8, ch * 0.12); return { ch, tabY, avail: h - tabY - pad, dDownMin: 4, dUpMin: Math.max(20, ch * 0.17) }; };
+    const fitsAll = (cw: number): boolean => {
+      const g = geo(cw);
+      return s.tab.every((col) => { const down = col.filter((x) => !x.up).length; const up = col.length - down; return g.ch + down * g.dDownMin + Math.max(0, up - 1) * g.dUpMin <= g.avail; });
+    };
+    // La columna más larga manda: si no cabe a tamaño completo, la carta se reduce (nunca se corta ninguna)
+    let cw = cap;
+    if (!fitsAll(cw)) { let lo = 16; let hi = cap; for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (fitsAll(mid)) lo = mid; else hi = mid; } cw = lo; }
+    const { ch, tabY, avail, dDownMin, dUpMin } = geo(cw);
     // el resto del ancho se reparte entre columnas (máximo 0,3 de carta) y el conjunto se centra
     const gap = Math.max(3, Math.min((w - pad * 2 - 7 * cw) / 6, cw * 0.3));
     const left = (w - (7 * cw + 6 * gap)) / 2;
-    const tabY = pad + ch + Math.max(8, ch * 0.12);
-    const avail = h - tabY - pad;
     const colX = (c: number): number => left + c * (cw + gap);
     const placed: Placed[] = [];
     // mazo y descarte
@@ -125,14 +133,17 @@ export default function Solitario() {
     s.found.forEach((f, fi) => f.forEach((c, i) => placed.push({ card: c, x: colX(3 + fi), y: pad, z: 1 + i * 0.01, up: true, src: i === f.length - 1 ? { kind: 'found', f: fi } : null })));
     s.tab.forEach((col, c) => {
       const down = col.filter((x) => !x.up).length; const up = col.length - down;
-      // separación según la carta: ~10 px boca abajo y ~26 px boca arriba (en cartas de 86 px), comprimida si la columna no cabe
-      const dDown = Math.max(5, ch * 0.08); const dUp = Math.max(14, ch * 0.21);
-      const need = ch + down * dDown + Math.max(0, up - 1) * dUp;
-      const k = need > avail ? Math.max(0.14, (avail - ch) / (need - ch)) : 1;
+      // separación ideal por carta, interpolada hacia el mínimo cuando la columna no cabe
+      const dDown = Math.max(8, ch * 0.1); const dUp = Math.max(26, ch * 0.27);
+      const rest = avail - ch;
+      const want = down * dDown + Math.max(0, up - 1) * dUp;
+      const least = down * dDownMin + Math.max(0, up - 1) * dUpMin;
+      const t = want <= rest || want === least ? 1 : Math.max(0, (rest - least) / (want - least));
+      const sDown = dDownMin + (dDown - dDownMin) * t; const sUp = dUpMin + (dUp - dUpMin) * t;
       let y = tabY;
       col.forEach((slot, j) => {
         placed.push({ card: slot.card, x: colX(c), y, z: 10 + j, up: slot.up, src: slot.up ? { kind: 'tab', col: c, idx: j } : null });
-        y += (slot.up ? dUp : dDown) * k;
+        y += slot.up ? sUp : sDown;
       });
     });
     return { cw, ch, pad, gap, tabY, colX, placed };
