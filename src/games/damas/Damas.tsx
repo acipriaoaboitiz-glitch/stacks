@@ -13,7 +13,8 @@ import type { SeatInfo } from '../mus/app/game/types.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { CrownArt } from '../shared/art.tsx';
 import { HudPills } from '../shared/hud.tsx';
-import { ResultOverlay } from '../shared/kit.tsx';
+import { Banner, ResultOverlay, useBanner } from '../shared/kit.tsx';
+import { Button } from '../mus/app/components/ui.tsx';
 import { useDuel } from '../shared/duel.ts';
 import { applyDamas, botMove, legalMoves, newDamas, type DAction, type DState, type Piece, type Side } from './engine.ts';
 
@@ -67,6 +68,10 @@ export default function Damas() {
   const [sel, setSel] = useState<number | null>(null);
   const paid = useRef(false);
   const [doneSeq, setDoneSeq] = useState(0);
+  const { banner, show } = useBanner(1800);
+  // Modo de juego (solo en partidas locales; online es siempre oficial): null = aún sin elegir
+  const [casual, setCasual] = useState<boolean | null>(online ? false : null);
+  const pick = (c: boolean): void => { setCasual(c); setS((cur) => (cur ? newDamas(cur.players, c) : cur)); };
 
   // IA con una pausa natural (750–900 ms).
   useEffect(() => {
@@ -109,10 +114,27 @@ export default function Damas() {
         felt={<div className="grid h-full place-items-center"><span className="size-6 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" aria-hidden /></div>} bottom={null} />
     );
   }
+  if (casual === null) {
+    return (
+      <GameFrame gameId="damas" onExit={() => { void exitMatch(nav); }} header={<p className="text-center font-[var(--font-display)] text-xl font-bold text-amber-300">{t('g.damas.name')}</p>}
+        felt={(
+          <div className="grid h-full place-items-center p-6">
+            <div className="grid w-full max-w-xs gap-3 text-center">
+              <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">Modo de juego</h2>
+              <Button variant="primary" block onClick={() => pick(false)}>Reglas Oficiales (Captura obligatoria)</Button>
+              <Button variant="secondary" block onClick={() => pick(true)}>Modo Casual (Captura libre)</Button>
+              <p className="text-xs text-stone-400">En el modo oficial, si puedes comer ficha, debes hacerlo.</p>
+            </div>
+          </div>
+        )}
+        bottom={null} />
+    );
+  }
   const oppIdx = (1 - myIdx) as Side;
   const myTurn = s.winner === null && s.turn === myIdx;
   const moves = myTurn ? legalMoves(s) : [];
   const movable = new Set(moves.map((m) => m.from));
+  const forced = myTurn && !s.casual && moves.some((m) => m.captured.length > 0);
   const targets = sel !== null ? moves.filter((m) => m.from === sel) : [];
   const flip = myIdx === 1;
   // En pantalla el jugador siempre ve sus fichas abajo.
@@ -122,7 +144,8 @@ export default function Damas() {
     if (!myTurn) return;
     const tg = targets.find((m) => m.to === i);
     if (sel !== null && tg) { setSel(null); dispatch(me, { k: 'move', from: sel, to: i }); return; }
-    if (movable.has(i)) { setSel(i === sel ? null : i); feedback('tap'); } else setSel(null);
+    if (movable.has(i)) { setSel(i === sel ? null : i); feedback('tap'); }
+    else { setSel(null); if (forced && s.board[i]?.side === myIdx) { feedback('defeat'); show('Captura obligatoria: debes comer ficha'); } }
   };
 
   return (
@@ -172,10 +195,12 @@ export default function Damas() {
                         transition={fresh && n > 0
                           ? { x: { duration: (HOP * n) / 1000, times: tm, ease: 'easeInOut' }, y: { duration: (HOP * n) / 1000, times: tm, ease: 'easeInOut' }, scale: { duration: (HOP * n) / 1000, times: tsc, ease: 'easeInOut' } }
                           : { duration: 0.01 }}>
-                        <button type="button" disabled={!movable.has(i)} onClick={() => tap(i)} aria-label={`${v.r + 1}-${v.c + 1}`} className="relative block h-full w-full touch-manipulation">
+                        <button type="button" disabled={!myTurn || p.side !== myIdx} onClick={() => tap(i)} aria-label={`${v.r + 1}-${v.c + 1}`} className="relative block h-full w-full touch-manipulation">
                           <Disc p={p} />
                           {sel === i && <span className="absolute inset-[7%] rounded-full ring-[3px] ring-[#FCE38A] shadow-[0_0_12px_rgba(252,227,138,.9)]" />}
-                          {myTurn && movable.has(i) && sel !== i && <span className="absolute inset-[9%] rounded-full ring-1 ring-[#FCE38A]/60" />}
+                          {myTurn && movable.has(i) && sel !== i && (forced
+                            ? <motion.span aria-hidden className="absolute inset-[5%] rounded-full ring-[3px] ring-amber-400" animate={{ opacity: [1, 0.35, 1], scale: [1, 1.07, 1] }} transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }} style={{ boxShadow: '0 0 12px rgba(251,191,36,.85)' }} />
+                            : <span className="absolute inset-[9%] rounded-full ring-1 ring-[#FCE38A]/60" />)}
                         </button>
                       </motion.div>
                     );
@@ -200,17 +225,20 @@ export default function Damas() {
         </div>
       )}
       overlays={(
+        <>
+        <Banner text={banner} />
         <AnimatePresence>
           {s.winner !== null && (
             <ResultOverlay outcome={s.winner === 'draw' ? undefined : s.winner === myIdx ? 'win' : 'lose'} prize={s.winner === myIdx ? WIN_BONUS : 0} taunt="" title={s.winner === 'draw' ? t('g8.draw') : s.winner === myIdx ? t('ser.champion') : t('ser.lost')}
               actions={[
-                ...(hostLike ? [{ label: t('g8.newGame'), primary: true, onClick: () => { paid.current = false; setSel(null); d.restart(); } }] : []),
+                ...(hostLike ? [{ label: t('g8.newGame'), primary: true, onClick: () => { paid.current = false; setSel(null); setS(newDamas(s.players, !!s.casual)); setDoneSeq(0); } }] : []),
                 { label: t('a.lobby'), onClick: () => { void exitMatch(nav); } },
               ]}>
               <p className="text-center text-sm tabular-nums text-stone-300">{count(myIdx)} – {count(oppIdx)}</p>
             </ResultOverlay>
           )}
         </AnimatePresence>
+        </>
       )}
     />
   );

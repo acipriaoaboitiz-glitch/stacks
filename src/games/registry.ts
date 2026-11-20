@@ -230,7 +230,8 @@ export const GAMES: GameInfo[] = [
     icon: Disc, route: '/play/damas', playable: true, accent: '#f1e7c6', tint: ['#2b2214', '#0d1a12'],
     rules: [
       'Tablero de 8×8: las fichas se mueven en diagonal hacia delante sobre casillas oscuras.',
-      'Capturar es obligatorio: saltas sobre una ficha rival a una casilla libre y puedes encadenar varios saltos.',
+      'Reglas oficiales: capturar es obligatorio. Si puedes comer ficha, debes hacerlo; saltas sobre una ficha rival a una casilla libre y puedes encadenar varios saltos.',
+      'Modo Casual (solo partidas contra la IA, se elige al empezar): la captura es libre y puedes mover otra ficha aunque puedas comer.',
       'Al llegar a la última fila tu ficha se corona Dama y se mueve y captura también hacia atrás.',
       'Gana quien captura todas las fichas rivales o las deja sin movimientos.',
     ],

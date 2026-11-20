@@ -17,18 +17,20 @@ export interface DState {
   seq: number;
   /** Plies sin captura ni movimiento de hombre (tablas a los 80). */
   quiet: number;
+  /** Modo casual: la captura es libre (en el oficial es obligatoria). */
+  casual?: boolean;
 }
 
 const dir = (side: Side): number => (side === 0 ? -1 : 1);
 
-export function newDamas(players: DuelPlayer[]): DState {
+export function newDamas(players: DuelPlayer[], casual = false): DState {
   const board: (Piece | null)[] = Array(64).fill(null);
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
     if ((r + c) % 2 !== 1) continue;
     if (r < 3) board[r * 8 + c] = { side: 1, king: false };
     else if (r > 4) board[r * 8 + c] = { side: 0, king: false };
   }
-  return { players, board, turn: 0, winner: null, last: null, seq: 0, quiet: 0 };
+  return { players, board, turn: 0, winner: null, last: null, seq: 0, quiet: 0, casual };
 }
 
 const inside = (r: number, c: number): boolean => r >= 0 && r < 8 && c >= 0 && c < 8;
@@ -57,7 +59,7 @@ function jumps(board: (Piece | null)[], from: number, piece: Piece, start: numbe
   if (!extended && captured.length) out.push({ from: start, to: from, path, captured, crowns: false });
 }
 
-/** Todos los movimientos legales del bando `side` (si hay capturas, solo capturas). */
+/** Todos los movimientos legales del bando `side` (modo oficial: si hay capturas, solo capturas; casual: todo vale). */
 export function legalMoves(s: DState, side: Side = s.turn): Move[] {
   const caps: Move[] = []; const steps: Move[] = [];
   s.board.forEach((p, i) => {
@@ -69,7 +71,7 @@ export function legalMoves(s: DState, side: Side = s.turn): Move[] {
       if (inside(nr, nc) && s.board[nr * 8 + nc] === null) steps.push({ from: i, to: nr * 8 + nc, path: [nr * 8 + nc], captured: [], crowns: !p.king && nr === crownRow(side) });
     }
   });
-  return caps.length ? caps : steps;
+  return s.casual ? [...caps, ...steps] : caps.length ? caps : steps;
 }
 
 export type DAction = { k: 'move'; from: number; to: number };
