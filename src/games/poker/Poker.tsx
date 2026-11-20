@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { Hand as HandIcon, Layers, ShieldOff } from 'lucide-react';
+import { ArrowLeft, Hand as HandIcon, Layers, ShieldOff, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
@@ -37,6 +37,36 @@ function bestFive(hole: PokerState['community'], community: PokerState['communit
 const PHASE: Record<string, string> = { preflop: 'PRE-FLOP', flop: 'FLOP', turn: 'TURN', river: 'RIVER', showdown: 'SHOWDOWN' };
 
 /** Asiento compacto para la mesa vertical de móvil: avatar, nombre y stack, 2 mini-cartas y la apuesta debajo. */
+/** Suscripción a una media query. */
+function useMedia(query: string): boolean {
+  const [v, setV] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = (): void => setV(mq.matches);
+    on();
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [query]);
+  return v;
+}
+
+/** Móvil en vertical: el Póker solo se juega en panorámico. Aviso a pantalla completa con salida al lobby. */
+function RotateToLandscapeOverlay({ onExit }: { onExit: () => void }) {
+  return (
+    <div role="dialog" aria-modal="true" aria-label="Gira tu móvil a horizontal" className="fixed inset-0 z-50 grid place-items-center bg-[#061810] p-6">
+      <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[28px] border border-[#D4AF37]/60" />
+      <button type="button" onClick={onExit} className="absolute left-5 top-[calc(env(safe-area-inset-top)+20px)] z-10 flex h-10 touch-manipulation items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-bold text-stone-100 active:scale-95"><ArrowLeft size={16} strokeWidth={1.75} aria-hidden />Salir de la mesa</button>
+      <div className="grid max-w-xs justify-items-center gap-4 text-center">
+        <motion.span className="grid size-24 place-items-center rounded-full border border-[#D4AF37]/50 bg-black/30 text-[#FCE38A]" animate={{ rotate: [0, 0, 90, 90, 0] }} transition={{ duration: 3.2, repeat: Infinity, times: [0, 0.2, 0.5, 0.8, 1], ease: 'easeInOut' }}>
+          <Smartphone size={46} strokeWidth={1.5} aria-hidden />
+        </motion.span>
+        <h2 className="font-[Unbounded] text-xl font-bold leading-snug text-amber-300">Gira tu móvil a horizontal</h2>
+        <p className="text-[14px] leading-relaxed text-white/70">La mesa de Póker VIP requiere pantalla panorámica para una visibilidad perfecta.</p>
+      </div>
+    </div>
+  );
+}
+
 function MobileSeat({ s, i, top }: { s: PokerState; i: number; top?: boolean }) {
   const x = s.seats[i]!;
   const turn = s.phase === 'betting' && s.turn === i;
@@ -177,12 +207,21 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   const n = s.players.length;
   const nm = (i: number): string => s.players[i]!.name;
   const [raising, setRaising] = useState<number | null>(null);
-  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches);
+  const wide = useMedia('(min-width: 1024px)');
+  const land = useMedia('(max-width: 1023px) and (orientation: landscape)');
+  const [portraitPhone, setPortraitPhone] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const on = (): void => setWide(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
+    const check = (): void => setPortraitPhone(window.innerWidth < 768 && window.innerHeight > window.innerWidth && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+    check();
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check); };
+  }, []);
+  // Android Chrome / Capacitor: intenta bloquear la pantalla en horizontal y lo libera al salir
+  useEffect(() => {
+    const o = screen.orientation as (ScreenOrientation & { lock?: (o: string) => Promise<void> }) | undefined;
+    try { void o?.lock?.('landscape')?.catch(() => { /* no permitido */ }); } catch { /* sin soporte */ }
+    return () => { try { o?.unlock?.(); } catch { /* sin soporte */ } };
   }, []);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
@@ -287,7 +326,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   const flip = (c: PokerState['community'][number], k: number) => (
     <motion.div key={c.id} style={{ perspective: 600 }} initial={{ rotateY: 90, y: -24, opacity: 0 }} animate={{ rotateY: 0, y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 160, damping: 18, delay: k >= 3 ? 0 : k * 0.12 }}>
-      <FaceCard card={c} scale={wide ? 0.78 : 0.6} glow={s.phase === 'handOver' && s.result?.reason === 'showdown' && winCards.has(c.id)} />
+      <FaceCard card={c} scale={wide ? 0.78 : land ? 0.72 : 0.6} glow={s.phase === 'handOver' && s.result?.reason === 'showdown' && winCards.has(c.id)} />
     </motion.div>
   );
   const at = (x: number, y: number): React.CSSProperties => ({ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' });
@@ -332,6 +371,34 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
           </div>
         </div>
       </div>
+      <Banner text={banner} />
+    </div>
+  );
+  // Móvil en horizontal (~844×390): óvalo compacto con asientos por el perímetro y el centro libre
+  const POSL: Record<number, Record<number, [number, number]>> = {
+    2: { 1: [50, 15] },
+    3: { 1: [86, 50], 2: [14, 50] },
+    4: { 1: [88, 58], 2: [50, 15], 3: [12, 58] },
+    6: { 1: [87, 82], 2: [88, 34], 3: [50, 14], 4: [12, 34], 5: [13, 82] },
+  };
+  const landFelt = (
+    <div className="h-full w-full" style={{ ['--card-w' as string]: '66px' }}>
+      <OvalTable>
+        {Array.from({ length: n - 1 }, (_, i) => i + 1).map((k) => {
+          const pos = POSL[n]?.[k];
+          if (!pos) return null;
+          return <div key={k} className="absolute z-10" style={at(pos[0], pos[1])}><MobileSeat s={s} i={(myIdx + k) % n} /></div>;
+        })}
+        <div className="absolute z-[6] flex items-center gap-2" style={at(50, 60)}>
+          <span className="font-mono flex shrink-0 items-center gap-1.5 rounded-full border border-[#D4AF37]/50 bg-black/55 px-3 py-0.5 text-[12px] font-bold tabular-nums text-amber-200"><span className="text-[9px] font-extrabold tracking-[.14em] text-[#FCE38A]">BOTE</span>{total}</span>
+          <div className="flex items-center justify-center gap-1.5" aria-label="Cartas comunitarias">
+            {Array.from({ length: 5 }, (_, k) => {
+              const c = s.community[k];
+              return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] rounded-[3px] border border-[#D4AF37]/30 bg-black/15" style={{ width: 'calc(var(--card-w) * 0.72)' }} />;
+            })}
+          </div>
+        </div>
+      </OvalTable>
       <Banner text={banner} />
     </div>
   );
@@ -415,6 +482,40 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     </div>
   );
 
+  const landBottom = (
+    <div className="flex h-[76px] w-full items-center justify-between gap-3 px-1" style={{ ['--card-w' as string]: '64px' }}>
+      <div className="flex min-w-0 items-center gap-2.5" role="group" aria-label="Tus cartas">
+        <div className="flex shrink-0 items-end">
+          {me.hole.map((c, i) => <div key={c.id} style={{ marginLeft: i ? -10 : 0 }}><FaceCard card={c} deal={i} scale={0.82} rotate={i === 0 ? -3 : 3} dim={me.folded} /></div>)}
+        </div>
+        <div className="grid min-w-0 gap-1">
+          <span className="font-mono rounded-full border border-white/10 bg-zinc-900/70 px-2 py-0.5 text-[11px] font-bold tabular-nums text-amber-200">{me.stack}{me.bet > 0 ? ` · apuesta ${me.bet}` : ''}{s.button === myIdx ? ' · D' : ''}</span>
+          {myHand && <span className="truncate rounded-full border border-[#D4AF37]/40 bg-black/35 px-2 py-0.5 text-[11px] font-bold text-[#FCE38A]">{myHand}</span>}
+        </div>
+      </div>
+      <div className="flex min-w-0 items-center justify-end gap-1.5" role="group" aria-label="Acciones">
+        {myTurn && lg ? (
+          <>
+            <button type="button" onClick={() => send({ type: 'fold' })} className="h-10 touch-manipulation rounded-xl border border-red-400/40 bg-red-950/80 px-2.5 text-[12px] font-bold text-red-100 active:scale-95">Retirarse</button>
+            {lg.canCheck
+              ? <button type="button" onClick={() => send({ type: 'check' })} className="h-10 touch-manipulation rounded-xl border border-white/15 bg-white/10 px-3 text-[12px] font-bold text-white active:scale-95">Pasar</button>
+              : <button type="button" onClick={() => send({ type: 'call' })} className="h-10 touch-manipulation rounded-xl border border-white/15 bg-white/10 px-3 text-[12px] font-bold tabular-nums text-white active:scale-95">Igualar {lg.callAmount}</button>}
+            {lg.canRaise && (
+              <>
+                {([['½', () => clampTo(s.currentBet + total / 2)], ['Bote', () => clampTo(s.currentBet + total)], ['All-In', () => lg.maxTo]] as const).map(([lab, fn]) => (
+                  <button key={lab} type="button" onClick={() => setRaising(fn())} className="h-10 touch-manipulation rounded-xl border border-white/15 bg-white/[0.07] px-2 text-[11px] font-bold text-stone-100 active:scale-95">{lab}</button>
+                ))}
+                <button type="button" onClick={() => send({ type: 'raise', to: rt })} className="h-10 touch-manipulation rounded-xl bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] px-3 text-[12px] font-extrabold tabular-nums text-[#2a1d02] active:scale-95">{rt >= lg.maxTo ? 'All-in' : `Subir ${rt}`}</button>
+              </>
+            )}
+          </>
+        ) : s.phase === 'handOver' ? (
+          <button type="button" onClick={() => dispatch({ k: 'next' })} className="h-10 touch-manipulation rounded-xl bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] px-5 text-[13px] font-extrabold text-[#2a1d02] active:scale-95">{t('a.next')}</button>
+        ) : <p className="truncate text-[12px] font-semibold text-stone-400" aria-live="polite">{status || 'Esperando…'}</p>}
+      </div>
+    </div>
+  );
+
   const bottom = (
     <>
       {vipDock}
@@ -474,10 +575,11 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   );
 
   const over = s.phase === 'gameOver';
+  if (portraitPhone) return <RotateToLandscapeOverlay onExit={exit} />;
   return (
     <GameFrame
       gameId="poker" feltTone="emerald"
-      strip={(
+      strip={land ? undefined : (
         <>
           <div className="flex items-center justify-between gap-2 px-1 text-[12px] font-bold tabular-nums text-stone-300 lg:hidden" role="group" aria-label={t('sc.pot')}>
             <span>Ciegas {BB / 2}/{BB} · <span className="text-[#FCE38A]">{(PHASE[s.street] ?? '').replace('-', '-')}</span></span>
@@ -492,9 +594,11 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
       )}
       onExit={online ? exit : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
-      header={<><p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300 lg:hidden">Póker</p><div className="no-scrollbar hidden min-w-0 flex-1 overflow-x-auto lg:block"><ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} /></div></>}
-      felt={wide ? felt : mobileFelt}
-      bottom={bottom}
+      header={land ? (
+        <div className="flex h-10 items-center justify-center gap-3 truncate text-[12px] font-bold tabular-nums text-stone-200"><span className="font-[Unbounded] text-[13px] text-amber-300">Póker</span><span>Ciegas {BB / 2}/{BB} · <span className="text-[#FCE38A]">{PHASE[s.street] ?? ''}</span></span><span className="text-amber-200">Tu stack {me.stack}</span></div>
+      ) : <><p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300 lg:hidden">Póker</p><div className="no-scrollbar hidden min-w-0 flex-1 overflow-x-auto lg:block"><ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} /></div></>}
+      felt={wide ? felt : land ? landFelt : mobileFelt}
+      bottom={land ? landBottom : bottom}
       overlays={
         <>
           <PhaseCinematic cine={cine} />
