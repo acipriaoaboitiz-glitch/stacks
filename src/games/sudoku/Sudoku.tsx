@@ -116,14 +116,14 @@ export default function Sudoku() {
         </div>
       )}
       bottom={(
-        <div className="grid w-full gap-1.5" role="group" aria-label={t('g8.actions')}>
-          <div className="grid grid-cols-9 gap-1">
+        <div className="grid w-full gap-1.5 [@media(max-height:500px)]:flex [@media(max-height:500px)]:items-center" role="group" aria-label={t('g8.actions')}>
+          <div className="grid grid-cols-9 gap-1 [@media(max-height:500px)]:flex-1">
             {Array.from({ length: 9 }, (_, k) => (
               <button key={k} type="button" disabled={count(k + 1) >= 9 || over} onClick={() => put(k + 1)}
-                className="relative h-12 touch-manipulation rounded-xl border border-white/10 bg-white/[0.07] text-[20px] font-bold tabular-nums leading-none text-[#FCE38A] transition-opacity active:scale-90 disabled:opacity-25">{k + 1}<span className="absolute bottom-0.5 right-1 text-[9px] font-semibold text-white/55">{9 - count(k + 1)}</span></button>
+                className="relative h-12 [@media(max-height:500px)]:h-10 touch-manipulation rounded-xl border border-white/10 bg-white/[0.07] text-[20px] font-bold tabular-nums leading-none text-[#FCE38A] transition-opacity active:scale-90 disabled:opacity-25">{k + 1}<span className="absolute bottom-0.5 right-1 text-[9px] font-semibold text-white/55">{9 - count(k + 1)}</span></button>
             ))}
           </div>
-          <div className="flex min-h-[48px] items-center gap-2">
+          <div className="flex min-h-[48px] items-center gap-2 [@media(max-height:500px)]:min-h-0 [@media(max-height:500px)]:w-[34%]">
             <RailButton onClick={() => { setPencil((p) => !p); feedback('tap'); }} active={pencil}><Pencil size={16} strokeWidth={1.75} aria-hidden />{t('g8.notes')}</RailButton>
             <RailButton onClick={erase}><Eraser size={16} strokeWidth={1.75} aria-hidden />{t('g8.erase')}</RailButton>
             <RailButton onClick={reset} label={t('g8.newGame')}><RotateCcw size={16} strokeWidth={1.75} aria-hidden /></RailButton>

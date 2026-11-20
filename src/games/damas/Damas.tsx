@@ -133,10 +133,10 @@ export default function Damas() {
       header={<HudPills items={[{ label: t('dm8.mine'), value: count(myIdx) }, { label: t('dm8.rival'), value: count(oppIdx) }]} />}
       felt={(
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
-          <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, s.players[oppIdx]!.name, s.players[oppIdx]!.human)} tone="them" mano={false} turn={s.winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
+          <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10 max-lg:landscape:absolute max-lg:landscape:left-2 max-lg:landscape:top-1 max-lg:landscape:z-10"><SeatBadge info={info(oppIdx, s.players[oppIdx]!.name, s.players[oppIdx]!.human)} tone="them" mano={false} turn={s.winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
           <div className="min-h-0 w-full flex-1 [container-type:size]">
             <div className="grid h-full place-items-center">
-              <div className="rounded-[14px] p-[1.8%]" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
+              <div className="rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', padding: 'calc(min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1))) * 0.018)', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
                 <div className="relative aspect-square overflow-hidden rounded-[6px]">
                   <Squares />
                   {/* destinos válidos */}

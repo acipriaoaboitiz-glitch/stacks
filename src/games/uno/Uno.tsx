@@ -301,7 +301,7 @@ export default function Uno() {
                 <div role="button" tabIndex={canDraw ? 0 : -1} aria-label="Mazo: robar carta" aria-disabled={!canDraw}
                   onClick={canDraw ? () => { feedback('draw'); act({ k: 'draw' }); } : undefined}
                   onKeyDown={canDraw ? (e) => { if (e.key === 'Enter' || e.key === ' ') { feedback('draw'); act({ k: 'draw' }); } } : undefined}
-                  className={`relative w-[clamp(46px,min(14vw,9dvh),74px)] touch-manipulation rounded-xl ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
+                  className={`relative w-[clamp(46px,min(14vw,9dvh),74px)] [@media(max-height:500px)]:w-[40px]! touch-manipulation rounded-xl ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
                   style={{ aspectRatio: '2 / 3', marginRight: 8, marginTop: 8 }}>
                   {[4, 3, 2, 1, 0].map((k) => (
                     <span key={k} className="pointer-events-none absolute inset-0 block overflow-hidden rounded-xl border-[3px] border-white" style={{ transform: `translate(${k * 1.6}px, ${-k * 1.6}px)`, boxShadow: k === 0 ? '0 3px 8px rgba(0,0,0,.5)' : undefined }}>
@@ -321,7 +321,7 @@ export default function Uno() {
                 </div>
                 <span className="font-mono text-[10px] text-amber-200/80">{s.drawPile.length}</span>
               </div>
-              <div className="relative aspect-[2/3] w-[clamp(46px,min(14vw,9dvh),74px)]">
+              <div className="relative aspect-[2/3] w-[clamp(46px,min(14vw,9dvh),74px)] [@media(max-height:500px)]:w-[40px]!">
                 {s.discard.length > 1 && (
                   <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} style={{ width: '100%' }} /></div>
                 )}
@@ -346,7 +346,7 @@ export default function Uno() {
 
   const bottom = (
     <>
-      <div className="relative flex w-full items-center justify-between gap-2">
+      <div className="relative flex w-full items-center justify-between gap-2 [@media(max-height:500px)]:pointer-events-none [@media(max-height:500px)]:absolute [@media(max-height:500px)]:left-1 [@media(max-height:500px)]:top-0 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:w-auto">
         <div className="flex min-w-0 items-center gap-2">
           <TableAvatar name="Tú" tone="me" active={myTurn} className="size-9 text-[15px]" />
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>Tú</b>
@@ -380,7 +380,7 @@ export default function Uno() {
       <PillBar pills={pills} />
       <div ref={handRef} onPointerMove={scrub} onPointerDown={scrub} onPointerUp={unscrub} onPointerCancel={unscrub} onPointerLeave={unscrub}
         className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.4dvh,18px)]" style={{ touchAction: scrollable ? 'pan-x' : 'none' }} role="group" aria-label="Tu mano">
-        <div className="mx-auto flex w-max items-end px-2 [--uno-hand-w:46px] sm:[--uno-hand-w:64px] lg:[--uno-hand-w:78px]">
+        <div className="mx-auto flex w-max items-end px-2 [--uno-hand-w:46px] sm:[--uno-hand-w:64px] lg:[--uno-hand-w:78px] [@media(max-height:500px)]:[--uno-hand-w:44px]!">
           {sorted.map((c, i) => (
             <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : sorted.length > 7 ? -20 : -12, zIndex: hot === i ? 60 : i }}>
               <motion.div initial={!dealing && fresh.has(c.id) ? { y: -90, opacity: 0 } : false} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.2, ease: EASE }}>

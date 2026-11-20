@@ -13,6 +13,7 @@ import { ProfileCard } from "../../components/ui/ProfileModal.tsx";
 import { ExitButton, QuickButtons } from '../../components/ui/QuickButtons.tsx';
 import { TurnTimerBar, type TurnTimerSpec } from '../../components/ui/TurnTimer.tsx';
 import { useCardInfo } from '../../store/cardInfo.ts';
+import { OrientationLock } from '../../components/ui/OrientationLock.tsx';
 import { EmoteBubble, ReactionButton } from '../../components/ui/Reactions.tsx';
 import { ExitConfirm, askExit } from '../../components/ui/ExitConfirm.tsx';
 import { exitMatch } from '../../services/exitMatch.ts';
@@ -62,8 +63,11 @@ export function GameFrame(props: Props) {
 /** Línea fija del dock: nombre y valor de la carta tocada (reserva su altura para no mover la mesa). */
 function CardInfoLine() {
   const t = useCardInfo();
-  return <p aria-live="polite" className="h-4 w-full truncate text-center text-[12px] font-bold leading-4 text-amber-200">{t}</p>;
+  return <p aria-live="polite" className="h-4 w-full truncate text-center text-[12px] font-bold leading-4 text-amber-200 [@media(max-height:500px)]:hidden">{t}</p>;
 }
+
+/** Juegos de mesa ancha: ofrecen el bloqueo horizontal opcional. */
+const WIDE_GAMES = new Set(['poker', 'bingo', 'ajedrez', 'damas', 'flota', 'parchis']);
 
 function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, feltTone }: Props) {
   const nav = useNavigate();
@@ -133,13 +137,13 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
     <div className="musapp">
       <div className="app">
         <main
-          className={`relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden ${shaking ? 'animate-shake' : ''} pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] text-stone-100 [--card-w:min(21.8vw,11.7dvh,136px)] lg:[--card-w:calc(min(125px,11.5dvh)/var(--z,1))]`}
+          className={`relative flex h-[100dvh] w-full select-none flex-col justify-between overflow-hidden ${shaking ? 'animate-shake' : ''} pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] [@media(max-height:500px)]:pb-1 [@media(max-height:500px)]:pt-1 text-stone-100 [--card-w:min(21.8vw,11.7dvh,136px)] lg:[--card-w:calc(min(125px,11.5dvh)/var(--z,1))]`}
         >
           <div className="desk-zoom mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
             <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
               <div className="flex items-center gap-1.5"><ExitButton onClick={exit} /><ProfileCard compact /></div>
               <div className="no-scrollbar min-w-0 overflow-x-auto">{header}</div>
-              <QuickButtons onRules={() => setRules(true)} onSettings={() => setSettings(true)} extra={<ReactionButton onSend={sendEmote} />} />
+              <QuickButtons onRules={() => setRules(true)} onSettings={() => setSettings(true)} extra={<>{WIDE_GAMES.has(gameId) && <OrientationLock />}<ReactionButton onSend={sendEmote} /></>} />
             </header>
             {timer && <TurnTimerBar spec={timer} />}
             {strip && <section aria-label="Estado">{strip}</section>}
@@ -158,7 +162,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
               <div aria-hidden className="pointer-events-none absolute inset-0 z-[15]" style={{ background: 'radial-gradient(ellipse at 50% 44%, rgba(255,226,160,.17) 0%, rgba(255,226,160,.05) 38%, rgba(255,226,160,0) 62%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.5) 100%)' }} />
             </section>
             </div>
-            <section dir="ltr" className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego"><CardInfoLine />{bottom}<EmoteBubble text={emote} /><div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-1" aria-live="polite">{others.map((r) => <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>)}</div></section>
+            <section dir="ltr" className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)] [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:flex-wrap [@media(max-height:500px)]:justify-center [@media(max-height:500px)]:gap-x-3" aria-label="Tu zona de juego"><CardInfoLine />{bottom}<EmoteBubble text={emote} /><div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-1" aria-live="polite">{others.map((r) => <span key={r.id} className="rounded-full bg-amber-300 px-3 py-1 text-[12px] font-extrabold text-amber-950 shadow-lg">{r.name}: {r.text}</span>)}</div></section>
           </div>
           {timer?.active && <div aria-hidden className="turn-glow pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20" style={{ background: 'linear-gradient(to top, rgba(240,195,95,.5), transparent)' }} />}
           {cinematic && <GameCinematic key={cinematic.id} title={cinematic.title} sub={cinematic.sub} tone={cinematic.tone} />}

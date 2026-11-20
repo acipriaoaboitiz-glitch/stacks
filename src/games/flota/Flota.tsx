@@ -245,7 +245,7 @@ export default function Flota() {
       )}
       felt={(
         <div dir="ltr" className="relative flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)] lg:flex-row lg:justify-center lg:gap-5">
-          <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(foeIdx, foe.name, foe.human)} tone="them" mano={false} turn={s.phase === 'battle' && s.turn === foeIdx} deadline={null} cards={0} /></div>
+          <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10 max-lg:landscape:absolute max-lg:landscape:left-2 max-lg:landscape:top-1 max-lg:landscape:z-10"><SeatBadge info={info(foeIdx, foe.name, foe.human)} tone="them" mano={false} turn={s.phase === 'battle' && s.turn === foeIdx} deadline={null} cards={0} /></div>
           {placing ? (
             <div className="min-h-0 w-full flex-1 [container-type:size] lg:self-stretch"><div className="mx-auto" style={{ width: BOARD, height: BOARD }}><Radar n={n} fleet={myFleet} shots={s.shots[myIdx]} reveal pulse={null} dim={iAmReady} onCell={iAmReady ? undefined : placeTap} halo={selShip !== null ? myFleet[selShip]?.cells : undefined} /></div></div>
           ) : (

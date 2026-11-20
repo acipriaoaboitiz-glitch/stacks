@@ -172,7 +172,7 @@ export default function TresEnRaya() {
       strip={<SeriesGems entries={[{ key: 'me', label: labels[0], wins: series.wins.me ?? 0 }, { key: 'them', label: labels[1], wins: series.wins.them ?? 0 }]} />}
       felt={(
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
-          <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10"><SeatBadge info={info(oppIdx, opp.name, opp.human)} tone="them" mano={false} turn={winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
+          <div className="lg:absolute lg:left-5 lg:top-4 lg:z-10 max-lg:landscape:absolute max-lg:landscape:left-2 max-lg:landscape:top-1 max-lg:landscape:z-10"><SeatBadge info={info(oppIdx, opp.name, opp.human)} tone="them" mano={false} turn={winner === null && s.turn === oppIdx} deadline={null} cards={0} /></div>
           <div className="min-h-0 w-full flex-1 [container-type:size]"><div className="mx-auto" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', height: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))' }}><Board s={s} canPlay={myTurn} onCell={place} /></div></div>
         </div>
       )}

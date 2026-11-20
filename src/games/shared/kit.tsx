@@ -36,13 +36,13 @@ export interface PillSpec { id: string; label: ReactNode; tone: keyof typeof TON
 /** Barra de acciones: píldora de cristal con botones redondeados. `idle` se muestra cuando no hay acciones. */
 export function PillBar({ pills, idle }: { pills: PillSpec[]; idle?: string }) {
   return (
-    <div className="flex min-h-[50px] items-center justify-center">
+    <div className="flex min-h-[50px] items-center justify-center [@media(max-height:500px)]:pointer-events-none [@media(max-height:500px)]:absolute [@media(max-height:500px)]:right-2 [@media(max-height:500px)]:top-0 [@media(max-height:500px)]:z-20 [@media(max-height:500px)]:min-h-0">
       <AnimatePresence mode="wait">
         {pills.length === 0 ? (
           <motion.div key="idle" className="sr-only" aria-live="polite">{idle || ' '}</motion.div>
         ) : (
           <motion.div key="actions" role="group" aria-label="Acciones"
-            className="flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/95 p-[5px]"
+            className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-[5px] rounded-[26px] border border-white/10 bg-zinc-900/95 p-[5px]"
             initial={{ opacity: 0, y: 14, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1, transition: FAST_EASE }}
             exit={{ opacity: 0, y: 6, transition: { duration: 0.15 } }}>
             {pills.map((p) => (

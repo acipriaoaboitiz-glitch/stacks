@@ -267,8 +267,8 @@ export function Table({ source, endAction, endNote, onExit }: TableProps) {
         </section>
 
         {/* 4 · Tu zona */}
-        <section className="flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">
-          <div className="relative flex w-full items-center justify-between gap-2">
+        <section className="relative flex min-h-0 flex-col items-center gap-[min(.8dvh,6px)]" aria-label="Tu zona de juego">
+          <div className="relative flex w-full items-center justify-between gap-2 [@media(max-height:500px)]:absolute [@media(max-height:500px)]:left-0 [@media(max-height:500px)]:top-0 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:gap-3">
             <div className="relative flex min-w-0 items-center gap-2">
               <SignTrigger
                 name={myName}

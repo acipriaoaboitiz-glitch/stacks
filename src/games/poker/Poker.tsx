@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { ArrowLeft, Hand as HandIcon, Layers, ShieldOff, Smartphone } from 'lucide-react';
+import { Hand as HandIcon, Layers, ShieldOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
@@ -48,23 +48,6 @@ function useMedia(query: string): boolean {
     return () => mq.removeEventListener('change', on);
   }, [query]);
   return v;
-}
-
-/** Móvil en vertical: el Póker solo se juega en panorámico. Aviso a pantalla completa con salida al lobby. */
-function RotateToLandscapeOverlay({ onExit }: { onExit: () => void }) {
-  return (
-    <div role="dialog" aria-modal="true" aria-label="Gira tu móvil a horizontal" className="fixed inset-0 z-50 grid place-items-center bg-[#061810] p-6">
-      <div aria-hidden className="pointer-events-none absolute inset-3 rounded-[28px] border border-[#D4AF37]/60" />
-      <button type="button" onClick={onExit} className="absolute left-5 top-[calc(env(safe-area-inset-top)+20px)] z-10 flex h-10 touch-manipulation items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-bold text-stone-100 active:scale-95"><ArrowLeft size={16} strokeWidth={1.75} aria-hidden />Salir de la mesa</button>
-      <div className="grid max-w-xs justify-items-center gap-4 text-center">
-        <motion.span className="grid size-24 place-items-center rounded-full border border-[#D4AF37]/50 bg-black/30 text-[#FCE38A]" animate={{ rotate: [0, 0, 90, 90, 0] }} transition={{ duration: 3.2, repeat: Infinity, times: [0, 0.2, 0.5, 0.8, 1], ease: 'easeInOut' }}>
-          <Smartphone size={46} strokeWidth={1.5} aria-hidden />
-        </motion.span>
-        <h2 className="font-[Unbounded] text-xl font-bold leading-snug text-amber-300">Gira tu móvil a horizontal</h2>
-        <p className="text-[14px] leading-relaxed text-white/70">La mesa de Póker VIP requiere pantalla panorámica para una visibilidad perfecta.</p>
-      </div>
-    </div>
-  );
 }
 
 function MobileSeat({ s, i, top }: { s: PokerState; i: number; top?: boolean }) {
@@ -209,20 +192,6 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   const [raising, setRaising] = useState<number | null>(null);
   const wide = useMedia('(min-width: 1024px)');
   const land = useMedia('(max-width: 1023px) and (orientation: landscape)');
-  const [portraitPhone, setPortraitPhone] = useState(false);
-  useEffect(() => {
-    const check = (): void => setPortraitPhone(window.innerWidth < 768 && window.innerHeight > window.innerWidth && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
-    check();
-    window.addEventListener('resize', check);
-    window.addEventListener('orientationchange', check);
-    return () => { window.removeEventListener('resize', check); window.removeEventListener('orientationchange', check); };
-  }, []);
-  // Android Chrome / Capacitor: intenta bloquear la pantalla en horizontal y lo libera al salir
-  useEffect(() => {
-    const o = screen.orientation as (ScreenOrientation & { lock?: (o: string) => Promise<void> }) | undefined;
-    try { void o?.lock?.('landscape')?.catch(() => { /* no permitido */ }); } catch { /* sin soporte */ }
-    return () => { try { o?.unlock?.(); } catch { /* sin soporte */ } };
-  }, []);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
   const paid = useRef(false);
@@ -344,15 +313,15 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     6: { 1: 'rlow', 2: 'right', 3: 'top', 4: 'left', 5: 'llow' },
   };
   const placeCls: Record<string, string> = {
-    top: 'left-1/2 top-3 -translate-x-1/2',
-    right: 'right-2.5 top-[24%]',
-    left: 'left-2.5 top-[24%]',
-    rlow: 'right-2.5 bottom-3',
-    llow: 'left-2.5 bottom-3',
+    top: 'left-1/2 top-2.5 -translate-x-1/2',
+    right: `right-2 ${n === 6 ? 'top-[17%]' : 'top-[20%]'}`,
+    left: `left-2 ${n === 6 ? 'top-[17%]' : 'top-[20%]'}`,
+    rlow: 'right-2 bottom-[15%]',
+    llow: 'left-2 bottom-[15%]',
   };
   const mobileFelt = (
     <div className="h-full w-full p-1.5">
-      <div className="relative h-full w-full rounded-[64px] border-[6px] border-[#13241c] ring-1 ring-[#D4AF37]/35" style={{ background: 'radial-gradient(ellipse at 50% 52%, #14543a 0%, #0B2E20 45%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55), 0 14px 26px rgba(0,0,0,.55)' }}>
+      <div className="relative h-full w-full rounded-[72px] border-[6px] border-[#13241c] ring-1 ring-[#D4AF37]/35" style={{ background: 'radial-gradient(ellipse at 50% 52%, #14543a 0%, #0B2E20 45%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55), 0 14px 26px rgba(0,0,0,.55)' }}>
         <span aria-hidden className="pointer-events-none absolute inset-3 rounded-[52px] border border-[#D4AF37]/30" />
         {Array.from({ length: n - 1 }, (_, i) => i + 1).map((k) => {
           const where = mobPlace[n]?.[k];
@@ -361,9 +330,9 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
           return <div key={k} className={`absolute z-10 ${placeCls[where]}`}><MobileSeat s={s} i={i} top={where === 'top'} /></div>;
         })}
         <span className="pointer-events-none absolute left-1/2 top-[10px] hidden" aria-hidden />
-        <div className="absolute inset-x-0 top-[56%] z-[6] grid -translate-y-1/2 justify-items-center gap-2">
+        <div className="absolute inset-x-0 top-1/2 z-[6] grid -translate-y-1/2 justify-items-center gap-2">
           <span className="font-mono flex items-center gap-1.5 rounded-full border border-[#D4AF37]/50 bg-black/55 px-3 py-0.5 text-[13px] font-bold tabular-nums text-amber-200"><span className="text-[10px] font-extrabold tracking-[.14em] text-[#FCE38A]">BOTE</span>{total}</span>
-          <div className="grid w-full grid-cols-5 justify-items-center gap-1.5 px-3" aria-label="Cartas comunitarias">
+          <div className="mx-auto grid w-full max-w-[270px] grid-cols-5 justify-items-center gap-1.5" aria-label="Cartas comunitarias">
             {Array.from({ length: 5 }, (_, k) => {
               const c = s.community[k];
               return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] rounded-[4px] border border-[#D4AF37]/30 bg-black/15" style={{ width: 'calc(var(--card-w) * 0.6)' }} />;
@@ -575,11 +544,10 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   );
 
   const over = s.phase === 'gameOver';
-  if (portraitPhone) return <RotateToLandscapeOverlay onExit={exit} />;
   return (
     <GameFrame
       gameId="poker" feltTone="emerald"
-      strip={land ? undefined : (
+      strip={land || !wide ? undefined : (
         <>
           <div className="flex items-center justify-between gap-2 px-1 text-[12px] font-bold tabular-nums text-stone-300 lg:hidden" role="group" aria-label={t('sc.pot')}>
             <span>Ciegas {BB / 2}/{BB} · <span className="text-[#FCE38A]">{(PHASE[s.street] ?? '').replace('-', '-')}</span></span>
@@ -596,7 +564,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
       header={land ? (
         <div className="flex h-10 items-center justify-center gap-3 truncate text-[12px] font-bold tabular-nums text-stone-200"><span className="font-[Unbounded] text-[13px] text-amber-300">Póker</span><span>Ciegas {BB / 2}/{BB} · <span className="text-[#FCE38A]">{PHASE[s.street] ?? ''}</span></span><span className="text-amber-200">Tu stack {me.stack}</span></div>
-      ) : <><p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300 lg:hidden">Póker</p><div className="no-scrollbar hidden min-w-0 flex-1 overflow-x-auto lg:block"><ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} /></div></>}
+      ) : <><p className="grid min-w-0 text-center leading-tight lg:hidden"><span className="truncate font-[var(--font-display)] text-[15px] font-bold text-amber-300">Póker</span><span className="truncate text-[10.5px] font-bold tabular-nums text-stone-300">Ciegas {BB / 2}/{BB} · <span className="text-[#FCE38A]">{PHASE[s.street] ?? ''}</span></span></p><div className="no-scrollbar hidden min-w-0 flex-1 overflow-x-auto lg:block"><ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} /></div></>}
       felt={wide ? felt : land ? landFelt : mobileFelt}
       bottom={land ? landBottom : bottom}
       overlays={

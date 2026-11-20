@@ -183,8 +183,8 @@ export default function Ruleta() {
   const litSet = new Set<number>(hover ? covers(hover) : []);
 
   const felt = (
-    <div className="flex h-full min-h-0 flex-col items-center gap-[clamp(4px,1.4vw,12px)] p-[clamp(6px,2vw,16px)] lg:flex-row lg:justify-center lg:gap-8">
-      <div className="min-h-0 w-full [container-type:size] lg:h-full lg:w-[44%]" style={{ flex: '0 1 44%' }}>
+    <div className="flex h-full min-h-0 flex-col items-center gap-[clamp(4px,1.4vw,12px)] p-[clamp(6px,2vw,16px)] lg:flex-row lg:justify-center lg:gap-8 [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:justify-center [@media(max-height:500px)]:gap-3">
+      <div className="min-h-0 w-full [container-type:size] lg:h-full lg:w-[44%] [@media(max-height:500px)]:h-full [@media(max-height:500px)]:w-[30%]" style={{ flex: '0 1 44%' }}>
         <div className="relative mx-auto" style={{ width: 'min(100cqw, 100cqh)', height: 'min(100cqw, 100cqh)' }}>
           <Wheel spin={spinNo} result={result} duration={SPIN_SECONDS} className="h-full w-full" />
           {shownResult !== null && (
@@ -193,7 +193,7 @@ export default function Ruleta() {
           )}
         </div>
       </div>
-      <div className="relative mb-[clamp(34px,10vw,46px)] max-h-[420px] min-h-0 w-full max-w-[680px] flex-1 lg:mb-0 lg:h-[calc(100%-100px)] lg:max-h-[540px] lg:max-w-[600px]">
+      <div className="relative mb-[clamp(34px,10vw,46px)] max-h-[420px] min-h-0 w-full max-w-[680px] flex-1 lg:mb-0 lg:h-[calc(100%-100px)] lg:max-h-[540px] lg:max-w-[600px] [@media(max-height:500px)]:mb-0 [@media(max-height:500px)]:h-full [@media(max-height:500px)]:max-h-none [@media(max-height:500px)]:max-w-none">
         <div className="grid h-full w-full" style={{ gridTemplateColumns: '1.1fr repeat(12, 1fr) 1.1fr', gridTemplateRows: 'repeat(3, minmax(0,1fr)) minmax(0,.8fr) minmax(0,.8fr)' }}>
           <Spot id="n:0" bets={bets} label="0" cls={CELL.green} win={isWin('n:0')} lit={litSet.has(0)} locked={locked} onBet={place} onHover={setHover} style={{ gridRow: '1 / span 3', gridColumn: 1 }} />
           {ROWS.map((row, r) => row.map((n, c) => (
@@ -226,24 +226,24 @@ export default function Ruleta() {
 
   const bottom = (
     <>
-      <div className="flex w-full items-center justify-between gap-2">
+      <div className="flex w-full items-center justify-between gap-2 [@media(max-height:500px)]:w-[44%]">
         <div className="flex min-w-0 flex-1 items-center justify-start gap-[clamp(3px,1.2vw,10px)]" role="group" aria-label={t('rl.chips')}>
           {CHIPS.map((c) => (
             <button key={c} type="button" onClick={() => { setChip(c); feedback('tap'); }} aria-label={String(c)} aria-pressed={chip === c}
               className={`grid touch-manipulation place-items-center rounded-full border-2 border-dashed font-extrabold tabular-nums transition-transform ${chip === c ? '-translate-y-1 scale-110 border-amber-100 bg-gradient-to-br from-amber-200 to-amber-600 text-amber-950' : 'border-amber-400/60 bg-gradient-to-br from-stone-700 to-stone-900 text-amber-200'}`}
-              style={{ width: 'clamp(32px,9vw,54px)', height: 'clamp(32px,9vw,54px)', fontSize: 'clamp(11px,3vw,15px)' }}>{c}</button>
+              style={{ width: 'clamp(30px,min(9vw,8dvh),54px)', height: 'clamp(30px,min(9vw,8dvh),54px)', fontSize: 'clamp(11px,min(3vw,2.8dvh),15px)' }}>{c}</button>
           ))}
         </div>
-        <div className="shrink-0 whitespace-nowrap text-right text-[13px] text-stone-300">
+        <div className="shrink-0 whitespace-nowrap text-right text-[13px] text-stone-300 [@media(max-height:500px)]:text-[11px] [@media(max-height:500px)]:leading-tight">
           <p>Apuesta Total: <b className="tabular-nums text-amber-200">{total}</b></p>
           {net !== null && <p className={`font-extrabold tabular-nums ${net > 0 ? 'text-emerald-300' : net < 0 ? 'text-rose-300' : 'text-stone-300'}`}>{net > 0 ? '+' : ''}{net}</p>}
         </div>
       </div>
       {/* Action Rail: altura fija reservada para que la mesa nunca se mueva */}
-      <div className="flex min-h-[48px] w-full items-center justify-center gap-2" role="group" aria-label={t('rl.actions')}>
-        <button type="button" disabled={locked || total === 0} onClick={undo} aria-label={t('rl.undo')} className="btn flex touch-manipulation items-center gap-1 px-3"><Undo2 size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only">{t('rl.undo')}</span></button>
-        <button type="button" disabled={locked || total === 0} onClick={clear} aria-label={t('rl.clear')} className="btn flex touch-manipulation items-center gap-1 px-3"><Eraser size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only">{t('rl.clear')}</span></button>
-        <button type="button" disabled={locked || total > 0 || lastTotal === 0} onClick={repeat} aria-label={t('rl.repeat')} className="btn flex touch-manipulation items-center gap-1 px-3"><Repeat size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only">{t('rl.repeat')}</span></button>
+      <div className="flex min-h-[48px] w-full items-center justify-center gap-2 [@media(max-height:500px)]:min-h-0 [@media(max-height:500px)]:w-[52%]" role="group" aria-label={t('rl.actions')}>
+        <button type="button" disabled={locked || total === 0} onClick={undo} aria-label={t('rl.undo')} className="btn flex touch-manipulation items-center gap-1 px-3"><Undo2 size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only [@media(max-height:500px)]:sr-only">{t('rl.undo')}</span></button>
+        <button type="button" disabled={locked || total === 0} onClick={clear} aria-label={t('rl.clear')} className="btn flex touch-manipulation items-center gap-1 px-3"><Eraser size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only [@media(max-height:500px)]:sr-only">{t('rl.clear')}</span></button>
+        <button type="button" disabled={locked || total > 0 || lastTotal === 0} onClick={repeat} aria-label={t('rl.repeat')} className="btn flex touch-manipulation items-center gap-1 px-3"><Repeat size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only [@media(max-height:500px)]:sr-only">{t('rl.repeat')}</span></button>
         <button type="button" disabled={locked || total === 0} onClick={doubleAll} aria-label="Doblar" className="btn flex touch-manipulation items-center gap-1 px-3"><Copy size={16} strokeWidth={1.75} aria-hidden /><span className="font-extrabold">x2</span></button>
         <button type="button" disabled={locked || total === 0} onClick={spin} className="btn btn--gold min-w-0 flex-1 touch-manipulation font-extrabold">{locked ? '…' : t('rl.spin')}</button>
       </div>

@@ -70,7 +70,7 @@ export function TableCenter({ view, mySeat, names, banner }: { view: PublicState
             className="grid justify-items-center gap-[min(1.4dvh,10px)] text-center"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.2 } }}
           >
-            <span className="font-[var(--font-display)] text-[clamp(24px,8vw,40px)] font-bold leading-none text-amber-50/90">{title}</span>
+            <span className="font-[var(--font-display)] text-[clamp(24px,8vw,40px)] font-bold leading-none text-amber-50/90 [@media(max-height:500px)]:text-[26px]">{title}</span>
             {bet && (
               <motion.div
                 layout

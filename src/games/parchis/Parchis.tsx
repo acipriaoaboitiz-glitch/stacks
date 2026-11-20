@@ -218,12 +218,12 @@ export default function Parchis() {
       )}
       felt={(
         <div className="flex h-full min-h-0 flex-col items-center gap-2 p-[clamp(8px,2.4vw,18px)]">
-          <div className="flex w-full items-start justify-around lg:absolute lg:left-4 lg:right-4 lg:top-3 lg:z-10 lg:w-auto lg:flex-col lg:gap-3 lg:items-start lg:justify-start lg:right-auto">
+          <div className="flex w-full items-start justify-around max-lg:landscape:absolute max-lg:landscape:left-2 max-lg:landscape:top-1 max-lg:landscape:z-10 max-lg:landscape:w-auto max-lg:landscape:flex-col max-lg:landscape:items-start max-lg:landscape:justify-start max-lg:landscape:gap-1 lg:absolute lg:left-4 lg:right-4 lg:top-3 lg:z-10 lg:w-auto lg:flex-col lg:gap-3 lg:items-start lg:justify-start lg:right-auto">
             {others.map(({ p, i }) => <SeatBadge key={p.id} info={info(i, p.name, p.human)} tone="them" mano={false} turn={s.phase !== 'over' && s.turn === i} deadline={null} cards={0} />)}
           </div>
           <div className="min-h-0 w-full flex-1 [container-type:size]">
             <div className="grid h-full place-items-center">
-              <div className="rounded-[14px] p-[1.6%]" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
+              <div className="rounded-[14px]" style={{ width: 'min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1)))', padding: 'calc(min(100cqw, 100cqh, calc((100dvh - 150px) / var(--z, 1)), calc((100vw - 40px) / var(--z, 1)), calc(780px / var(--z, 1))) * 0.016)', background: 'linear-gradient(145deg,#4a2e1a,#2b1a0d)', boxShadow: 'inset 0 0 0 2px #B8860B, inset 0 0 0 3.5px rgba(252,227,138,.45), inset 0 5px 8px rgba(0,0,0,.5), 0 10px 22px rgba(0,0,0,.55)' }}>
                 <div className="relative aspect-square overflow-hidden rounded-[6px]" style={{ transform: `rotate(${rot}deg)` }}>
                   <BoardArt rot={rot} />
                   {/* barreras: dos fichas en una casilla del recorrido llevan un aro dorado */}
@@ -266,7 +266,7 @@ export default function Parchis() {
         </div>
       )}
       bottom={(
-        <div className="grid w-full justify-items-center gap-1.5">
+        <div className="grid w-full justify-items-center gap-1.5 max-lg:landscape:flex max-lg:landscape:items-center max-lg:landscape:justify-center max-lg:landscape:gap-4">
           <SeatBadge info={info(myIdx, me$.name, true)} tone="me" mano={false} turn={myTurn} deadline={null} cards={0} />
           {/* Action Rail de altura fija: dado y botón de tirar */}
           <div className="flex min-h-[56px] w-full items-center justify-center gap-4" role="group" aria-label={t('g8.actions')}>
