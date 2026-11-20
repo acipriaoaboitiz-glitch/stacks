@@ -224,7 +224,8 @@ export default function Chinchon() {
       gameId="chinchon"
       onExit={online ? () => { setActiveRoom(null); void exitMatch(nav); } : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.phase}:${s.stock.length}`, onTimeout: () => { setSel(null); dispatch(me, s.phase === 'draw' ? { k: 'draw', source: 'stock' } : { k: 'discard', cardId: s.drawn ?? hand[0]!.id }); } }}
-      header={<ScoreStrip items={s.scores.map((v, i) => ({ name: nm(i), value: v, us: i === myIdx }))} target={OUT_AT} />}
+      header={<p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300">Chinchón</p>}
+      strip={<ScoreStrip items={s.scores.map((v, i) => ({ name: nm(i), value: v, us: i === myIdx }))} target={OUT_AT} />}
       felt={felt}
       bottom={bottom}
       overlays={
