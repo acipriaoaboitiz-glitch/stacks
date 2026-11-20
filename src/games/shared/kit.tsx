@@ -7,7 +7,8 @@ import { Button } from '../mus/app/components/ui.tsx';
 import { type PhaseCine } from '../mus/app/game/useTableDirector.ts';
 import { juice } from '../../services/juice.ts';
 import { CardBackArt, FrenchFace } from '../../components/cards/FrenchFace.tsx';
-import type { AnyCard, SpanishCard, SpanishSuit } from '../../engine/deck.ts';
+import { cardLabel, type AnyCard, type SpanishCard, type SpanishSuit } from '../../engine/deck.ts';
+import { setCardInfo } from '../../store/cardInfo.ts';
 import { CARD_EASE, FAST_EASE, feedback, playWhoosh, useSettings } from '../../store/settings.ts';
 import { gameTimeout } from '../../services/timers.ts';
 import { useThrow } from './useThrow.ts';
@@ -122,7 +123,10 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
     return () => window.clearTimeout(id);
   }, [deal]);
   const { help } = useSettings();
-  if (!help) { badge = undefined; aura = false; shimmer = false; }
+  void badge; // las etiquetas flotantes sobre la carta están prohibidas: el dato va al dock inferior
+  if (!help) { aura = false; shimmer = false; }
+  const info = title ?? (faceDown ? '' : cardLabel(card));
+  useEffect(() => { if (selected && info) setCardInfo(info); return () => { if (selected) setCardInfo(''); }; }, [selected, info]);
   const content = faceDown
     ? (card.deck === 'fr' ? <CardBackArt /> : <CardBack />)
     : card.deck === 'fr' ? <FrenchFace card={card} /> : <CardFace card={card} />;
@@ -134,7 +138,10 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
       {...(interactive ? handlers : {})}
       aria-pressed={interactive ? selected : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : undefined}
-      title={faceDown ? undefined : title}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse' && info) setCardInfo(info); }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse' && !selected) setCardInfo(''); }}
+      onFocus={() => { if (info) setCardInfo(info); }}
+      onBlur={() => { if (!selected) setCardInfo(''); }}
       className={`${deal !== undefined ? 'deal-in ' : ''}${shimmer && !faceDown ? 'card-shimmer ' : ''}relative block shrink-0 touch-manipulation select-none overflow-hidden rounded-none border border-black/40 shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       style={{
         transformPerspective: 1000,
@@ -156,10 +163,6 @@ export const FaceCard = memo(function FaceCard({ card, faceDown, scale = 1, onCl
       {!faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,.14)_0%,rgba(255,255,255,0)_45%,rgba(0,0,0,.08)_100%)]" />}
       <span aria-hidden="true" className="pointer-events-none absolute inset-[3px] border border-black/15" />
       {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/35" />}
-      {badge && !faceDown && (
-        <span aria-hidden="true" className="pointer-events-none absolute right-[5%] top-[3%] rounded-full bg-black/70 px-[.35em] py-[.05em] font-mono font-bold leading-none text-amber-200 shadow"
-          style={{ fontSize: `max(8px, calc(var(--card-w) * ${scale} * 0.13))` }}>{badge}</span>
-      )}
     </motion.button>
   );
 });
@@ -293,14 +296,14 @@ export function ResultOverlay({ title, children, actions, outcome, prize = 0, ta
 /** Brisca: puntos de la carta (+11, +10, +4, +3, +2) y aura dorada para el palo de triunfo. */
 export const briscaDeco = (card: SpanishCard, trump: SpanishSuit): { badge?: string; aura: boolean; title: string } => {
   const p = briscaPoints(card);
-  return { badge: p > 0 ? `+${p}` : undefined, aura: card.suit === trump, title: `${p} puntos${card.suit === trump ? ' · triunfo' : ''}` };
+  return { badge: p > 0 ? `+${p}` : undefined, aura: card.suit === trump, title: `${cardLabel(card)} · ${p} pts${card.suit === trump ? ' · triunfo' : ''}` };
 };
 
 /** Escoba: valor de suma de las figuras (=8, =9, =10) y brillo del 7 de oros (el «velo»: 1 punto directo). */
 export const escobaDeco = (card: SpanishCard): { badge?: string; shimmer: boolean; title: string } => {
   const v = escobaValue(card);
   const velo = card.suit === 'oros' && card.rank === 7;
-  return { badge: card.rank >= 10 ? `=${v}` : undefined, shimmer: velo, title: velo ? 'Siete de oros (el velo): 1 punto al final de la ronda' : `Vale ${v}` };
+  return { badge: card.rank >= 10 ? `=${v}` : undefined, shimmer: velo, title: velo ? `${cardLabel(card)} · el velo (1 punto)` : `${cardLabel(card)} · vale ${v}` };
 };
 
 /** Marcador compacto para 3 o más jugadores (o puntuaciones individuales). */

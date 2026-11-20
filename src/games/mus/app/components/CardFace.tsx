@@ -25,15 +25,6 @@ export function CardFace({ card, eightKings = true }: { card: Card; eightKings?:
         draggable={false}
       />
       <CornerIndex card={{ deck: 'es', rank: card.rank, suit: card.suit }} />
-      {eq && (
-        <span
-          aria-hidden="true"
-          title={eq === 'R' ? 'Cuenta como rey' : 'Cuenta como as'}
-          className="pointer-events-none absolute right-[6%] top-[3%] grid size-[1.7em] place-items-center rounded-full border border-amber-200/70 bg-black/70 text-[min(3.6vw,1.9dvh,12px)] font-extrabold leading-none text-amber-200 shadow"
-        >
-          {eq}
-        </span>
-      )}
     </span>
   );
 }

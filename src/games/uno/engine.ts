@@ -31,8 +31,8 @@ export interface UnoState {
   uno: { pid: string; at: number } | null;
 }
 
-/** Ventana (ms) para cantar «¡UNO!» o cazar al que no lo ha cantado. */
-export const UNO_WINDOW = 2800;
+/** Regla oficial: 5 segundos para cantar «¡UNO!» (o para que otro cace al que no lo ha cantado). */
+export const UNO_WINDOW = 5000;
 
 export const COLOR_NAME: Record<Color, string> = { red: 'rojo', yellow: 'amarillo', green: 'verde', blue: 'azul' };
 
@@ -245,8 +245,26 @@ export function catchUno(prev: UnoState, byPid: string): UnoState | null {
   return s;
 }
 
-/** Se acabó el tiempo de la ventana sin que nadie actuara. */
-export const expireUno = (prev: UnoState): UnoState | null => (prev.uno ? { ...prev, uno: null } : null);
+/** Se acabó la ventana de 5 s: si el jugador es humano y no cantó, roba 2 cartas de penalización; los bots despistados quedan libres. */
+export function expireUno(prev: UnoState): UnoState | null {
+  if (!prev.uno) return null;
+  const victim = prev.players.find((p) => p.id === prev.uno!.pid);
+  if (!victim?.human || prev.hands[victim.id]!.length !== 1) return { ...prev, uno: null };
+  const s = structuredClone(prev);
+  take(s, victim.id, 2);
+  s.uno = null;
+  say(s, victim.id, `${victim.name} no cantó UNO: +2`, 'draw');
+  return s;
+}
+
+/** Salvavidas: si por lo que sea nadie puede mover, el turno pasa al siguiente jugador (nunca se congela la partida). */
+export function forceAdvance(prev: UnoState): UnoState {
+  const s = structuredClone(prev);
+  s.drawn = null;
+  s.turn = nextIdx(s, s.turn);
+  say(s, s.players[prev.turn]!.id, 'Pasa');
+  return s;
+}
 
 /** Acciones que un jugador puede enviar (en local o a través de la sala). «uno» canta el propio o caza a otro. */
 export type UnoAction = { k: 'play'; cardId: string; color?: Color } | { k: 'draw' } | { k: 'pass' } | { k: 'uno' };

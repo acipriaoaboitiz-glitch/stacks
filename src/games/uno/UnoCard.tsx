@@ -1,7 +1,4 @@
 import { memo, useEffect, useSyncExternalStore, type CSSProperties } from 'react';
-import { motion } from 'framer-motion';
-import { CARD_EASE, playWhoosh } from '../../store/settings.ts';
-import { gameTimeout } from '../../services/timers.ts';
 import { useThrow } from '../shared/useThrow.ts';
 import { cardLabel, type Color, type UnoCard as UnoCardData } from './engine.ts';
 
@@ -10,8 +7,6 @@ const HEX: Record<Color | 'wild', string> = { red: '#DC2626', yellow: '#EAB308',
 /** Acabado satinado: luz arriba a la izquierda y tono más profundo abajo a la derecha. */
 const SATIN: Record<Color | 'wild', [string, string]> = { red: ['#E23232', '#C21F1F'], yellow: ['#F2C21A', '#D9A406'], green: ['#22B455', '#12873F'], blue: ['#3B76F0', '#1F4FD0'], wild: ['#2A2A2F', '#111114'] };
 
-/** El «hover» se queda pegado en pantallas táctiles: solo se usa con ratón. */
-const CAN_HOVER = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
 
 // ─── Set vectorial opcional: /public/cards/uno/{color}_{valor}.svg ───────────────────────────────
 // Nombres: red|yellow|green|blue + 0-9, skip, reverse, draw2  ·  wild_wild.svg, wild_wild4.svg  ·  back.svg
@@ -157,68 +152,43 @@ interface Props {
   faceDown?: boolean;
   scale?: number;
   onClick?: () => void;
-  /** Se puede jugar: solo brilla (no se eleva). */
+  /** Se puede jugar: solo brilla. */
   playable?: boolean;
-  /** Seleccionada: se eleva; un segundo toque la juega. */
   selected?: boolean;
   dim?: boolean;
   glow?: boolean;
-  /** Bajo el dedo/cursor: sube 18 px y crece un 8 %. */
+  /** Bajo el dedo/cursor: sube un poco (-translate-y-3). */
   lifted?: boolean;
-  /** Posición en el reparto: sale del mazo en cascada (45 ms por carta). */
-  deal?: number;
-  /** Carta robada y jugable: aparece boca abajo y gira en 3D (rotateY 180 → 0, perspectiva 1000 px) con destello dorado. */
-  flip?: boolean;
-  rotate?: number;
   style?: CSSProperties;
 }
 
-/** Carta de UNO: usa el set SVG de /public/cards/uno si existe y, si no, el diseño vectorial propio. */
-export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, lifted, deal, flip, rotate = 0, style }: Props) {
+/** Carta de UNO: borde blanco, color vivo y números grandes. Sin animaciones complejas: solo sube un poco al señalarla. */
+export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClick, playable, selected, dim, glow, lifted, style }: Props) {
   const vectors = useVectorSet();
   const interactive = Boolean(onClick);
   const { handlers, click } = useThrow(() => onClick?.(), interactive);
-  useEffect(() => {
-    if (deal === undefined) return;
-    const id = gameTimeout(() => playWhoosh(), deal * 45);
-    return () => window.clearTimeout(id);
-  }, [deal]);
   const lit = glow || playable || selected;
   return (
-    <motion.button
+    <button
       type="button"
       disabled={!interactive}
       onClick={click}
       {...(interactive ? handlers : {})}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`${deal !== undefined ? 'deal-in ' : ''}relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl border-[3px] border-white bg-white shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl border-[3px] border-white bg-white shadow-md transition-transform duration-150 ${lifted || selected ? '-translate-y-3' : ''} ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
-        transformPerspective: 1000,
         width: `calc(var(--card-w) * ${scale})`,
-        boxShadow: lit ? '0 0 0 2px #f0c35f' : undefined,
-        ...(deal !== undefined ? { ['--d' as string]: deal } : {}),
+        boxShadow: lit ? '0 0 0 2px #f0c35f, 0 3px 8px rgba(0,0,0,.5)' : undefined,
         ...(interactive ? { touchAction: 'pan-x' } : {}),
         ...style,
       }}
-      initial={flip ? { rotateY: 180, y: -30, scale: 1.15 } : undefined}
-      animate={{ y: lifted ? -18 : selected ? -12 : playable && interactive ? -8 : 0, scale: lifted ? 1.08 : 1, rotate, rotateY: 0 }}
-      whileHover={interactive && CAN_HOVER ? { y: selected ? -14 : -6 } : undefined}
-      whileTap={interactive ? { scale: 0.96 } : undefined}
-      transition={flip ? { duration: 0.55, ease: [0.2, 0.8, 0.25, 1] } : CARD_EASE}
     >
-      {flip && (
-        <>
-          <motion.span aria-hidden className="pointer-events-none absolute inset-0 z-10" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 0.01, delay: 0.27 }}><UnoBack /></motion.span>
-          <motion.span aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-xl border-[3px] border-[#FCE38A]" initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0] }} transition={{ duration: 0.9, delay: 0.3 }} />
-        </>
-      )}
       {vectors
         ? <img src={`${BASE}${faceDown ? 'back.svg' : unoFile(card)}`} alt="" draggable={false} className="size-full object-contain" />
         : faceDown ? <UnoBack /> : <UnoFace card={card} />}
-      {playable && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-x-[10%] top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white to-transparent opacity-90" />}
       {dim && !faceDown && <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/45" />}
-    </motion.button>
+    </button>
   );
 });
 
