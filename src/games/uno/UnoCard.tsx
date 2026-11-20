@@ -6,9 +6,9 @@ import { useThrow } from '../shared/useThrow.ts';
 import { cardLabel, type Color, type UnoCard as UnoCardData } from './engine.ts';
 
 /** Colores oficiales del set. */
-const HEX: Record<Color | 'wild', string> = { red: '#DC2626', yellow: '#D97706', green: '#059669', blue: '#2563EB', wild: '#111827' };
+const HEX: Record<Color | 'wild', string> = { red: '#DC2626', yellow: '#EAB308', green: '#16A34A', blue: '#2563EB', wild: '#18181B' };
 /** Acabado satinado: luz arriba a la izquierda y tono más profundo abajo a la derecha. */
-const SATIN: Record<Color | 'wild', [string, string]> = { red: ['#EF4444', '#991B1B'], yellow: ['#F59E0B', '#A16207'], green: ['#10B981', '#047857'], blue: ['#3B82F6', '#1D4ED8'], wild: ['#1F2937', '#05080F'] };
+const SATIN: Record<Color | 'wild', [string, string]> = { red: ['#E23232', '#C21F1F'], yellow: ['#F2C21A', '#D9A406'], green: ['#22B455', '#12873F'], blue: ['#3B76F0', '#1F4FD0'], wild: ['#2A2A2F', '#111114'] };
 
 /** El «hover» se queda pegado en pantallas táctiles: solo se usa con ratón. */
 const CAN_HOVER = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
@@ -114,8 +114,8 @@ const cornerLabel = (card: UnoCardData): string =>
 function Corner({ card }: { card: UnoCardData }) {
   return (
     <g>
-      <text textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="900" fontStyle="italic" fontSize="32" fill="#000" stroke="#000" strokeWidth="5" x="1.5" y="2">{cornerLabel(card)}</text>
-      <text textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="900" fontStyle="italic" fontSize="32" fill="#fff">{cornerLabel(card)}</text>
+      <text textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="900" fontStyle="italic" fontSize="58" fill="#000" stroke="#000" strokeWidth="7" x="2" y="3">{cornerLabel(card)}</text>
+      <text textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="900" fontStyle="italic" fontSize="58" fill="#fff">{cornerLabel(card)}</text>
     </g>
   );
 }
@@ -134,8 +134,8 @@ export function UnoFace({ card }: { card: UnoCardData }) {
       <ellipse cx="100" cy="150" rx="60" ry="96" fill="#F8FAFC" fillOpacity=".94" transform="rotate(26 100 150)" />
       {wild && <ellipse cx="100" cy="150" rx="55" ry="90" fill="#111827" transform="rotate(26 100 150)" />}
       <g transform="translate(100 150)"><Glyph card={card} color={wild ? '#fff' : bg} /></g>
-      <g transform="translate(36 42)"><Corner card={card} /></g>
-      <g transform="translate(164 258) rotate(180)"><Corner card={card} /></g>
+      <g transform="translate(40 52)"><Corner card={card} /></g>
+      <g transform="translate(160 248) rotate(180)"><Corner card={card} /></g>
     </svg>
   );
 }
@@ -192,7 +192,7 @@ export const UnoCard = memo(function UnoCard({ card, faceDown, scale = 1, onClic
       {...(interactive ? handlers : {})}
       aria-pressed={interactive ? Boolean(selected) : undefined}
       aria-label={faceDown ? 'Carta boca abajo' : cardLabel(card)}
-      className={`${deal !== undefined ? 'deal-in ' : ''}relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl bg-[#0b1220] shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`${deal !== undefined ? 'deal-in ' : ''}relative block aspect-[2/3] shrink-0 touch-manipulation select-none overflow-hidden rounded-xl border-[3px] border-white bg-white shadow-md will-change-transform md:shadow-[0_10px_24px_rgba(0,0,0,0.65)] ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         transformPerspective: 1000,
         width: `calc(var(--card-w) * ${scale})`,

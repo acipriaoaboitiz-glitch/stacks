@@ -83,7 +83,7 @@ export function Body2({ id }: { id: string }) {
       return (
         <g>
           <Shadow />
-          {[['king_of_spades', 34, 40, -14], ['queen_of_hearts', 62, 30, -4], ['jack_of_clubs', 90, 32, 8], ['ace_of_diamonds', 112, 44, 18]].map(([f, x, y, r]) => (
+          {[['king_of_spades', 18, 42, -16], ['queen_of_hearts', 43, 31, -5], ['jack_of_clubs', 67, 31, 5], ['ace_of_diamonds', 92, 42, 16]].map(([f, x, y, r]) => (
             <g key={String(f)} transform={`translate(${x} ${y}) rotate(${r} 20 50)`} style={{ filter: 'drop-shadow(0 5px 4px rgba(0,0,0,.5))' }}>
               <rect x="-1" y="-1" width="42" height="62" rx="3" fill="#fdfbf7" />
               <image href={`${BASE}cards/french/${f}.svg`} x="0" y="0" width="40" height="60" preserveAspectRatio="xMidYMid meet" />

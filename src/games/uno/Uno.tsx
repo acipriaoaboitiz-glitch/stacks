@@ -49,7 +49,8 @@ const reach = (slot: Slot, k: number): { x: number; y: number } => {
   const H = typeof window === 'undefined' ? 640 : window.innerHeight;
   return slot === 'top' ? { x: 0, y: -H * 0.26 * k } : slot === 'left' ? { x: -W * 0.33 * k, y: -H * 0.03 * k } : slot === 'right' ? { x: W * 0.33 * k, y: -H * 0.03 * k } : { x: 0, y: H * 0.32 * k };
 };
-const SPRING = { type: 'spring', stiffness: 420, damping: 26 } as const;
+/** Lanzamiento de carta: trayectoria curva suave y asentamiento. */
+const LAUNCH = { type: 'spring', stiffness: 380, damping: 28 } as const;
 
 /**
  * Anillo orbital: aro luminoso del color activo y tres cometas con flecha que giran en el sentido real del turno.
@@ -61,25 +62,14 @@ function OrbitRing({ color, ccw }: { color: string; ccw: boolean }) {
   useEffect(() => { mounted.current = true; }, []);
   return (
     <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: 'calc(var(--card-w) * 2.5)', aspectRatio: '1' }}>
-      <svg shapeRendering="geometricPrecision" viewBox="-100 -100 200 200" className="absolute inset-0 size-full" style={{ overflow: 'visible' }}>
-        <circle r="92" fill="none" stroke={color} strokeWidth="9" opacity=".12" style={{ transition: 'stroke .3s' }} />
-        <circle r="92" fill="none" stroke={color} strokeWidth="1.6" opacity=".5" style={{ transition: 'stroke .3s' }} />
-      </svg>
-      <AnimatePresence initial={false}>
-        <motion.div key={ccw ? 'ccw' : 'cw'} className="absolute inset-0" initial={{ opacity: 0, scale: 0.82, rotate: ccw ? 40 : -40 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={{ type: 'spring', stiffness: 240, damping: 10 }}>
-          <div className={`orbit-spin size-full ${ccw ? 'ccw' : ''}`}>
-            <svg shapeRendering="geometricPrecision" viewBox="-100 -100 200 200" className="size-full" style={{ overflow: 'visible', transform: ccw ? 'scaleX(-1)' : undefined }}>
-              <circle r="92" fill="none" stroke={color} strokeWidth="4.5" strokeLinecap="round" pathLength="360" strokeDasharray="38 82" style={{ transition: 'stroke .3s' }} />
-              {[40, 160, 280].map((a) => (
-                <polygon key={a} points="-9,-8 4,0 -9,8" fill="#FFF8DC" transform={`rotate(${a}) translate(92 0) rotate(90)`} />
-              ))}
-            </svg>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+      <div key={ccw ? 'ccw' : 'cw'} className={`orbit-spin size-full ${ccw ? 'ccw' : ''}`}>
+        <svg shapeRendering="geometricPrecision" viewBox="-100 -100 200 200" className="size-full" style={{ overflow: 'visible' }}>
+          {[0, 180].map((r) => <path key={r} d="M0 -92 A92 92 0 0 1 80 -46" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" opacity=".5" transform={`rotate(${r})`} style={{ transition: 'stroke .3s' }} />)}
+        </svg>
+      </div>
       {mounted.current && (
-        <motion.svg key={ccw ? 'f1' : 'f0'} viewBox="-100 -100 200 200" className="absolute inset-0 size-full" style={{ overflow: 'visible' }} initial={{ opacity: 1, scale: 0.92 }} animate={{ opacity: 0, scale: 1.18 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
-          <circle r="92" fill="none" stroke="#FFF3B0" strokeWidth="7" />
+        <motion.svg key={ccw ? 'f1' : 'f0'} viewBox="-100 -100 200 200" className="absolute inset-0 size-full" style={{ overflow: 'visible' }} initial={{ opacity: 0.9, scale: 0.94 }} animate={{ opacity: 0, scale: 1.1 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
+          <circle r="92" fill="none" stroke="#fff" strokeWidth="1.5" />
         </motion.svg>
       )}
     </div>
@@ -107,7 +97,7 @@ export default function Uno() {
   const flyCards = useCallback((slot: Slot, count: number, base: number, silent: boolean): void => {
     for (let i = 0; i < count; i++) {
       const id = ++flightId.current;
-      const delay = base + i * 0.085;
+      const delay = base + i * 0.09;
       setFlights((f) => [...f, { id, slot, delay }]);
       if (!silent) gameTimeout(() => feedback('draw'), delay * 1000);
       gameTimeout(() => setFlights((f) => f.filter((x) => x.id !== id)), 700 + delay * 1000);
@@ -199,7 +189,7 @@ export default function Uno() {
     const fly = (slot: Slot, count = 1): void => {
       for (let i = 0; i < count; i++) {
         const id = ++flightId.current;
-        setFlights((f) => [...f, { id, slot, delay: i * 0.085 }]);
+        setFlights((f) => [...f, { id, slot, delay: i * 0.09 }]);
         gameTimeout(() => feedback('draw'), i * 85);
         gameTimeout(() => setFlights((f) => f.filter((x) => x.id !== id)), 700 + i * 85);
       }
@@ -414,15 +404,15 @@ export default function Uno() {
                     initial={fromSlot
                       ? { x: from.x + wobble, y: from.y, scale: bigCard ? 1.35 : 0.9, rotate: (fromSlot === 'left' ? -1 : 1) * 38 + wobble / 2, opacity: 1 }
                       : { scale: 1.25, opacity: 0, rotate: 14, y: -20, x: 0 }}
-                    animate={{ x: 0, y: 0, scale: 1, opacity: 1, rotate: (Number(topCard.id.slice(1)) % 9) - 4 }}
-                    transition={{ x: { duration: 0.3, ease: 'easeOut' }, y: SPRING, scale: SPRING, rotate: SPRING, opacity: { duration: 0.1 } }}>
+                    animate={{ x: 0, y: 0, scale: [1.08, 1], opacity: 1, rotate: (Number(topCard.id.slice(1)) % 17) - 8 }}
+                    transition={{ x: LAUNCH, y: LAUNCH, rotate: LAUNCH, scale: { duration: 0.28, ease: 'easeOut' }, opacity: { duration: 0.1 } }}>
                     <UnoCardView card={topCard} scale={1.05} glow />
                   </motion.div>
                 </AnimatePresence>
                 {/* onda de impacto del color de la carta */}
                 <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
-                  <motion.span key={`r${topCard.id}`} className="block aspect-square w-[135%] rounded-full border-[3px]" style={{ borderColor: UNO_HEX[topCard.color === 'wild' ? s.color : topCard.color] }}
-                    initial={{ opacity: 0, scale: 0.5 }} animate={{ scale: [0.5, 1.6], opacity: [0.75, 0] }} transition={{ duration: 0.55, delay: fromSlot ? 0.16 : 0, ease: 'easeOut' }} />
+                  <motion.span key={`r${topCard.id}${s.color}`} className="block aspect-square w-[135%] rounded-full" style={{ background: `radial-gradient(circle, ${UNO_HEX[topCard.color === 'wild' ? s.color : topCard.color]}aa 0%, ${UNO_HEX[topCard.color === 'wild' ? s.color : topCard.color]}00 70%)` }}
+                    initial={{ opacity: 0, scale: 0.5 }} animate={{ scale: [0.6, 1.4], opacity: [0.7, 0] }} transition={{ duration: 0.55, delay: fromSlot ? 0.16 : 0, ease: 'easeOut' }} />
                 </div>
                 {/* castigo flotante (+2 / +4) sobre el descarte */}
                 <AnimatePresence>
@@ -490,10 +480,10 @@ export default function Uno() {
       <PillBar pills={pills} />
       <div ref={handRef} onPointerMove={scrub} onPointerDown={scrub} onPointerUp={unscrub} onPointerCancel={unscrub} onPointerLeave={unscrub}
         className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.4dvh,18px)]" style={{ touchAction: scrollable ? 'pan-x' : 'none' }} role="group" aria-label="Tu mano">
-        <div className="mx-auto flex w-max items-end px-2">
+        <div className="mx-auto flex w-max items-end px-2 [--uno-hand-w:54px] sm:[--uno-hand-w:68px]">
           {sorted.map((c, i) => (
-            <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : `calc(var(--card-w) * ${sorted.length > 9 ? -0.46 : sorted.length > 6 ? -0.34 : -0.12})`, zIndex: hot === i ? 60 : i }}>
-              <UnoCardView card={c} deal={i} flip={flipOk && fresh.has(c.id) && playable.has(c.id)} scale={0.86} rotate={(i - (sorted.length - 1) / 2) * Math.min(3, 28 / sorted.length)} playable={playable.has(c.id)} lifted={hot === i} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
+            <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : sorted.length > 9 ? -26 : sorted.length > 6 ? -18 : -12, zIndex: hot === i ? 60 : i }}>
+              <UnoCardView card={c} deal={i} flip={flipOk && fresh.has(c.id) && playable.has(c.id)} scale={0.86} style={{ width: 'var(--uno-hand-w)' }} rotate={(i - (sorted.length - 1) / 2) * Math.min(3, 28 / sorted.length)} playable={playable.has(c.id)} lifted={hot === i} dim={myTurn && !playable.has(c.id)} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
             </div>
           ))}
         </div>

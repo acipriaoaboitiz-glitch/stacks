@@ -14,11 +14,11 @@ export const EMOTES: { id: EmoteId; icon: LucideIcon; label: string; text: strin
 export function ReactionButton({ onSend }: { onSend: (text: string) => void }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative z-20 flex flex-col items-end gap-1.5">
+    <div className="relative z-30 flex flex-col items-end gap-1.5">
       <AnimatePresence>
         {open && (
-          <motion.div className="absolute bottom-full right-0 mb-1.5 flex gap-1 rounded-full border border-white/10 bg-zinc-900/90 p-1 shadow-lg" role="group" aria-label="Reacciones rápidas"
-            initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6 }} transition={FAST_EASE}>
+          <motion.div className="absolute right-0 top-full mt-1.5 flex gap-1 rounded-full border border-white/10 bg-zinc-900/90 p-1 shadow-lg" role="group" aria-label="Reacciones rápidas"
+            initial={{ opacity: 0, y: -8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6 }} transition={FAST_EASE}>
             {EMOTES.map((e) => (
               <button key={e.id} type="button" aria-label={e.label} title={e.label}
                 onClick={() => { emoteSound(e.id); onSend(e.text); setOpen(false); }}
@@ -28,8 +28,8 @@ export function ReactionButton({ onSend }: { onSend: (text: string) => void }) {
         )}
       </AnimatePresence>
       <button type="button" aria-label={open ? 'Cerrar reacciones' : 'Reacciones rápidas'} aria-expanded={open} onClick={() => setOpen((v) => !v)}
-        className="grid size-10 place-items-center rounded-full border border-amber-300/50 bg-zinc-900/80 text-amber-200 shadow-[0_4px_14px_rgba(0,0,0,.4)] transition active:scale-90">
-        {open ? <X size={18} /> : <Smile size={20} />}
+        className="grid size-9 shrink-0 place-items-center rounded-full border border-amber-300/40 bg-gradient-to-b from-zinc-800/90 to-zinc-950/90 text-amber-200 shadow-[0_4px_10px_rgba(0,0,0,.35)] transition active:scale-90">
+        {open ? <X size={17} strokeWidth={1.75} /> : <Smile size={17} strokeWidth={1.75} />}
       </button>
     </div>
   );

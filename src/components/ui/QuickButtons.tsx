@@ -22,11 +22,12 @@ export const ExitButton = ({ onClick }: { onClick: () => void }) => {
 };
 
 /** Botones rápidos de la esquina: Reglas (?), Sonido on/off y Ajustes (engranaje), siempre visibles. */
-export function QuickButtons({ onRules, onSettings }: { onRules?: () => void; onSettings: () => void }) {
+export function QuickButtons({ onRules, onSettings, extra }: { onRules?: () => void; onSettings: () => void; extra?: ReactNode }) {
   const t = useT();
   const { sound } = useSettings();
   return (
     <div className="flex items-center gap-1.5">
+      {extra}
       {onRules && <IconBtn label={t('menu.rules')} onClick={onRules}><HelpCircle size={17} /></IconBtn>}
       <IconBtn label={sound ? t('menu.soundOn') : t('menu.soundOff')} onClick={() => setSettings({ sound: !sound })}>
         {sound ? <Volume2 size={17} /> : <VolumeX size={17} />}

@@ -135,15 +135,13 @@ export const MineArt = memo(function MineArt({ size = '100%' }: { size?: string 
 /** Bandera de oro cepillado sobre un mástil de latón, con pliegue y brillo. */
 export const FlagArt = memo(function FlagArt({ size = '100%' }: { size?: string }) {
   return (
-    <svg viewBox="16 2 74 92" style={{ width: size, height: size, display: 'block' }} shapeRendering="geometricPrecision" aria-hidden="true">
-      <MetalDefs />
-      <ellipse cx="46" cy="88" rx="24" ry="5" fill="#000" opacity=".4" />
-      <path d="M28 88 H64" stroke="url(#mt-brass)" strokeWidth="7" strokeLinecap="round" />
-      <path d="M44 88 V12" stroke="url(#mt-brass)" strokeWidth="5.4" strokeLinecap="round" />
-      <circle cx="44" cy="11" r="4.4" fill="url(#mt-brass)" stroke="#5c430b" strokeWidth="1.2" />
-      <path d="M47 16 L84 28 Q78 38 84 48 L47 58 Z" fill="url(#mt-brass)" stroke="#6b4a08" strokeWidth="2.4" />
-      <path d="M47 16 L84 28 Q78 38 84 48" fill="none" stroke="#fff" strokeOpacity=".5" strokeWidth="2.2" />
-      <path d="M56 24 Q62 38 56 53" fill="none" stroke="#6b4a08" strokeOpacity=".35" strokeWidth="2.4" />
+    <svg viewBox="0 0 100 100" style={{ width: size, height: size, display: 'block', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.65))' }} shapeRendering="geometricPrecision" aria-hidden="true">
+      <rect x="22" y="82" width="56" height="9" rx="2.5" fill="#0F172A" />
+      <rect x="32" y="74" width="36" height="9" rx="2" fill="#0F172A" />
+      <rect x="47" y="10" width="6" height="66" rx="2" fill="#F8FAFC" />
+      <rect x="47" y="10" width="2" height="66" fill="#fff" opacity=".8" />
+      <path d="M53 12 L88 27 Q78 31 70 29 Q62 33 53 42 Z" fill="#EF4444" />
+      <path d="M53 12 L88 27 L72 30 L53 22 Z" fill="#FCA5A5" opacity=".8" />
     </svg>
   );
 });

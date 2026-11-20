@@ -43,7 +43,7 @@ const CellView = memo(function CellView({ cell, boom, i, onTap, onPress, size, d
           : { background: 'linear-gradient(160deg,#21735a,#0e3f30 55%,#082a1f)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 3px rgba(0,0,0,.35), 0 3px 0 #030D08, 0 4px 5px rgba(0,0,0,.5)' }) }}>
         {open
           ? (cell.mine ? <span className="block h-[86%] w-[86%]"><MineArt /></span> : cell.adj > 0 ? <span style={{ fontSize: `calc(${size} * .68)`, textShadow: '0 1px 0 rgba(0,0,0,.6), 0 0 6px currentColor' }}>{cell.adj}</span> : null)
-          : cell.flag ? <span className="block h-[88%] w-[88%]"><FlagArt /></span> : null}
+          : cell.flag ? <span className="block h-[64%] w-[64%]"><FlagArt /></span> : null}
       </span>
     </button>
   );

@@ -5,7 +5,6 @@ import { playersBySeat, teamTableSize, useReplica, useSeating } from '../../serv
 import { juice } from '../../services/juice.ts';
 import { progression } from '../../store/progression.ts';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
-import { CardBack } from '../mus/app/components/CardFace.tsx';
 import { SeatBadge } from '../mus/app/components/SeatBadge.tsx';
 import { TableAvatar } from '../mus/app/components/TableAvatar.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
@@ -19,6 +18,8 @@ import { points as briscaPts } from '../brisca/engine.ts';
 import { SeriesGems, useSeries } from '../shared/series.tsx';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { Banner, FaceCard, PhaseCinematic, PillBar, ResultOverlay, ScorePair, briscaDeco, tilt, useBanner, useCine, type PillSpec } from '../shared/kit.tsx';
+import { TrumpPile } from '../shared/TrumpPile.tsx';
+import { SpanishGlyph } from '../../components/cards/CornerIndex.tsx';
 import {
   applyTuteAction, botTute, declareTute, hasTute, legalCards, newTute, playTute, resolveTute, sing, singable, teamOf, teamPoints, winnerTeam, type TPlayer, type TuteAction, type TuteState,
 } from './engine.ts';
@@ -226,17 +227,7 @@ export default function Tute() {
         </div>
         <div className="col-start-3 row-span-2 row-start-1 self-center justify-self-center">{seat('right')}</div>
       </div>
-      <div className="absolute left-[clamp(6px,2vw,14px)] top-[clamp(6px,2vw,14px)] z-10 flex items-center gap-1.5" aria-label={`Quedan ${s.deck.length} cartas; triunfo ${SUIT_LABEL[s.trumpSuit]}`}>
-        <div className="relative h-[calc(var(--card-w)*.4*1.583)] w-[calc(var(--card-w)*.84)]">
-          <div className="absolute top-0 z-0" style={{ left: 'calc(var(--card-w) * .3165)' }}><FaceCard card={s.trumpCard} flipIn={0.35} scale={0.4} rotate={90} aura /></div>
-          <div className="absolute left-0 top-0 z-10 aspect-[12/19] w-[calc(var(--card-w)*.4)]">
-            {[2, 1, 0].map((k) => (
-              <span key={k} className="absolute inset-0 overflow-hidden rounded-[6px] shadow-[0_4px_8px_rgba(0,0,0,.4)]" style={{ transform: `translate(${k * 2}px, ${-k * 2}px)` }}><CardBack /></span>
-            ))}
-          </div>
-        </div>
-        <span className="font-mono text-[10px] text-amber-200/80">{s.deck.length}</span>
-      </div>
+      <TrumpPile trump={s.trumpCard as never} count={s.deck.length} />
       <Banner text={banner} />
     </>
   );
@@ -249,7 +240,7 @@ export default function Tute() {
           <b className={`truncate text-[13px] ${myTurn ? 'text-amber-200' : 'text-stone-200'}`}>{t('g.you')}</b>
           <span className="rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-stone-300">{myTricks} bazas</span>
         </div>
-        <span className="text-[11px] text-stone-400">Triunfo: <b className="text-amber-200">{SUIT_LABEL[s.trumpSuit]}</b></span>
+        <span className="flex items-center gap-1 text-[11px] text-stone-400">Triunfo: <b className="flex items-center gap-1 text-amber-200"><span className="grid size-5 place-items-center rounded bg-[#fffdf5] text-[13px]" style={{ color: ({ oros: '#a8740a', copas: '#c3162c', espadas: '#1d4fbf', bastos: '#0a7a4c' } as Record<string, string>)[s.trumpSuit] }}><SpanishGlyph suit={s.trumpSuit as never} /></span>{SUIT_LABEL[s.trumpSuit]}</b></span>
       </div>
       <PillBar pills={pills} idle={pills.length === 0 ? status : undefined} />
       <p className="sr-only" aria-live="polite">{status}</p>

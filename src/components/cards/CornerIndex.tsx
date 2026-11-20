@@ -2,7 +2,7 @@ import { Club, Diamond, Heart, Spade } from 'lucide-react';
 import { FRENCH_RANK_LABEL, type FrenchRank, type FrenchSuit, type SpanishSuit } from '../../engine/deck.ts';
 
 /** Palo español dibujado a mano (24×24): oros, copas, espadas y bastos. */
-function SpanishGlyph({ suit }: { suit: SpanishSuit }) {
+export function SpanishGlyph({ suit }: { suit: SpanishSuit }) {
   switch (suit) {
     case 'oros': return <svg viewBox="0 0 24 24" className="size-[1em]" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" /><circle cx="12" cy="12" r="6.2" fill="none" stroke="#fffdf5" strokeWidth="1.8" /></svg>;
     case 'copas': return <svg viewBox="0 0 24 24" className="size-[1em]" aria-hidden="true"><path d="M3 3h18c0 8-3 12-8 12v4h5v2H6v-2h5v-4C6 15 3 11 3 3Z" fill="currentColor" /></svg>;

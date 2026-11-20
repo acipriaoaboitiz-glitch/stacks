@@ -180,14 +180,14 @@ export default function Ruleta() {
   const bottom = (
     <>
       <div className="flex w-full items-center justify-between gap-2">
-        <div className="flex items-center gap-[clamp(4px,1.6vw,10px)]" role="group" aria-label={t('rl.chips')}>
+        <div className="flex min-w-0 flex-1 items-center justify-start gap-[clamp(3px,1.2vw,10px)]" role="group" aria-label={t('rl.chips')}>
           {CHIPS.map((c) => (
             <button key={c} type="button" onClick={() => { setChip(c); feedback('tap'); }} aria-label={String(c)} aria-pressed={chip === c}
               className={`grid touch-manipulation place-items-center rounded-full border-2 border-dashed font-extrabold tabular-nums transition-transform ${chip === c ? '-translate-y-1 scale-110 border-amber-100 bg-gradient-to-br from-amber-200 to-amber-600 text-amber-950' : 'border-amber-400/60 bg-gradient-to-br from-stone-700 to-stone-900 text-amber-200'}`}
-              style={{ width: 'clamp(38px,11vw,54px)', height: 'clamp(38px,11vw,54px)', fontSize: 'clamp(11px,3vw,15px)' }}>{c}</button>
+              style={{ width: 'clamp(32px,9vw,54px)', height: 'clamp(32px,9vw,54px)', fontSize: 'clamp(11px,3vw,15px)' }}>{c}</button>
           ))}
         </div>
-        <div className="min-w-0 text-right text-[11px] text-stone-400">
+        <div className="shrink-0 whitespace-nowrap text-right text-[11px] text-stone-400">
           <p>{t('rl.bet')}: <b className="tabular-nums text-amber-200">{total}</b></p>
           {net !== null && <p className={`font-extrabold tabular-nums ${net > 0 ? 'text-emerald-300' : net < 0 ? 'text-rose-300' : 'text-stone-300'}`}>{net > 0 ? '+' : ''}{net}</p>}
         </div>

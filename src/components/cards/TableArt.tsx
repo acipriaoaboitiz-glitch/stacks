@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { CupGroup, IsoDefs, IsoDie } from '../../games/mentiroso/Dice.tsx';
 import { WheelGroup } from '../../games/ruleta/Wheel.tsx';
 import { ART2, Body2, TableArt2Defs } from './TableArt2.tsx';
+import { COVER, CoverBody, CoverDefs } from './CoverArt.tsx';
 
 /** Ilustraciones vectoriales de los juegos de mesa (Dominó, El Mentiroso, Ruleta VIP). viewBox 150×150, nítidas a cualquier tamaño. */
 const P = { tl: [14, 14], tr: [36, 14], ml: [14, 25], mr: [36, 25], c: [25, 25], bl: [14, 36], br: [36, 36] } as const;
@@ -13,6 +14,7 @@ function Defs() {
     <>
     <IsoDefs />
     <TableArt2Defs />
+    <CoverDefs />
     <defs>
       <linearGradient id="ta-ivory" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FFFBEA" /><stop offset=".6" stopColor="#F1E7C6" /><stop offset="1" stopColor="#D2C292" /></linearGradient>
       <linearGradient id="ta-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FCE38A" /><stop offset=".5" stopColor="#D4AF37" /><stop offset="1" stopColor="#8B6914" /></linearGradient>
@@ -48,6 +50,7 @@ function Dice({ x, y, r, face, s = 1 }: { x: number; y: number; r: number; face:
 
 
 function Body({ id }: { id: string }) {
+  if (COVER.has(id)) return <CoverBody id={id} />;
   if (ART2.has(id)) return <Body2 id={id} />;
   if (id === 'domino') {
     return (
