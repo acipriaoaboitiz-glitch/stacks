@@ -244,6 +244,13 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     4: { 1: [90, 50], 2: [50, 19], 3: [10, 50] },
     6: { 1: [89, 68], 2: [89, 32], 3: [50, 18], 4: [11, 32], 5: [11, 68] },
   };
+  // En móvil los rivales laterales bajan a la fila inferior del óvalo para dejar libre la franja central de las cartas comunitarias
+  const POSM: Record<number, Record<number, [number, number]>> = {
+    2: { 1: [50, 17] },
+    3: { 1: [82, 70], 2: [18, 70] },
+    4: { 1: [83, 72], 2: [50, 16], 3: [17, 72] },
+    6: { 1: [86, 78], 2: [88, 36], 3: [50, 14], 4: [12, 36], 5: [14, 78] },
+  };
   const slotOf = (x: number): Slot => (x > 70 ? 'right' : x < 30 ? 'left' : 'top');
   const winSeat = s.result?.reason === 'showdown' ? s.result.wins[0]?.seat : undefined;
   const winCards = useMemo(() => (winSeat !== undefined ? bestFive(s.seats[winSeat]!.hole, s.community) : new Set<string>()), [winSeat, s.seats, s.community]);
@@ -257,7 +264,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   /** Punto a mitad de camino entre el asiento y el centro del bote, donde se apila su apuesta. */
   const toward = (x: number, y: number): [number, number] => [x + (50 - x) * 0.4, y + (52 - y) * 0.4];
   const seatsOnTable = Array.from({ length: n - 1 }, (_, i) => i + 1).map((k) => {
-    const pos = POS[n]?.[k];
+    const pos = (wide ? POS : POSM)[n]?.[k];
     return pos ? { k, i: (myIdx + k) % n, pos } : null;
   }).filter((v): v is { k: number; i: number; pos: [number, number] } => v !== null);
   const felt = (
@@ -351,7 +358,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
           <span className="font-mono rounded-full border border-white/10 bg-zinc-900/70 px-2 py-[2px] text-[10px] font-bold text-amber-200">{me.stack}{me.bet > 0 ? ` · apuesta ${me.bet}` : ''}</span>
           {s.button === myIdx && <span className="grid size-[17px] place-items-center rounded-full bg-white text-[9px] font-extrabold text-zinc-900">D</span>}
         </div>
-        <span className="truncate text-right text-[11px] text-stone-400">{myHand}</span>
+        {myHand && <span className="truncate rounded-full border border-[#D4AF37]/40 bg-black/35 px-2.5 py-0.5 text-right text-[12px] font-bold text-[#FCE38A]">{myHand}</span>}
       </div>
       {raising !== null && lg ? (
         <div className="grid w-full max-w-md gap-2 rounded-2xl border border-white/10 bg-zinc-900/75 p-2.5" role="group" aria-label="Subir apuesta">
@@ -392,15 +399,25 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     <GameFrame
       gameId="poker" feltTone="emerald"
       strip={(
-        <div className="flex items-center justify-between gap-2 px-1 text-[11px] font-bold tabular-nums text-stone-300" role="group" aria-label={t('sc.pot')}>
-          <span className="text-amber-200">{t('sc.pot')} {pot(s)}</span>
-          <span>{t('sc.blinds')} SB/BB {BB / 2}/{BB}</span>
-          <span>{t('sc.toCall')} {lg ? lg.callAmount : s.currentBet}</span>
-        </div>
+        <>
+          <div className="grid grid-cols-3 gap-1.5 tabular-nums lg:hidden" role="group" aria-label={t('sc.pot')}>
+            {([['BOTE', String(total), 'text-amber-200'], [PHASE[s.street] ?? '', `${BB / 2}/${BB}`, 'text-teal-300'], ['TU STACK', String(me.stack), 'text-orange-300']] as const).map(([lab, val, tone]) => (
+              <div key={lab} className="min-w-0 rounded-[13px] border border-white/10 bg-gradient-to-br from-white/[0.06] to-black/30 px-2.5 py-1">
+                <p className={`truncate text-[8.5px] font-extrabold uppercase tracking-[.05em] ${tone}`}>{lab}</p>
+                <b className="block truncate text-[14px] leading-tight">{val}</b>
+              </div>
+            ))}
+          </div>
+          <div className="hidden items-center justify-between gap-2 px-1 text-[11px] font-bold tabular-nums text-stone-300 lg:flex" role="group" aria-label={t('sc.pot')}>
+            <span className="text-amber-200">{t('sc.pot')} {pot(s)}</span>
+            <span>{t('sc.blinds')} SB/BB {BB / 2}/{BB}</span>
+            <span>{t('sc.toCall')} {lg ? lg.callAmount : s.currentBet}</span>
+          </div>
+        </>
       )}
       onExit={online ? exit : undefined}
       timer={{ active: myTurn, id: `${s.turn}:${s.street}:${total}`, onTimeout: () => send(lg?.canCheck ? { type: 'check' } : { type: 'fold' }) }}
-      header={<div className="no-scrollbar min-w-0 flex-1 overflow-x-auto"><ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} /></div>}
+      header={<><p className="truncate text-center font-[var(--font-display)] text-lg font-bold text-amber-300 lg:hidden">Póker</p><div className="no-scrollbar hidden min-w-0 flex-1 overflow-x-auto lg:block"><ScoreStrip items={(n === 6 ? [myIdx] : s.seats.map((_, i) => i)).map((i) => ({ name: nm(i), value: s.seats[i]!.stack, us: i === myIdx })).concat(n === 6 ? [{ name: "Mano", value: s.handNo, us: false }] : [])} /></div></>}
       felt={felt}
       bottom={bottom}
       overlays={

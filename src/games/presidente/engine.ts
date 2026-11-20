@@ -82,7 +82,12 @@ export function newRound(players: PresPlayer[], deck: DeckKind, prev?: PresState
   if (!s.roles) {
     const holder = players.findIndex((p) => hands[p.id]!.some((c) => c.id === opener));
     s.turn = Math.max(0, holder);
-    s.mustInclude = opener;
+    // El 3 de Oros se retira al repartir: quien lo recibía abre la ronda 1 sin esa carta en la mano.
+    if (holder >= 0) {
+      const hid = players[holder]!.id;
+      hands[hid] = hands[hid]!.filter((c) => c.id !== opener);
+      say(s, hid, `${players[holder]!.name} tenía el ${deck === 'es' ? '3 de Oros' : '3 de Tréboles'}: se retira y sale él`);
+    }
     return s;
   }
   const pres = players.find((p) => s.roles![p.id] === 'presidente')!;
@@ -119,6 +124,10 @@ export function giveBack(prev: PresState, ids: string[]): PresState | null {
 
 const sameSet = (cards: AnyCard[]): boolean => cards.length > 0 && cards.every((c) => power(c) === power(cards[0]!));
 
+/** «¡Plin!»: un 10 (o varios) sobre otro 10 de la misma cantidad de cartas, aunque no lo supere. */
+const isPlin = (s: PresState, cards: AnyCard[]): boolean =>
+  Boolean(s.table) && cards[0]!.rank === 10 && s.table!.cards[0]!.rank === 10 && cards.length === s.table!.cards.length && power(cards[0]!) === s.table!.power;
+
 /** ¿Es válida esta jugada ahora mismo? */
 export function canPlay(s: PresState, pid: string, ids: string[]): boolean {
   if (s.phase !== 'play' || s.players[s.turn]!.id !== pid) return false;
@@ -127,7 +136,7 @@ export function canPlay(s: PresState, pid: string, ids: string[]): boolean {
   if (!s.table) return true; // el titular del 3 de Oros abre la ronda 1, pero puede jugar cualquier carta o grupo
   const p = power(cards[0]!);
   const top = TOP(s.deck);
-  return (cards.length === s.table.cards.length && p > s.table.power) || (p === top && cards.length === 1);
+  return (cards.length === s.table.cards.length && p > s.table.power) || (p === top && cards.length === 1) || isPlin(s, cards);
 }
 
 function finishIfOut(s: PresState, pid: string): void {
@@ -152,12 +161,18 @@ export function playCards(prev: PresState, pid: string, ids: string[]): PresStat
   s.hands[pid] = s.hands[pid]!.filter((c) => !ids.includes(c.id));
   s.mustInclude = null;
   const p = power(cards[0]!);
+  const plin = isPlin(prev, cards);
   const cut = Boolean(s.table) && p === TOP(s.deck);
   s.passed = [];
   s.table = { cards, by: pid, power: p };
   finishIfOut(s, pid);
   if (s.phase === 'done') return s;
-  if (cut) {
+  if (plin) {
+    // ¡Plin!: se limpia el centro y vuelve a salir quien lo tiró (o el siguiente, si ya terminó).
+    s.table = null;
+    s.turn = s.finished.includes(pid) ? nextTurn(s, me) : me;
+    say(s, pid, '¡Plin!', 'clear');
+  } else if (cut) {
     // Un 2 corta: se limpia el centro y vuelve a salir quien lo tiró (o el siguiente, si ya terminó).
     s.table = null;
     s.turn = s.finished.includes(pid) ? nextTurn(s, me) : me;

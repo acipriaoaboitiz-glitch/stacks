@@ -311,7 +311,7 @@ export function ScoreStrip({ items, target }: { items: { name: string; value: nu
   return (
     <div className="grid w-full gap-1 tabular-nums sm:gap-2" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(${items.length > 3 ? '58px' : '0'}, 1fr))` }} role="group" aria-label="Marcador">
       {items.map((it) => (
-        <div key={it.name} className={`min-w-0 rounded-[13px] border border-white/10 px-[min(2vw,8px)] py-[min(1dvh,5px)] ${it.us ? 'bg-gradient-to-br from-teal-400/10 to-black/30' : 'bg-gradient-to-br from-orange-400/10 to-black/30'}`}>
+        <div key={it.name} className={`min-w-0 rounded-[13px] border px-[min(2vw,8px)] ${items.length > 1 && it.value === Math.max(...items.map((x) => x.value)) && it.value > 0 ? 'border-[#D4AF37]/60' : 'border-white/10'} py-[min(1dvh,5px)] ${it.us ? 'bg-gradient-to-br from-teal-400/10 to-black/30' : 'bg-gradient-to-br from-orange-400/10 to-black/30'}`}>
           <span className={`block truncate text-[8px] font-extrabold uppercase tracking-[.06em] ${it.us ? 'text-teal-300' : 'text-orange-300'}`}>{it.name}</span>
           <b className={`font-[var(--font-display)] leading-none tabular-nums ${items.length > 3 ? "text-[clamp(11px,3.3vw,15px)]" : "text-[clamp(15px,4.6vw,20px)]"}`}>
             <AnimatedNumber value={it.value} duration={0.7} />{target !== undefined && <small className="font-sans text-[8px] font-bold text-stone-400">/{target}</small>}

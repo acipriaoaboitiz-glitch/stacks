@@ -138,7 +138,7 @@ function Frame({ gameId, header, strip, felt, bottom, overlays, onExit, timer, f
           <div className="desk-zoom mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col justify-between gap-[min(1.1dvh,8px)] px-[clamp(8px,2.6vw,24px)]">
             <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
               <div className="flex items-center gap-1.5"><ExitButton onClick={exit} /><ProfileCard compact /></div>
-              <div className="min-w-0">{header}</div>
+              <div className="no-scrollbar min-w-0 overflow-x-auto">{header}</div>
               <QuickButtons onRules={() => setRules(true)} onSettings={() => setSettings(true)} extra={<ReactionButton onSend={sendEmote} />} />
             </header>
             {timer && <TurnTimerBar spec={timer} />}
