@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Zap } from 'lucide-react';
+import { Check, LayoutGrid, Zap } from 'lucide-react';
 import { botName, tr, useT } from '../../i18n/index.ts';
 import { juice } from '../../services/juice.ts';
 import { exitMatch } from '../../services/exitMatch.ts';
@@ -14,11 +14,13 @@ import { GameFrame } from '../shared/GameFrame.tsx';
 import { HudPills } from '../shared/hud.tsx';
 import { ResultOverlay } from '../shared/kit.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
-import { BET, applyBingo, bingoPrize, botClaims, drawBall, hasLine, linePrize, missingBingo, missingLine, newBingo, type BAction, type BState, type Card } from './engine.ts';
+import { BET, VIP_BALL, applyBingo, bingoPrize, botClaims, drawBall, hasLine, linePrize, missingBingo, missingLine, newBingo, rowNumbers, vipBonus, type BAction, type BState, type Card } from './engine.ts';
 
-const WIN_BONUS = 0;
 type Speed = 'pausado' | 'normal' | 'turbo';
-const SPEEDS: { id: Speed; label: string; ms: number }[] = [{ id: 'pausado', label: 'Pausado 3.2s', ms: 3200 }, { id: 'normal', label: 'Normal 2.2s', ms: 2200 }, { id: 'turbo', label: 'Turbo 1.3s', ms: 1300 }];
+const SPEEDS: { id: Speed; label: string; ms: number }[] = [{ id: 'pausado', label: 'Pausado 3.0s', ms: 3000 }, { id: 'normal', label: 'Normal 2.0s', ms: 2000 }, { id: 'turbo', label: 'Turbo 1.2s', ms: 1200 }];
+/** Color de la bola según su decena: 1-9 oro · 10s rubí · 20s esmeralda · 30s zafiro · 40s ámbar · 50s púrpura · 60s turquesa · 70s coral · 80-90 plata. */
+const DECADE = ['#f0c35f', '#e11d48', '#10b981', '#2563eb', '#f59e0b', '#9333ea', '#14b8a6', '#fb7185', '#cbd5e1', '#cbd5e1'] as const;
+const ballColor = (n: number): string => DECADE[Math.floor(n / 10)]!;
 
 /** Bombo giratorio dorado: gira mientras salen bolas. */
 const Drum = memo(function Drum({ spinning }: { spinning: boolean }) {
@@ -41,22 +43,34 @@ const Drum = memo(function Drum({ spinning }: { spinning: boolean }) {
   );
 });
 
-const Ball = ({ n, big }: { n: number; big?: boolean }) => (
-  <span className={`grid shrink-0 place-items-center rounded-full border-2 border-[#fff6c4] font-extrabold tabular-nums text-[#2a1d02] shadow-[0_3px_6px_rgba(0,0,0,.5)] ${big ? 'size-14 text-2xl' : 'size-8 text-[13px]'}`} style={{ background: 'radial-gradient(circle at 35% 30%, #fffbe0, #f0c35f 70%, #b8860b)' }}>{n}</span>
-);
-
-/** Cartón 3×9: toca un número cantado para marcarlo con una ficha. */
-const CardView = memo(function CardView({ card, drawn, marks, onMark, idx }: { card: Card; drawn: readonly number[]; marks: readonly number[]; onMark: (n: number) => void; idx: number }) {
+const Ball = ({ n, big }: { n: number; big?: boolean }) => {
+  const c = ballColor(n);
+  const dark = c === '#f0c35f' || c === '#cbd5e1' || c === '#f59e0b';
   return (
-    <div className="mx-auto w-full max-w-[520px] rounded-xl border border-amber-300/30 bg-[#0a1a14] p-1.5 shadow-[0_4px_10px_rgba(0,0,0,.4)]" aria-label={`Cartón ${idx + 1}`}>
+    <span className={`grid shrink-0 place-items-center rounded-full border-2 border-white/80 font-extrabold tabular-nums shadow-[0_3px_6px_rgba(0,0,0,.5)] ${big ? 'size-14 text-2xl' : 'size-8 text-[13px]'}`}
+      style={{ background: `radial-gradient(circle at 35% 28%, #fff 0%, ${c} 45%, ${c}99 100%)`, color: dark ? '#2a1d02' : '#fff', textShadow: dark ? 'none' : '0 1px 2px rgba(0,0,0,.7)' }}>{n}</span>
+  );
+};
+
+/** Cartón 3×9: toca un número cantado para marcarlo. Se ilumina con «¡A 1!» cuando falta un número para Línea o Bingo. */
+const CardView = memo(function CardView({ card, drawn, marks, onMark, idx, lineTaken, nudge }: { card: Card; drawn: readonly number[]; marks: readonly number[]; onMark: (n: number) => void; idx: number; lineTaken: boolean; nudge: ReadonlySet<number> }) {
+  const live = marks.filter((n) => drawn.includes(n));
+  const toBingo = missingBingo(card, live);
+  const rowMiss = [0, 1, 2].map((r) => rowNumbers(card, r).filter((n) => !live.includes(n)));
+  const oneLine = !lineTaken && rowMiss.some((m) => m.length === 1);
+  const key = new Set<number>([...(oneLine ? rowMiss.filter((m) => m.length === 1).flat() : []), ...(toBingo === 1 ? rowMiss.flat() : [])]);
+  const near = oneLine || toBingo === 1 || toBingo === 2;
+  return (
+    <div className={`relative mx-auto w-full max-w-[520px] rounded-xl border bg-[#0a1a14] p-1.5 shadow-[0_4px_10px_rgba(0,0,0,.4)] ${near ? 'dm-pulse border-[#FCE38A] shadow-[0_0_14px_rgba(252,227,138,.6)]' : 'border-amber-300/30'}`} aria-label={`Cartón ${idx + 1}`}>
+      {near && <span className="absolute -top-2 right-2 z-10 rounded-full bg-gradient-to-b from-rose-500 to-rose-700 px-2 py-[1px] text-[10px] font-black tracking-wide text-white shadow">{toBingo === 1 ? '¡A 1 DE BINGO!' : oneLine ? '¡A 1 DE LÍNEA!' : '¡A 2 DE BINGO!'}</span>}
       <div className="grid grid-cols-9 gap-[3px]">
         {card.map((n, i) => {
-          if (!n) return <span key={i} className="h-[clamp(30px,7vw,40px)] rounded-md bg-black/25" />;
-          const marked = marks.includes(n) && drawn.includes(n);
+          if (!n) return <span key={i} className="grid h-[clamp(30px,7vw,40px)] place-items-center rounded-md bg-black/25 font-[var(--font-display)] text-[13px] font-bold text-[#D4AF37]/45">S</span>;
+          const marked = live.includes(n);
           const pending = drawn.includes(n) && !marked;
           return (
             <button key={i} type="button" onClick={() => onMark(n)} aria-label={String(n)} aria-pressed={marked}
-              className={`relative grid h-[clamp(30px,7vw,40px)] touch-manipulation place-items-center rounded-md border text-[clamp(12px,3.6vw,17px)] font-extrabold tabular-nums active:scale-95 ${pending ? 'border-amber-200 bg-[#f6eed6] text-[#2a1d02] shadow-[0_0_8px_rgba(252,227,138,.8)]' : 'border-black/20 bg-[#f6eed6] text-[#2a1d02]'}`}>
+              className={`relative grid h-[clamp(30px,7vw,40px)] touch-manipulation place-items-center rounded-md border text-[clamp(12px,3.6vw,17px)] font-extrabold tabular-nums active:scale-95 ${pending ? (nudge.has(n) ? 'dm-pulse ' : '') + 'border-amber-200 bg-[#f6eed6] text-[#2a1d02] shadow-[0_0_8px_rgba(252,227,138,.8)]' : 'border-black/20 bg-[#f6eed6] text-[#2a1d02]'} ${key.has(n) && !marked ? 'ring-2 ring-rose-500' : ''}`}>
               {n}
               {marked && <span aria-hidden className="absolute inset-[8%] rounded-full" style={{ background: 'radial-gradient(circle at 35% 30%, #fb7185, #be123c 70%, #4c0519)', opacity: 0.92, boxShadow: '0 1px 3px rgba(0,0,0,.6)' }} />}
               {marked && <span aria-hidden className="absolute z-10 text-white [text-shadow:0_1px_2px_#000]">{n}</span>}
@@ -80,6 +94,10 @@ export default function Bingo() {
   const [speed, setSpeed] = useState<Speed>('normal');
   const [auto, setAuto] = useState(true);
   const [note, setNote] = useState('');
+  const [board, setBoard] = useState(true);
+  const [n0, setN0] = useState(2);
+  const [tick, setTick] = useState(0);
+  const drawnAt = useRef<Record<number, number>>({});
   const paid = useRef({ line: false, bingo: false, buy: false });
   const lastSeq = useRef(0);
   const me = online ? s?.players.find((p) => p.peerId === seating.myPeerId)?.id ?? 'p0' : 'p0';
@@ -133,6 +151,16 @@ export default function Bingo() {
     return () => ids.forEach((x) => window.clearTimeout(x));
   }, [ballCount, hostLike]); // eslint-disable-line
 
+  // Ayuda en modo manual: un número cantado que lleva 3.5 s sin marcarse emite un pulso suave
+  useEffect(() => {
+    const last = s?.drawn[s.drawn.length - 1];
+    if (last !== undefined && drawnAt.current[last] === undefined) drawnAt.current[last] = Date.now();
+  }, [ballCount]); // eslint-disable-line
+  useEffect(() => {
+    if (auto || !playing) return;
+    const id = gameInterval(() => setTick((v) => v + 1), 500);
+    return () => window.clearInterval(id);
+  }, [auto, playing]);
   // Auto-marcado
   const myMarks = s?.players.find((p) => p.id === me)?.marks;
   useEffect(() => {
@@ -164,6 +192,7 @@ export default function Bingo() {
   const drawn = s?.drawn ?? [];
   const lastBalls = useMemo(() => drawn.slice(-6, -1).reverse(), [drawn]);
   const current = drawn[drawn.length - 1];
+  const nudge = useMemo(() => new Set<number>(auto ? [] : drawn.filter((d) => Date.now() - (drawnAt.current[d] ?? Date.now()) > 3500)), [drawn, auto, tick]); // eslint-disable-line
   const mark = (num: number) => { if (!s || s.phase !== 'play') return; if (!drawn.includes(num)) { feedback('thud'); return; } feedback('chip'); dispatch(me, { k: 'mark', n: num }); };
   const claim = (kind: 'line' | 'bingo') => {
     if (!s || !mine) return;
@@ -188,8 +217,13 @@ export default function Bingo() {
               <div className="mx-auto size-24"><Drum spinning={false} /></div>
               <h2 className="font-[var(--font-display)] text-2xl font-bold text-amber-300">¿Cuántos cartones?</h2>
               {[1, 2, 3, 4].map((c) => (
-                <Button key={c} variant={c === 2 ? 'primary' : 'secondary'} block disabled={w.chips < c * BET} onClick={() => begin(c)}>{c} {c === 1 ? 'cartón' : 'cartones'} · {c * BET} fichas</Button>
+                <Button key={c} variant={c === n0 ? 'primary' : 'secondary'} block disabled={w.chips < c * BET} onClick={() => { setN0(c); begin(c); }}>{c} {c === 1 ? 'cartón' : 'cartones'} · {c * BET} fichas</Button>
               ))}
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] text-stone-300"><span className="rounded-lg bg-white/[0.06] px-2 py-1">Bote de Línea ≈ <b className="tabular-nums text-amber-200">{Math.round((n0 + 6) * BET * 0.2)}</b></span><span className="rounded-lg bg-white/[0.06] px-2 py-1">Bote de Bingo ≈ <b className="tabular-nums text-amber-200">{Math.round((n0 + 6) * BET * 0.8)}</b></span></div>
+              <div className="flex items-center gap-1.5">
+                {SPEEDS.map((x) => <button key={x.id} type="button" onClick={() => setSpeed(x.id)} className={`h-9 min-w-0 flex-1 touch-manipulation rounded-xl border text-[11px] font-bold ${speed === x.id ? 'border-[#FCE38A] bg-[#FCE38A]/15 text-[#FCE38A]' : 'border-white/10 bg-white/[0.06] text-stone-300'}`}>{x.label}</button>)}
+              </div>
+              <button type="button" role="switch" aria-checked={auto} onClick={() => setAuto((v) => !v)} className={`h-9 touch-manipulation rounded-xl border text-[12px] font-bold ${auto ? 'border-emerald-300/60 bg-emerald-400/15 text-emerald-200' : 'border-white/10 bg-white/[0.06] text-stone-300'}`}>Marcado {auto ? 'automático' : 'manual'}</button>
               <p className="text-xs text-stone-400">90 bolas, 3 rivales. Premio de Línea (20 % del bote) y de Bingo (80 %). Fichas virtuales, nunca dinero real.</p>
             </div>
           </div>
@@ -213,17 +247,30 @@ export default function Bingo() {
             </AnimatePresence>
             <div className="flex items-center gap-1">{lastBalls.map((b) => <Ball key={b} n={b} />)}</div>
           </div>
-          <p className="mt-1 truncate text-[11px] tabular-nums text-stone-400">{drawn.length}/90 · {rivals.map((p) => `${p.name.split(' ').pop()}: ${s.lineBy ? Math.min(...p.cards.map((c) => missingBingo(c, p.marks))) : Math.min(...p.cards.map((c) => missingLine(c, p.marks)))}`).join(' · ')}</p>
+          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+            {rivals.map((p) => {
+              const miss = s.lineBy ? Math.min(...p.cards.map((c) => missingBingo(c, p.marks))) : Math.min(...p.cards.map((c) => missingLine(c, p.marks)));
+              const total = s.lineBy ? 15 : 5;
+              return (
+                <div key={p.id} className="min-w-0">
+                  <p className="truncate text-[10px] font-bold text-stone-300">{p.name} <span className={miss <= 1 ? 'text-rose-300' : 'text-stone-500'}>· faltan {miss}</span></p>
+                  <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-rose-400 transition-[width] duration-300" style={{ width: `${Math.max(4, ((total - miss) / total) * 100)}%` }} /></div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-1 text-[10px] tabular-nums text-stone-500">{drawn.length}/90{drawn.length <= VIP_BALL && !s.bingoBy ? ` · Prima VIP +50 % hasta la bola ${VIP_BALL}` : ''}</p>
         </div>
+        <button type="button" onClick={() => { setBoard((v) => !v); feedback('tap'); }} aria-label="Tablero 1 a 90" aria-pressed={board} className={`grid size-9 shrink-0 touch-manipulation place-items-center rounded-xl border active:scale-95 ${board ? 'border-[#FCE38A] bg-[#FCE38A]/15 text-[#FCE38A]' : 'border-white/10 bg-white/[0.06] text-stone-300'}`}><LayoutGrid size={16} strokeWidth={1.75} /></button>
       </div>
       {/* panel 1–90 */}
-      <div className="grid shrink-0 grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px]" aria-label="Panel 1 a 90">
+      <div hidden={!board} className="grid shrink-0 grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px]" aria-label="Panel 1 a 90">
         {Array.from({ length: 90 }, (_, i) => i + 1).map((b) => (
           <span key={b} className={`grid h-[clamp(13px,2.6vw,18px)] place-items-center rounded-[3px] text-[clamp(7px,1.9vw,10px)] font-bold tabular-nums ${drawn.includes(b) ? 'bg-amber-300 text-[#2a1d02]' : 'bg-white/[0.07] text-white/40'}`}>{b}</span>
         ))}
       </div>
       <div className="no-scrollbar grid min-h-0 flex-1 content-start gap-2 overflow-y-auto">
-        {mine?.cards.map((c, i) => <CardView key={i} idx={i} card={c} drawn={drawn} marks={mine.marks} onMark={mark} />)}
+        {mine?.cards.map((c, i) => <CardView key={i} idx={i} card={c} drawn={drawn} marks={mine.marks} onMark={mark} lineTaken={!!s.lineBy} nudge={nudge} />)}
       </div>
     </div>
   );
@@ -261,7 +308,7 @@ export default function Bingo() {
                 ...(hostLike ? [{ label: 'Otra partida', primary: true, onClick: () => { if (online) { paid.current = { line: false, bingo: false, buy: false }; hostStart(); } else { paid.current = { line: false, bingo: false, buy: false }; setS(null); setN(null); } } }] : []),
                 { label: t('a.lobby'), onClick: () => { void exitMatch(nav); } },
               ]}>
-              <p className="text-center text-sm tabular-nums text-stone-300">{s.drawn.length} bolas{n ? ` · ${n} cartones` : ''}{WIN_BONUS ? '' : ''}</p>
+              <p className="text-center text-sm tabular-nums text-stone-300">{s.drawn.length} bolas{n ? ` · ${n} cartones` : ''}{vipBonus(s) > 0 && s.bingoBy === me ? ` · Prima VIP +${vipBonus(s)}` : ''}</p>
             </ResultOverlay>
           )}
         </AnimatePresence>

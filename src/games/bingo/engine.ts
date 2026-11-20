@@ -103,7 +103,11 @@ export function applyBingo(prev: BState, pid: string, a: BAction): BState | null
 }
 
 export const linePrize = (s: BState): number => Math.round(s.pot * LINE_SHARE);
-export const bingoPrize = (s: BState): number => s.pot - linePrize(s);
+/** Prima VIP: un Bingo cantado antes de la bola 38 se lleva un 50 % extra sobre el premio. */
+export const VIP_BALL = 38;
+export const baseBingoPrize = (s: BState): number => s.pot - linePrize(s);
+export const vipBonus = (s: BState): number => (s.drawn.length <= VIP_BALL ? Math.round(baseBingoPrize(s) * 0.5) : 0);
+export const bingoPrize = (s: BState): number => baseBingoPrize(s) + vipBonus(s);
 
 /** IA: marca todo al instante y canta en cuanto puede (el anfitrión añade una pausa natural). */
 export function botClaims(s: BState, pid: string): BAction | null {

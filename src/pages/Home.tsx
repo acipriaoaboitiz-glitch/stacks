@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Gem, Globe, Play, Trophy, Users, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gem, Gift, Globe, HelpCircle, Play, Trophy, Users, X } from 'lucide-react';
 import { Portal } from '../components/ui/Portal.tsx';
 import { GameArt } from '../components/cards/GameArt.tsx';
 import { OnlineLobbyModal } from '../components/online/OnlineLobbyModal.tsx';
@@ -35,6 +35,11 @@ const DUST = Array.from({ length: 16 }, (_, i) => ({
   left: (i * 37 + 11) % 96 + 2, size: 3 + (i % 4), dur: 16 + (i * 7) % 12, delay: -((i * 5) % 18), dx: ((i * 23) % 40) - 20, o: 0.35 + (i % 4) * 0.12,
 }));
 
+/** Etiqueta de ritmo de la tarjeta (esquina superior derecha). */
+const LIVE = new Set(['uno', 'presidente', 'domino', 'mentiroso']);
+const tagOf = (g: GameInfo): string => (LIVE.has(g.id) ? 'EN VIVO' : g.category === 'casino' ? 'VIP' : g.category === 'mesa' ? 'ESTRATÉGICO' : g.category === 'logica' ? 'LÓGICA' : 'CLÁSICO');
+const HALO: Record<GameCategory, string> = { espanola: '#d4af37', casino: '#c0213a', mesa: '#10b981', logica: '#22d3ee' };
+
 /** Tarjeta del carrusel: foco de luz, medallón dorado y emblema. Estática (sin animaciones infinitas) para mantener 60 FPS en móvil. */
 const Slide = memo(function Slide({ game }: { game: GameInfo; active: boolean }) {
   const t = useT();
@@ -47,6 +52,7 @@ const Slide = memo(function Slide({ game }: { game: GameInfo; active: boolean })
       <span className="font-mono relative z-10 flex w-fit items-center gap-1 rounded-full px-2.5 py-[3px] text-[11px]" style={{ background: '#000a', color: game.accent, border: `1px solid ${game.accent}55` }}>
         <Users size={11} aria-hidden /> {t(`g.${game.id}.pl`)}
       </span>
+      <span className="absolute right-4 top-4 z-10 rounded-full border border-[#D4AF37]/60 bg-black/50 px-2.5 py-[3px] text-[10px] font-extrabold tracking-[.1em] text-[#FCE38A]">{tagOf(game)}</span>
       <div className="relative z-10 grid origin-center place-items-center lg:scale-[1.08] xl:scale-[1.2]">
         <svg aria-hidden viewBox="0 0 200 200" shapeRendering="geometricPrecision" className="absolute size-[214px]" style={{ opacity: 0.9 }}>
           <defs><linearGradient id={`mg-${game.id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff3b0" /><stop offset=".5" stopColor={game.accent} /><stop offset="1" stopColor="#7a4a06" /></linearGradient></defs>
@@ -258,7 +264,7 @@ export default function Home() {
           {DUST.map((d, i) => <span key={i} className="dust" style={{ left: `${d.left}%`, width: d.size, height: d.size, ['--dur' as string]: `${d.dur}s`, ['--delay' as string]: `${d.delay}s`, ['--dx' as string]: `${d.dx}px`, ['--o' as string]: d.o }} />)}
         </div>
 
-        <div aria-hidden />
+        <div aria-hidden className="pointer-events-none absolute left-1/2 top-[44%] z-0 size-[min(90vw,620px)] -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background] duration-500" style={{ background: `radial-gradient(circle, ${HALO[game.category]}30 0%, ${HALO[game.category]}00 66%)` }} />
 
         {/* Carrusel nativo: scroll horizontal con snap (sin JS por frame) */}
         <motion.div key={cat} className="relative z-10 h-[min(40dvh,360px)] w-full lg:h-[calc(min(450px,52dvh)/var(--z,1))] xl:h-[calc(min(490px,56dvh)/var(--z,1))]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
@@ -305,10 +311,19 @@ export default function Home() {
               <button type="button"
                 className="flex min-h-12 touch-manipulation active:scale-95 items-center justify-center gap-2 rounded-2xl border border-amber-200/25 bg-gradient-to-b from-zinc-800/90 to-zinc-950/90 text-[14px] font-bold text-stone-100 shadow-[inset_0_1px_rgba(255,255,255,.1)]"
                 onClick={() => { feedback('tap'); setOnline(game); }}>
-                <Globe size={16} aria-hidden /> {t('lobby.online')}
+                <Globe size={16} aria-hidden /> {t('lobby.online')}{friendsOnline > 0 && <span className="ml-1 flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] text-emerald-300"><span className="size-1.5 rounded-full bg-emerald-400" />{friendsOnline}</span>}
               </button>
             </>
           )}
+        </div>
+        {/* acceso rápido: recompensa diaria y reglas del juego elegido */}
+        <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/10 bg-[#081711]/90 p-1">
+          <button type="button" onClick={() => { feedback('tap'); setShowRefill(true); }} className="relative flex h-9 touch-manipulation items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold text-stone-200 active:scale-95">
+            <Gift size={15} strokeWidth={1.75} aria-hidden />Recompensa diaria
+            {chestReady && <span aria-hidden className="absolute right-1.5 top-1.5 size-2 animate-pulse rounded-full bg-[#FCE38A] shadow-[0_0_6px_#FCE38A]" />}
+          </button>
+          <span aria-hidden className="h-4 w-px bg-white/15" />
+          <button type="button" onClick={() => { feedback('tap'); setRules(game); }} className="flex h-9 touch-manipulation items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold text-stone-200 active:scale-95"><HelpCircle size={15} strokeWidth={1.75} aria-hidden />Reglas</button>
         </div>
       </div>
 

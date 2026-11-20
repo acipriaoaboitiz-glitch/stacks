@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eraser, Repeat, Undo2 } from 'lucide-react';
+import { Eraser, Repeat, Undo2, Copy } from 'lucide-react';
 import { useT } from '../../i18n/index.ts';
 import { juice } from '../../services/juice.ts';
 import { exitMatch } from '../../services/exitMatch.ts';
@@ -12,7 +12,7 @@ import { progression } from '../../store/progression.ts';
 import { useWallet, wallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import {
-  CHIPS, applyRouletteAction, colorOf, newTable, settle, wins,
+  CHIPS, applyRouletteAction, colorOf, covers, newTable, settle, wins,
   type BetKey, type Bets, type RouletteAction, type RouletteState,
 } from './engine.ts';
 import { Wheel } from './Wheel.tsx';
@@ -22,6 +22,28 @@ const CELL = { red: 'bg-[#8E1020]', black: 'bg-[#0A0A0C]', green: 'bg-[#0A6B45]'
 const short = (n: number): string => (n >= 1000 ? `${+(n / 1000).toFixed(1)}k` : String(n));
 /** Filas del tablero: arriba 3-6-…-36, en medio 2-5-…-35, abajo 1-4-…-34. */
 const ROWS = [0, 1, 2].map((r) => Array.from({ length: 12 }, (_, c) => c * 3 + 3 - r));
+const numAt = (r: number, c: number): number => c * 3 + 3 - r;
+/** Anchos relativos del tablero: casilla del 0, 12 columnas y columna «2:1». Alto: 3 filas de números y 2 de apuestas externas. */
+const COLW = [1.1, ...Array(12).fill(1), 1.1] as const;
+const COLSUM = COLW.reduce((a, b) => a + b, 0);
+const ROWH = [1, 1, 1, 0.8, 0.8] as const;
+const ROWSUM = ROWH.reduce((a, b) => a + b, 0);
+const xAt = (col: number): number => (COLW.slice(0, col).reduce((a, b) => a + b, 0) / COLSUM) * 100;
+const yAt = (row: number): number => (ROWH.slice(0, row).reduce((a, b) => a + b, 0) / ROWSUM) * 100;
+
+/** Zonas de apuesta sobre las líneas: caballos, calles y cuadros (centro de cada una en % del tablero). */
+const HOTSPOTS: { key: BetKey; x: number; y: number }[] = (() => {
+  const out: { key: BetKey; x: number; y: number }[] = [];
+  // caballos con el cero
+  [0, 1, 2].forEach((r) => out.push({ key: `s:0-${numAt(r, 0)}`, x: xAt(1), y: (yAt(r) + yAt(r + 1)) / 2 }));
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 12; c++) {
+    if (c < 11) out.push({ key: `s:${numAt(r, c)}-${numAt(r, c + 1)}`, x: xAt(c + 2), y: (yAt(r) + yAt(r + 1)) / 2 });
+    if (r < 2) out.push({ key: `s:${numAt(r + 1, c)}-${numAt(r, c)}`, x: (xAt(c + 1) + xAt(c + 2)) / 2, y: yAt(r + 1) });
+    if (r < 2 && c < 11) out.push({ key: `c:${numAt(r + 1, c)}-${numAt(r, c)}-${numAt(r + 1, c + 1)}-${numAt(r, c + 1)}`, x: xAt(c + 2), y: yAt(r + 1) });
+  }
+  for (let c = 0; c < 12; c++) out.push({ key: `st:${c * 3 + 1}`, x: (xAt(c + 1) + xAt(c + 2)) / 2, y: yAt(3) });
+  return out;
+})();
 
 function ChipMark({ amt }: { amt: number }) {
   // pila de 1 a 4 fichas según el importe; la de arriba muestra el total
@@ -41,11 +63,12 @@ function ChipTop({ amt }: { amt: number }) {
   );
 }
 
-function Spot({ id, bets, label, cls, win, locked, onBet, style }: { id: BetKey; bets: Bets; label: string; cls: string; win: boolean; locked: boolean; onBet: (k: BetKey) => void; style?: React.CSSProperties }) {
+function Spot({ id, bets, label, cls, win, lit, locked, onBet, onHover, style }: { id: BetKey; bets: Bets; label: string; cls: string; win: boolean; lit?: boolean; locked: boolean; onBet: (k: BetKey) => void; onHover?: (k: BetKey | null) => void; style?: React.CSSProperties }) {
   const amt = bets[id];
   return (
     <button type="button" disabled={locked} onClick={() => onBet(id)} aria-label={label} style={style}
-      className={`relative grid min-h-0 touch-manipulation place-items-center border border-amber-500/35 font-bold tabular-nums text-[#F1E7C6] transition-colors active:brightness-125 ${cls} ${win ? 'z-[1] ring-2 ring-inset ring-[#FCE38A] brightness-125' : ''}`}>
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') onHover?.(id); }} onPointerLeave={() => onHover?.(null)} onFocus={() => onHover?.(id)} onBlur={() => onHover?.(null)}
+      className={`relative grid min-h-0 touch-manipulation place-items-center border border-amber-500/35 font-bold tabular-nums text-[#F1E7C6] transition-colors active:brightness-125 ${cls} ${lit ? 'brightness-150 saturate-150' : ''} ${win ? 'z-[1] ring-2 ring-inset ring-[#FCE38A] brightness-125' : ''}`}>
       <span className="text-[clamp(9px,2.5vw,16px)] leading-none">{label}</span>
       {amt ? <ChipMark amt={amt} /> : null}
     </button>
@@ -64,6 +87,7 @@ export default function Ruleta() {
   const [lastBets, setLastBets] = useState<Bets>({});
   const [done, setDone] = useState(0); // número de giro ya liquidado
   const [net, setNet] = useState<number | null>(null);
+  const [hover, setHover] = useState<BetKey | null>(null);
   const stack = useRef<{ key: BetKey; amt: number }[]>([]);
   const betsRef = useRef<Bets>({});
   betsRef.current = bets;
@@ -145,10 +169,18 @@ export default function Ruleta() {
     stack.current = Object.entries(lastBets).map(([key, amt]) => ({ key, amt }));
     setBets(lastBets); setNet(null); feedback('chip');
   };
+  const doubleAll = () => {
+    if (locked || total === 0 || total > w.chips) { feedback('defeat'); return; }
+    wallet.spend(total);
+    for (const [key, amt] of Object.entries(bets)) stack.current.push({ key, amt });
+    setBets((b) => Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v * 2])));
+    feedback('chip');
+  };
   const spin = () => { if (locked || total === 0) return; dispatch(me, { k: 'spin' }); };
 
   const isWin = (key: BetKey): boolean => shownResult !== null && wins(key, shownResult);
   const resColor = shownResult === null ? null : colorOf(shownResult);
+  const litSet = new Set<number>(hover ? covers(hover) : []);
 
   const felt = (
     <div className="flex h-full min-h-0 flex-col items-center gap-[clamp(4px,1.4vw,12px)] p-[clamp(6px,2vw,16px)] lg:flex-row lg:justify-center lg:gap-8">
@@ -161,17 +193,32 @@ export default function Ruleta() {
           )}
         </div>
       </div>
-      <div className="mb-[clamp(34px,10vw,46px)] grid max-h-[420px] min-h-0 w-full max-w-[640px] flex-1 lg:mb-0 lg:h-[calc(100%-100px)] lg:max-h-[540px] lg:max-w-[560px]"
-        style={{ gridTemplateColumns: '1.1fr repeat(12, 1fr)', gridTemplateRows: 'repeat(3, minmax(0,1fr)) minmax(0,.8fr) minmax(0,.8fr)' }}>
-        <Spot id="n:0" bets={bets} label="0" cls={CELL.green} win={isWin('n:0')} locked={locked} onBet={place} style={{ gridRow: '1 / span 3', gridColumn: 1 }} />
-        {ROWS.map((row, r) => row.map((n, c) => (
-          <Spot key={n} id={`n:${n}`} bets={bets} label={String(n)} cls={CELL[colorOf(n)]} win={isWin(`n:${n}`)} locked={locked} onBet={place} style={{ gridRow: r + 1, gridColumn: c + 2 }} />
-        )))}
-        {(['d1', 'd2', 'd3'] as const).map((d, i) => (
-          <Spot key={d} id={d} bets={bets} label={['1–12', '13–24', '25–36'][i]!} cls="bg-emerald-950/60" win={isWin(d)} locked={locked} onBet={place} style={{ gridRow: 4, gridColumn: `${2 + i * 4} / span 4` }} />
+      <div className="relative mb-[clamp(34px,10vw,46px)] max-h-[420px] min-h-0 w-full max-w-[680px] flex-1 lg:mb-0 lg:h-[calc(100%-100px)] lg:max-h-[540px] lg:max-w-[600px]">
+        <div className="grid h-full w-full" style={{ gridTemplateColumns: '1.1fr repeat(12, 1fr) 1.1fr', gridTemplateRows: 'repeat(3, minmax(0,1fr)) minmax(0,.8fr) minmax(0,.8fr)' }}>
+          <Spot id="n:0" bets={bets} label="0" cls={CELL.green} win={isWin('n:0')} lit={litSet.has(0)} locked={locked} onBet={place} onHover={setHover} style={{ gridRow: '1 / span 3', gridColumn: 1 }} />
+          {ROWS.map((row, r) => row.map((n, c) => (
+            <Spot key={n} id={`n:${n}`} bets={bets} label={String(n)} cls={CELL[colorOf(n)]} win={isWin(`n:${n}`)} lit={litSet.has(n)} locked={locked} onBet={place} onHover={setHover} style={{ gridRow: r + 1, gridColumn: c + 2 }} />
+          )))}
+          {(['col3', 'col2', 'col1'] as const).map((k, r) => (
+            <Spot key={k} id={k} bets={bets} label="2:1" cls="bg-emerald-950/60" win={false} locked={locked} onBet={place} onHover={setHover} style={{ gridRow: r + 1, gridColumn: 14 }} />
+          ))}
+          {(['d1', 'd2', 'd3'] as const).map((d, i) => (
+            <Spot key={d} id={d} bets={bets} label={['1–12', '13–24', '25–36'][i]!} cls="bg-emerald-950/60" win={isWin(d)} lit={hover === d} locked={locked} onBet={place} onHover={setHover} style={{ gridRow: 4, gridColumn: `${2 + i * 4} / span 4` }} />
+          ))}
+          {([['lo', '1–18', 'bg-emerald-950/60'], ['even', t('rl.even'), 'bg-emerald-950/60'], ['red', '', CELL.red], ['black', '', CELL.black], ['odd', t('rl.odd'), 'bg-emerald-950/60'], ['hi', '19–36', 'bg-emerald-950/60']] as const).map(([k, label, cls], i) => (
+            <Spot key={k} id={k} bets={bets} label={label || '◆'} cls={`${cls} ${k === 'red' ? 'text-[#ff6b7a]' : k === 'black' ? 'text-stone-300' : ''}`} win={isWin(k)} lit={hover === k} locked={locked} onBet={place} onHover={setHover} style={{ gridRow: 5, gridColumn: `${2 + i * 2} / span 2` }} />
+          ))}
+        </div>
+        {/* caballos, calles y cuadros: zonas pequeñas sobre las líneas del tapete */}
+        {!locked && HOTSPOTS.map((h) => (
+          <button key={h.key} type="button" aria-label={h.key} onClick={() => place(h.key)} onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHover(h.key); }} onPointerLeave={() => setHover(null)}
+            className="absolute z-[2] -translate-x-1/2 -translate-y-1/2 touch-manipulation rounded-full hover:bg-[#FCE38A]/50"
+            style={{ left: `${h.x}%`, top: `${h.y}%`, width: 'clamp(9px,2.6vw,16px)', height: 'clamp(9px,2.6vw,16px)' }}>
+            {bets[h.key] ? <ChipMark amt={bets[h.key]!} /> : null}
+          </button>
         ))}
-        {([['even', t('rl.even'), 'bg-emerald-950/60'], ['red', '', CELL.red], ['black', '', CELL.black], ['odd', t('rl.odd'), 'bg-emerald-950/60']] as const).map(([k, label, cls], i) => (
-          <Spot key={k} id={k} bets={bets} label={label || (k === 'red' ? '◆' : '◆')} cls={`${cls} ${k === 'red' ? 'text-[#ff6b7a]' : k === 'black' ? 'text-stone-300' : ''}`} win={isWin(k)} locked={locked} onBet={place} style={{ gridRow: 5, gridColumn: `${2 + i * 3} / span 3` }} />
+        {locked && HOTSPOTS.filter((h) => bets[h.key]).map((h) => (
+          <span key={h.key} className="pointer-events-none absolute z-[2] -translate-x-1/2 -translate-y-1/2" style={{ left: `${h.x}%`, top: `${h.y}%` }}><ChipMark amt={bets[h.key]!} /></span>
         ))}
       </div>
     </div>
@@ -187,17 +234,18 @@ export default function Ruleta() {
               style={{ width: 'clamp(32px,9vw,54px)', height: 'clamp(32px,9vw,54px)', fontSize: 'clamp(11px,3vw,15px)' }}>{c}</button>
           ))}
         </div>
-        <div className="shrink-0 whitespace-nowrap text-right text-[11px] text-stone-400">
-          <p>{t('rl.bet')}: <b className="tabular-nums text-amber-200">{total}</b></p>
+        <div className="shrink-0 whitespace-nowrap text-right text-[13px] text-stone-300">
+          <p>Apuesta Total: <b className="tabular-nums text-amber-200">{total}</b></p>
           {net !== null && <p className={`font-extrabold tabular-nums ${net > 0 ? 'text-emerald-300' : net < 0 ? 'text-rose-300' : 'text-stone-300'}`}>{net > 0 ? '+' : ''}{net}</p>}
         </div>
       </div>
       {/* Action Rail: altura fija reservada para que la mesa nunca se mueva */}
       <div className="flex min-h-[48px] w-full items-center justify-center gap-2" role="group" aria-label={t('rl.actions')}>
-        <button type="button" disabled={locked || total === 0} onClick={undo} aria-label={t('rl.undo')} className="btn touch-manipulation"><Undo2 size={17} aria-hidden /></button>
-        <button type="button" disabled={locked || total === 0} onClick={clear} aria-label={t('rl.clear')} className="btn touch-manipulation"><Eraser size={17} aria-hidden /></button>
-        <button type="button" disabled={locked || total > 0 || lastTotal === 0} onClick={repeat} aria-label={t('rl.repeat')} className="btn touch-manipulation"><Repeat size={17} aria-hidden /></button>
-        <button type="button" disabled={locked || total === 0} onClick={spin} className="btn btn--gold min-w-[9.5rem] touch-manipulation font-extrabold">{locked ? '…' : t('rl.spin')}</button>
+        <button type="button" disabled={locked || total === 0} onClick={undo} aria-label={t('rl.undo')} className="btn flex touch-manipulation items-center gap-1 px-3"><Undo2 size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only">{t('rl.undo')}</span></button>
+        <button type="button" disabled={locked || total === 0} onClick={clear} aria-label={t('rl.clear')} className="btn flex touch-manipulation items-center gap-1 px-3"><Eraser size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only">{t('rl.clear')}</span></button>
+        <button type="button" disabled={locked || total > 0 || lastTotal === 0} onClick={repeat} aria-label={t('rl.repeat')} className="btn flex touch-manipulation items-center gap-1 px-3"><Repeat size={16} strokeWidth={1.75} aria-hidden /><span className="max-sm:sr-only">{t('rl.repeat')}</span></button>
+        <button type="button" disabled={locked || total === 0} onClick={doubleAll} aria-label="Doblar" className="btn flex touch-manipulation items-center gap-1 px-3"><Copy size={16} strokeWidth={1.75} aria-hidden /><span className="font-extrabold">x2</span></button>
+        <button type="button" disabled={locked || total === 0} onClick={spin} className="btn btn--gold min-w-0 flex-1 touch-manipulation font-extrabold">{locked ? '…' : t('rl.spin')}</button>
       </div>
     </>
   );
@@ -215,8 +263,8 @@ export default function Ruleta() {
           <div className="min-w-0 rounded-[13px] border border-white/10 bg-gradient-to-br from-orange-400/10 to-black/30 px-3 py-1.5">
             <p className="text-[9px] font-extrabold uppercase tracking-[.14em] text-orange-300">{t('rl.last')}</p>
             <span className="flex gap-0.5 overflow-hidden">
-              {s.history.slice(0, 4).map((n, i) => (
-                <b key={`${i}-${n}`} className={`grid h-[17px] min-w-[17px] place-items-center rounded-full px-0.5 text-[10px] tabular-nums text-white ${CELL[colorOf(n)]}`}>{n}</b>
+              {s.history.slice(0, 10).map((n, i) => (
+                <b key={`${i}-${n}`} className={`grid place-items-center rounded-full tabular-nums text-white ${CELL[colorOf(n)]} ${i === 0 ? 'h-[22px] min-w-[22px] border border-amber-200 text-[12px]' : 'h-[16px] min-w-[16px] text-[9px]'}`}>{n}</b>
               ))}
               {s.history.length === 0 && <b className="text-[13px]">—</b>}
             </span>
