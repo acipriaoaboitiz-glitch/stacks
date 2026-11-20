@@ -158,7 +158,7 @@ export default function Chinchon() {
     const k = slots.indexOf(slot);
     if (k === -1) return null;
     const i = (myIdx + k) % n;
-    return <div className={s.out[i] ? 'opacity-40' : ''}><SeatBadge info={info(i, `${nm(i)}${s.out[i] ? ' ✕' : ''}`)} tone="them" mano={s.dealer === i} turn={s.turn === i && !s.out[i] && (s.phase === 'draw' || s.phase === 'discard')} deadline={null} cards={s.hands[i]!.length} /></div>;
+    return <div className={s.out[i] ? 'opacity-40' : ''}><SeatBadge info={info(i, `${nm(i)}${s.out[i] ? ' (fuera)' : ''}`)} tone="them" mano={s.dealer === i} turn={s.turn === i && !s.out[i] && (s.phase === 'draw' || s.phase === 'discard')} deadline={null} cards={s.hands[i]!.length} /></div>;
   };
 
   const pileW = 'calc(var(--card-w) * 0.8)';
@@ -244,7 +244,7 @@ export default function Chinchon() {
                 <ul className="grid gap-1.5 text-sm" aria-label="Puntos de la ronda">
                   {s.rows.map((r, i) => (
                     <li key={i} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 ${i === s.closer ? 'border-emerald-400/40 bg-emerald-900/25' : 'border-white/10 bg-white/5'} ${s.out[i] ? 'opacity-60' : ''}`}>
-                      <span className={`min-w-0 truncate ${i === s.closer ? 'font-bold text-amber-300' : ''}`}>{nm(i)}{s.out[i] ? ' ✕' : ''}{r.chinchon ? ' · Chinchón' : ''}</span>
+                      <span className={`min-w-0 truncate ${i === s.closer ? 'font-bold text-amber-300' : ''}`}>{nm(i)}{s.out[i] ? ' (fuera)' : ''}{r.chinchon ? ' · Chinchón' : ''}</span>
                       <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
                         <b className={`rounded-full px-2 py-[1px] text-[12px] ${r.delta < 0 ? 'bg-emerald-500/25 text-emerald-300' : 'bg-white/10 text-stone-200'}`}>{r.delta > 0 ? '+' : ''}{r.delta} pts</b>
                         <span className="text-[12px] text-stone-300"><b className="text-stone-50">{s.scores[i]}</b> / {OUT_AT}</span>

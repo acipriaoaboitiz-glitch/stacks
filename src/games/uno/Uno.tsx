@@ -96,7 +96,7 @@ export default function Uno() {
         return applyUnoAction(cur, p.id, m.type === 'play' ? { k: 'play', cardId: m.cardId, color: m.color } : { k: m.type })
           ?? applyUnoAction(cur, p.id, { k: 'draw' }) ?? applyUnoAction(cur, p.id, { k: 'pass' }) ?? forceAdvance(cur);
       });
-    }, botDelay());
+    }, botDelay() + (s.discard[s.discard.length - 1]!.kind !== 'num' && s.discard.length > 1 ? 750 : 0));
     return () => window.clearTimeout(id);
   }, [s, hostLike]);
 
@@ -282,8 +282,8 @@ export default function Uno() {
                 <div role="button" tabIndex={canDraw ? 0 : -1} aria-label="Mazo: robar carta" aria-disabled={!canDraw}
                   onClick={canDraw ? () => { feedback('draw'); act({ k: 'draw' }); } : undefined}
                   onKeyDown={canDraw ? (e) => { if (e.key === 'Enter' || e.key === ' ') { feedback('draw'); act({ k: 'draw' }); } } : undefined}
-                  className={`relative touch-manipulation rounded-xl ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
-                  style={{ width: 'calc(var(--card-w) * 0.86)', aspectRatio: '2 / 3', marginRight: 8, marginTop: 8 }}>
+                  className={`relative w-[54px] touch-manipulation rounded-xl sm:w-[74px] ${canDraw ? 'cursor-pointer active:scale-95' : ''}`}
+                  style={{ aspectRatio: '2 / 3', marginRight: 8, marginTop: 8 }}>
                   {[4, 3, 2, 1, 0].map((k) => (
                     <span key={k} className="pointer-events-none absolute inset-0 block overflow-hidden rounded-xl border-[3px] border-white" style={{ transform: `translate(${k * 1.6}px, ${-k * 1.6}px)`, boxShadow: k === 0 ? '0 3px 8px rgba(0,0,0,.5)' : undefined }}>
                       <UnoBack />
@@ -293,13 +293,13 @@ export default function Uno() {
                 </div>
                 <span className="font-mono text-[10px] text-amber-200/80">{s.drawPile.length}</span>
               </div>
-              <div className="relative" style={{ width: 'calc(var(--card-w) * 1.05)', height: 'calc(var(--card-w) * 0.9 * 1.5)' }}>
+              <div className="relative aspect-[2/3] w-[54px] sm:w-[74px]">
                 {s.discard.length > 1 && (
-                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} scale={1.05} /></div>
+                  <div className="absolute inset-0" style={{ transform: 'rotate(-6deg)' }}><UnoCardView card={s.discard[s.discard.length - 2]!} style={{ width: '100%' }} /></div>
                 )}
                 {/* entrada rápida y limpia de la carta jugada */}
                 <motion.div key={topCard.id} className="absolute inset-0" initial={{ x: from.x, y: from.y, opacity: 0.6, scale: 1.1, rotate: tilt * 2 }} animate={{ x: 0, y: 0, opacity: 1, scale: [1.1, 1], rotate: tilt }} transition={{ duration: 0.22, ease: EASE }}>
-                  <UnoCardView card={topCard} scale={1.05} glow />
+                  <UnoCardView card={topCard} style={{ width: '100%' }} glow />
                 </motion.div>
               </div>
             </div>
@@ -350,9 +350,9 @@ export default function Uno() {
       <PillBar pills={pills} />
       <div ref={handRef} onPointerMove={scrub} onPointerDown={scrub} onPointerUp={unscrub} onPointerCancel={unscrub} onPointerLeave={unscrub}
         className="no-scrollbar w-full overflow-x-auto overflow-y-hidden pb-1 pt-[min(2.4dvh,18px)]" style={{ touchAction: scrollable ? 'pan-x' : 'none' }} role="group" aria-label="Tu mano">
-        <div className="mx-auto flex w-max items-end px-2 [--uno-hand-w:54px] sm:[--uno-hand-w:68px]">
+        <div className="mx-auto flex w-max items-end px-2 [--uno-hand-w:46px] sm:[--uno-hand-w:64px] lg:[--uno-hand-w:78px]">
           {sorted.map((c, i) => (
-            <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : sorted.length > 11 ? -26 : sorted.length > 8 ? -20 : sorted.length > 5 ? -14 : -8, zIndex: hot === i ? 60 : i }}>
+            <div key={c.id} data-hi={i} style={{ marginLeft: i === 0 ? 0 : sorted.length > 7 ? -20 : -12, zIndex: hot === i ? 60 : i }}>
               <motion.div initial={!dealing && fresh.has(c.id) ? { y: -90, opacity: 0 } : false} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.2, ease: EASE }}>
               <UnoCardView card={c} scale={0.86} style={{ width: 'var(--uno-hand-w)' }} playable={playable.has(c.id)} lifted={hot === i} onClick={myTurn && playable.has(c.id) ? () => onCard(c) : undefined} />
               </motion.div>

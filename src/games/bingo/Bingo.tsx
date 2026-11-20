@@ -9,6 +9,7 @@ import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
 import { gameInterval, gameTimeout } from '../../services/timers.ts';
 import { feedback } from '../../store/settings.ts';
+import { BINGO_BALL_MS } from '../../utils/gamePacing.ts';
 import { wallet, useWallet } from '../../store/wallet.ts';
 import { GameFrame } from '../shared/GameFrame.tsx';
 import { HudPills } from '../shared/hud.tsx';
@@ -16,8 +17,8 @@ import { ResultOverlay } from '../shared/kit.tsx';
 import { Button } from '../mus/app/components/ui.tsx';
 import { BET, VIP_BALL, applyBingo, bingoPrize, botClaims, drawBall, hasLine, linePrize, missingBingo, missingLine, newBingo, rowNumbers, vipBonus, type BAction, type BState, type Card } from './engine.ts';
 
-type Speed = 'pausado' | 'normal' | 'turbo';
-const SPEEDS: { id: Speed; label: string; ms: number }[] = [{ id: 'pausado', label: 'Pausado 3.0s', ms: 3000 }, { id: 'normal', label: 'Normal 2.0s', ms: 2000 }, { id: 'turbo', label: 'Turbo 1.2s', ms: 1200 }];
+type Speed = 'pausado' | 'normal' | 'rapido';
+const SPEEDS: { id: Speed; label: string; ms: number }[] = [{ id: 'pausado', label: 'Pausado 5.5s', ms: BINGO_BALL_MS.pausado }, { id: 'normal', label: 'Normal 4.2s', ms: BINGO_BALL_MS.normal }, { id: 'rapido', label: 'Rápido 2.8s', ms: BINGO_BALL_MS.rapido }];
 /** Color de la bola según su decena: 1-9 oro · 10s rubí · 20s esmeralda · 30s zafiro · 40s ámbar · 50s púrpura · 60s turquesa · 70s coral · 80-90 plata. */
 const DECADE = ['#f0c35f', '#e11d48', '#10b981', '#2563eb', '#f59e0b', '#9333ea', '#14b8a6', '#fb7185', '#cbd5e1', '#cbd5e1'] as const;
 const ballColor = (n: number): string => DECADE[Math.floor(n / 10)]!;
@@ -53,7 +54,7 @@ const Ball = ({ n, big }: { n: number; big?: boolean }) => {
 };
 
 /** Cartón 3×9: toca un número cantado para marcarlo. Se ilumina con «¡A 1!» cuando falta un número para Línea o Bingo. */
-const CardView = memo(function CardView({ card, drawn, marks, onMark, idx, lineTaken, nudge }: { card: Card; drawn: readonly number[]; marks: readonly number[]; onMark: (n: number) => void; idx: number; lineTaken: boolean; nudge: ReadonlySet<number> }) {
+const CardView = memo(function CardView({ card, drawn, marks, onMark, idx, lineTaken, nudge, dense }: { dense?: boolean; card: Card; drawn: readonly number[]; marks: readonly number[]; onMark: (n: number) => void; idx: number; lineTaken: boolean; nudge: ReadonlySet<number> }) {
   const live = marks.filter((n) => drawn.includes(n));
   const toBingo = missingBingo(card, live);
   const rowMiss = [0, 1, 2].map((r) => rowNumbers(card, r).filter((n) => !live.includes(n)));
@@ -61,16 +62,16 @@ const CardView = memo(function CardView({ card, drawn, marks, onMark, idx, lineT
   const key = new Set<number>([...(oneLine ? rowMiss.filter((m) => m.length === 1).flat() : []), ...(toBingo === 1 ? rowMiss.flat() : [])]);
   const near = oneLine || toBingo === 1 || toBingo === 2;
   return (
-    <div className={`relative mx-auto w-full max-w-[520px] rounded-xl border bg-[#0a1a14] p-1.5 shadow-[0_4px_10px_rgba(0,0,0,.4)] ${near ? 'dm-pulse border-[#FCE38A] shadow-[0_0_14px_rgba(252,227,138,.6)]' : 'border-amber-300/30'}`} aria-label={`Cartón ${idx + 1}`}>
+    <div className={`relative mx-auto w-full max-w-2xl rounded-xl border bg-[#0a1a14] p-1.5 shadow-[0_4px_10px_rgba(0,0,0,.4)] ${near ? 'dm-pulse border-[#FCE38A] shadow-[0_0_14px_rgba(252,227,138,.6)]' : 'border-amber-300/30'}`} aria-label={`Cartón ${idx + 1}`}>
       {near && <span className="absolute -top-2 right-2 z-10 rounded-full bg-gradient-to-b from-rose-500 to-rose-700 px-2 py-[1px] text-[10px] font-black tracking-wide text-white shadow">{toBingo === 1 ? '¡A 1 DE BINGO!' : oneLine ? '¡A 1 DE LÍNEA!' : '¡A 2 DE BINGO!'}</span>}
       <div className="grid grid-cols-9 gap-[3px]">
         {card.map((n, i) => {
-          if (!n) return <span key={i} className="grid h-[clamp(30px,7vw,40px)] place-items-center rounded-md bg-black/25 font-[var(--font-display)] text-[13px] font-bold text-[#D4AF37]/45">S</span>;
+          if (!n) return <span key={i} className={`grid h-[clamp(30px,7vw,40px)] ${dense ? 'lg:h-[clamp(28px,4.8dvh,42px)]' : 'lg:h-[clamp(34px,6.2dvh,56px)]'} place-items-center rounded-md bg-black/25 font-[var(--font-display)] text-[13px] font-bold text-[#D4AF37]/45`}>S</span>;
           const marked = live.includes(n);
           const pending = drawn.includes(n) && !marked;
           return (
             <button key={i} type="button" onClick={() => onMark(n)} aria-label={String(n)} aria-pressed={marked}
-              className={`relative grid h-[clamp(30px,7vw,40px)] touch-manipulation place-items-center rounded-md border text-[clamp(12px,3.6vw,17px)] font-extrabold tabular-nums active:scale-95 ${pending ? (nudge.has(n) ? 'dm-pulse ' : '') + 'border-amber-200 bg-[#f6eed6] text-[#2a1d02] shadow-[0_0_8px_rgba(252,227,138,.8)]' : 'border-black/20 bg-[#f6eed6] text-[#2a1d02]'} ${key.has(n) && !marked ? 'ring-2 ring-rose-500' : ''}`}>
+              className={`relative grid h-[clamp(30px,7vw,40px)] ${dense ? 'lg:h-[clamp(28px,4.8dvh,42px)]' : 'lg:h-[clamp(34px,6.2dvh,56px)]'} touch-manipulation place-items-center rounded-md border text-[clamp(12px,3.6vw,17px)] font-extrabold tabular-nums active:scale-95 ${dense ? 'lg:text-lg' : 'lg:text-2xl'} ${pending ? (nudge.has(n) ? 'dm-pulse ' : '') + 'border-amber-200 bg-[#f6eed6] text-[#2a1d02] shadow-[0_0_8px_rgba(252,227,138,.8)]' : 'border-black/20 bg-[#f6eed6] text-[#2a1d02]'} ${key.has(n) && !marked ? 'ring-2 ring-rose-500' : ''}`}>
               {n}
               {marked && <span aria-hidden className="absolute inset-[8%] rounded-full" style={{ background: 'radial-gradient(circle at 35% 30%, #fb7185, #be123c 70%, #4c0519)', opacity: 0.92, boxShadow: '0 1px 3px rgba(0,0,0,.6)' }} />}
               {marked && <span aria-hidden className="absolute z-10 text-white [text-shadow:0_1px_2px_#000]">{n}</span>}
@@ -234,43 +235,56 @@ export default function Bingo() {
   const over = s.phase === 'over';
   const winner = s.bingoBy ? s.players.find((p) => p.id === s.bingoBy) : null;
   const rivals = s.players.filter((p) => p.id !== me);
-  const felt = (
-    <div className="flex h-full min-h-0 flex-col gap-2 p-[clamp(6px,2vw,14px)]">
-      <div className="flex shrink-0 items-center gap-3">
-        <div className="size-[clamp(64px,18vw,92px)] shrink-0"><Drum spinning={playing} /></div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <AnimatePresence mode="popLayout">
-              {current !== undefined && (
-                <motion.div key={current} initial={{ scale: 0, y: -30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 18 }}><Ball n={current} big /></motion.div>
-              )}
-            </AnimatePresence>
-            <div className="flex items-center gap-1">{lastBalls.map((b) => <Ball key={b} n={b} />)}</div>
-          </div>
-          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
-            {rivals.map((p) => {
-              const miss = s.lineBy ? Math.min(...p.cards.map((c) => missingBingo(c, p.marks))) : Math.min(...p.cards.map((c) => missingLine(c, p.marks)));
-              const total = s.lineBy ? 15 : 5;
-              return (
-                <div key={p.id} className="min-w-0">
-                  <p className="truncate text-[10px] font-bold text-stone-300">{p.name} <span className={miss <= 1 ? 'text-rose-300' : 'text-stone-500'}>· faltan {miss}</span></p>
-                  <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-rose-400 transition-[width] duration-300" style={{ width: `${Math.max(4, ((total - miss) / total) * 100)}%` }} /></div>
-                </div>
-              );
-            })}
-          </div>
-          <p className="mt-1 text-[10px] tabular-nums text-stone-500">{drawn.length}/90{drawn.length <= VIP_BALL && !s.bingoBy ? ` · Prima VIP +50 % hasta la bola ${VIP_BALL}` : ''}</p>
+  const ms = SPEEDS.find((x) => x.id === speed)!.ms;
+  const header = (
+    <div className="flex shrink-0 items-center gap-3 lg:flex-col lg:items-stretch">
+      <div className="flex items-center gap-3">
+        <div className="size-[clamp(64px,18vw,92px)] shrink-0 lg:size-24"><Drum spinning={playing} /></div>
+        {/* bola actual con anillo de progreso hasta la siguiente */}
+        <div className="relative grid size-[72px] shrink-0 place-items-center lg:size-[88px]">
+          <svg viewBox="0 0 100 100" className="absolute inset-0 size-full -rotate-90" aria-hidden="true">
+            <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="5" />
+            {playing && <motion.circle key={drawn.length} cx="50" cy="50" r="46" fill="none" stroke="#FCE38A" strokeWidth="5" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: ms / 1000, ease: 'linear' }} />}
+          </svg>
+          <AnimatePresence mode="popLayout">
+            {current !== undefined && (
+              <motion.div key={current} initial={{ scale: 0, y: -30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 18 }}><Ball n={current} big /></motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <button type="button" onClick={() => { setBoard((v) => !v); feedback('tap'); }} aria-label="Tablero 1 a 90" aria-pressed={board} className={`grid size-9 shrink-0 touch-manipulation place-items-center rounded-xl border active:scale-95 ${board ? 'border-[#FCE38A] bg-[#FCE38A]/15 text-[#FCE38A]' : 'border-white/10 bg-white/[0.06] text-stone-300'}`}><LayoutGrid size={16} strokeWidth={1.75} /></button>
+        <div className="flex min-w-0 flex-wrap items-center gap-1 lg:max-w-[150px]">{lastBalls.map((b) => <Ball key={b} n={b} />)}</div>
+        <button type="button" onClick={() => { setBoard((v) => !v); feedback('tap'); }} aria-label="Tablero 1 a 90" aria-pressed={board} className={`ml-auto grid size-9 shrink-0 touch-manipulation place-items-center rounded-xl border active:scale-95 lg:hidden ${board ? 'border-[#FCE38A] bg-[#FCE38A]/15 text-[#FCE38A]' : 'border-white/10 bg-white/[0.06] text-stone-300'}`}><LayoutGrid size={16} strokeWidth={1.75} /></button>
       </div>
-      {/* panel 1–90 */}
-      <div hidden={!board} className="grid shrink-0 grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px]" aria-label="Panel 1 a 90">
-        {Array.from({ length: 90 }, (_, i) => i + 1).map((b) => (
-          <span key={b} className={`grid h-[clamp(13px,2.6vw,18px)] place-items-center rounded-[3px] text-[clamp(7px,1.9vw,10px)] font-bold tabular-nums ${drawn.includes(b) ? 'bg-amber-300 text-[#2a1d02]' : 'bg-white/[0.07] text-white/40'}`}>{b}</span>
-        ))}
+      <div className="grid grid-cols-3 gap-1.5 lg:grid-cols-1">
+        {rivals.map((p) => {
+          const miss = s.lineBy ? Math.min(...p.cards.map((c) => missingBingo(c, p.marks))) : Math.min(...p.cards.map((c) => missingLine(c, p.marks)));
+          const total = s.lineBy ? 15 : 5;
+          return (
+            <div key={p.id} className="min-w-0">
+              <p className="truncate text-[10px] font-bold text-stone-300">{p.name} <span className={miss <= 1 ? 'text-rose-300' : 'text-stone-500'}>· faltan {miss}</span></p>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-rose-400 transition-[width] duration-300" style={{ width: `${Math.max(4, ((total - miss) / total) * 100)}%` }} /></div>
+            </div>
+          );
+        })}
       </div>
-      <div className="no-scrollbar grid min-h-0 flex-1 content-start gap-2 overflow-y-auto">
-        {mine?.cards.map((c, i) => <CardView key={i} idx={i} card={c} drawn={drawn} marks={mine.marks} onMark={mark} lineTaken={!!s.lineBy} nudge={nudge} />)}
+      <p className="text-[10px] tabular-nums text-stone-500">{drawn.length}/90{drawn.length <= VIP_BALL && !s.bingoBy ? ` · Prima VIP +50 % hasta la bola ${VIP_BALL}` : ''}</p>
+    </div>
+  );
+  const panel = (
+    <div hidden={!board} className="grid shrink-0 grid-cols-[repeat(18,minmax(0,1fr))] gap-[2px] lg:!grid lg:grid-cols-[repeat(10,minmax(0,1fr))]" aria-label="Panel 1 a 90">
+      {Array.from({ length: 90 }, (_, i) => i + 1).map((b) => (
+        <span key={b} className={`grid h-[clamp(13px,2.6vw,18px)] place-items-center rounded-[3px] text-[clamp(7px,1.9vw,10px)] font-bold tabular-nums lg:h-[clamp(18px,3.1dvh,26px)] lg:text-[12px] ${drawn.includes(b) ? 'bg-amber-300 text-[#2a1d02]' : 'bg-white/[0.07] text-white/40'}`}>{b}</span>
+      ))}
+    </div>
+  );
+  const cardsView = mine?.cards ?? [];
+  const felt = (
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 p-[clamp(6px,2vw,14px)] lg:flex-row lg:gap-5">
+      <div className="flex shrink-0 flex-col gap-2 lg:w-[300px] lg:overflow-y-auto">{header}{panel}</div>
+      <div className={`no-scrollbar min-h-0 flex-1 overflow-y-auto lg:flex lg:items-center lg:justify-center`}>
+        <div className={`grid w-full content-start gap-2 lg:gap-4 ${cardsView.length > 2 ? 'md:grid-cols-2' : ''}`}>
+          {cardsView.map((c, i) => <CardView key={i} idx={i} card={c} drawn={drawn} marks={mine!.marks} onMark={mark} lineTaken={!!s.lineBy} nudge={nudge} dense={cardsView.length > 2} />)}
+        </div>
       </div>
     </div>
   );

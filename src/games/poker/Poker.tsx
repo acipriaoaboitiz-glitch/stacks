@@ -35,7 +35,7 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
         {s.button === i && !x.out && <span title="Dealer" className="absolute -right-1 -top-1 grid size-[17px] place-items-center rounded-full border-2 border-[#0b211a] bg-white text-[9px] font-extrabold text-zinc-900">D</span>}
       </div>
       <span className={`max-w-full truncate text-[11px] font-bold ${turn ? 'text-amber-200' : 'text-stone-200'}`}>{s.players[i]!.name}</span>
-      <span className="font-mono text-[11px] font-bold text-amber-200 tabular-nums">{x.out ? '✕' : x.stack}</span>
+      <span className="font-mono text-[11px] font-bold text-amber-200 tabular-nums">{x.out ? 'OUT' : x.stack}</span>
       {!x.out && !x.folded && slot !== 'bottom' && (
         <div className="flex">
           {x.hole.map((c, k) => (
