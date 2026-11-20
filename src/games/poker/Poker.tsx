@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { Hand as HandIcon, Layers, ShieldOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { setActiveRoom } from '../../services/multiplayer.ts';
 import { useReplica, useSeating } from '../../services/onlineGame.ts';
@@ -21,6 +22,20 @@ const WIN_BONUS = 200;
 const names = (): string[] => [tr('g.you'), botName(1), botName(2), botName(3), botName(4), botName(5)];
 type Slot = 'bottom' | 'right' | 'top' | 'left';
 
+/** Cartas (ids) que forman la mejor combinación de 5 entre las privadas y las comunitarias. */
+function bestFive(hole: PokerState['community'], community: PokerState['community']): Set<string> {
+  const all = [...hole, ...community];
+  if (all.length < 5) return new Set();
+  let best = -1; let pick: typeof all = [];
+  const rec = (start: number, cur: typeof all): void => {
+    if (cur.length === 5) { const sc = bestScore(cur); if (sc > best) { best = sc; pick = [...cur]; } return; }
+    for (let i = start; i < all.length; i++) rec(i + 1, [...cur, all[i]!]);
+  };
+  rec(0, []);
+  return new Set(pick.map((c) => c.id));
+}
+const PHASE: Record<string, string> = { preflop: 'PRE-FLOP', flop: 'FLOP', turn: 'TURN', river: 'RIVER', showdown: 'SHOWDOWN' };
+
 function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
   const x = s.seats[i]!;
   const turn = s.phase === 'betting' && s.turn === i;
@@ -36,6 +51,7 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
       </div>
       <span className={`max-w-full truncate text-[11px] font-bold ${turn ? 'text-amber-200' : 'text-stone-200'}`}>{s.players[i]!.name}</span>
       <span className="font-mono text-[11px] font-bold text-amber-200 tabular-nums">{x.out ? 'OUT' : x.stack}</span>
+      {x.last && !x.out && <span className="hidden max-w-[110px] truncate rounded-full bg-black/40 px-2 text-[10px] font-semibold text-stone-300 lg:block">{x.folded ? 'Retirado' : x.last}</span>}
       {!x.out && !x.folded && slot !== 'bottom' && (
         <div className="flex">
           {x.hole.map((c, k) => (
@@ -47,7 +63,7 @@ function SeatView({ s, i, slot }: { s: PokerState; i: number; slot: Slot }) {
         {x.bet > 0 && !x.out && !x.folded && (
           <motion.span key={x.bet} initial={{ opacity: 0, y: -4, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
             className={`rounded-full px-2 py-[1px] text-[10px] font-extrabold ${x.folded ? 'bg-zinc-800 text-stone-400' : 'bg-amber-300 text-amber-950'}`}>
-            {x.bet}
+            <span className="lg:hidden">{x.bet}</span><span className="hidden tabular-nums lg:inline">Apuesta: {x.bet}</span>
           </motion.span>
         )}
       </AnimatePresence>
@@ -131,6 +147,13 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
   const n = s.players.length;
   const nm = (i: number): string => s.players[i]!.name;
   const [raising, setRaising] = useState<number | null>(null);
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const on = (): void => setWide(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
   const { banner, show } = useBanner(1500);
   const { cine, show: showCine } = useCine();
   const paid = useRef(false);
@@ -222,10 +245,12 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     6: { 1: [89, 68], 2: [89, 32], 3: [50, 18], 4: [11, 32], 5: [11, 68] },
   };
   const slotOf = (x: number): Slot => (x > 70 ? 'right' : x < 30 ? 'left' : 'top');
+  const winSeat = s.result?.reason === 'showdown' ? s.result.wins[0]?.seat : undefined;
+  const winCards = useMemo(() => (winSeat !== undefined ? bestFive(s.seats[winSeat]!.hole, s.community) : new Set<string>()), [winSeat, s.seats, s.community]);
   const flip = (c: PokerState['community'][number], k: number) => (
     <motion.div key={c.id} style={{ perspective: 600 }} initial={{ rotateY: 90, y: -24, opacity: 0 }} animate={{ rotateY: 0, y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 160, damping: 18, delay: k >= 3 ? 0 : k * 0.12 }}>
-      <FaceCard card={c} scale={0.5} />
+      <FaceCard card={c} scale={wide ? 0.78 : 0.5} glow={s.phase === 'handOver' && s.result?.reason === 'showdown' && winCards.has(c.id)} />
     </motion.div>
   );
   const at = (x: number, y: number): React.CSSProperties => ({ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' });
@@ -246,16 +271,17 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
             <div key={`b${k}`} className="absolute z-[5]" style={at(...toward(pos[0], pos[1]))}><ChipPile amount={s.seats[i]!.bet} size={15} maxCols={3} /></div>
           ) : null)}
           {me.bet > 0 && <div className="absolute z-[5]" style={at(50, 76)}><ChipPile amount={me.bet} size={15} maxCols={3} /></div>}
+          <span className="pointer-events-none absolute left-1/2 bottom-[13%] z-[7] hidden -translate-x-1/2 rounded-full border border-[#D4AF37]/40 bg-black/45 px-3 py-0.5 text-[10px] font-extrabold tracking-[.18em] text-[#FCE38A] lg:block">{PHASE[s.street] ?? ''}</span>
           {/* bote y cartas comunitarias */}
           <div className="absolute z-[6] grid justify-items-center gap-1.5" style={at(50, 50)}>
             <div className="grid justify-items-center gap-1" aria-label={`Bote ${total}`}>
               <ChipPile amount={s.seats.reduce((a2, x) => a2 + x.committed, 0)} size={20} />
-              <span className="font-mono rounded-full border border-white/10 bg-black/45 px-3 py-0.5 text-[13px] font-bold text-amber-200 tabular-nums">{total}</span>
+              <span className="font-mono flex items-center gap-1.5 rounded-full border border-[#D4AF37]/50 bg-black/55 px-3 py-0.5 text-[13px] font-bold text-amber-200 tabular-nums lg:text-base"><span className="text-[10px] font-extrabold tracking-[.14em] text-[#FCE38A]">BOTE</span>{total}</span>
             </div>
-            <div className="flex items-center justify-center gap-[min(1vw,5px)]" aria-label="Cartas comunitarias">
+            <div className="flex items-center justify-center gap-[min(1vw,5px)] lg:gap-3" aria-label="Cartas comunitarias">
               {Array.from({ length: 5 }, (_, k) => {
                 const c = s.community[k];
-                return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] rounded-[3px] border border-dashed border-white/15" style={{ width: 'calc(var(--card-w) * 0.5)' }} />;
+                return c ? flip(c, k) : <span key={k} className="block aspect-[167/243] rounded-[4px] border border-[#D4AF37]/30 bg-black/15" style={{ width: `calc(var(--card-w) * ${wide ? 0.78 : 0.5})` }} />;
               })}
             </div>
           </div>
@@ -265,8 +291,59 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
     </>
   );
 
+  const rt = raising ?? (lg ? lg.minTo : 0);
+  const clampTo = (v: number): number => (lg ? Math.min(lg.maxTo, Math.max(lg.minTo, Math.round(v))) : v);
+  const vipDock = (
+    <div className="mx-auto hidden w-full max-w-[1120px] grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center gap-6 lg:grid">
+      {/* izquierda: tu mano y evaluación en vivo */}
+      <div className="flex items-center gap-5">
+        <div className="flex items-end justify-center pt-2" role="group" aria-label="Tus cartas">
+          {me.hole.map((c, i) => (
+            <div key={c.id} className="drop-shadow-[0_12px_14px_rgba(0,0,0,.6)]" style={{ marginLeft: i ? -14 : 0 }}><FaceCard card={c} deal={i} scale={0.82} rotate={i === 0 ? -3 : 3} dim={me.folded} /></div>
+          ))}
+        </div>
+        <div className="grid min-w-0 gap-1.5 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+          <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-stone-400"><Layers size={14} strokeWidth={1.75} aria-hidden />Stack{s.button === myIdx && <span className="grid size-[17px] place-items-center rounded-full bg-white text-[9px] font-extrabold text-zinc-900">D</span>}</div>
+          <b className="font-mono text-2xl tabular-nums text-amber-200">{me.stack}</b>
+          <div className="flex items-center gap-2 text-[13px] font-bold text-[#FCE38A]"><HandIcon size={15} strokeWidth={1.75} aria-hidden />{me.folded ? 'Retirado' : myHand || 'Esperando cartas comunitarias'}</div>
+        </div>
+      </div>
+      {/* derecha: consola de acciones */}
+      <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/30 p-3" role="group" aria-label="Acciones">
+        {myTurn && lg ? (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <button type="button" onClick={() => send({ type: 'fold' })} className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-red-400/40 bg-red-950/80 text-[13px] font-bold text-red-100 active:scale-95"><ShieldOff size={15} strokeWidth={1.75} aria-hidden />Retirarse</button>
+              {lg.canCheck
+                ? <button type="button" onClick={() => send({ type: 'check' })} className="h-11 rounded-xl border border-white/15 bg-white/10 text-[13px] font-bold text-white active:scale-95">Pasar</button>
+                : <button type="button" onClick={() => send({ type: 'call' })} className="h-11 rounded-xl border border-white/15 bg-white/10 text-[13px] font-bold tabular-nums text-white active:scale-95">Igualar {lg.callAmount}{lg.callAmount >= me.stack ? ' · all-in' : ''}</button>}
+              {lg.canRaise
+                ? <button type="button" onClick={() => send({ type: 'raise', to: rt })} className="h-11 rounded-xl bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] text-[13px] font-extrabold tabular-nums text-[#2a1d02] active:scale-95">{rt >= lg.maxTo ? 'All-in' : `${lg.toCall > 0 ? 'Subir' : 'Apostar'} a ${rt}`}</button>
+                : <span className="grid h-11 place-items-center rounded-xl bg-white/5 text-[12px] text-stone-500">Sin subida</span>}
+            </div>
+            {lg.canRaise && (
+              <div className="flex items-center gap-2">
+                {([['½ Bote', () => clampTo(s.currentBet + total / 2)], ['Bote', () => clampTo(s.currentBet + total)], ['All-In', () => lg.maxTo]] as const).map(([lab, fn]) => (
+                  <button key={lab} type="button" onClick={() => setRaising(fn())} className="h-8 rounded-full border border-white/15 bg-white/10 px-3 text-[12px] font-bold text-stone-100 active:scale-95">{lab}</button>
+                ))}
+                <input type="range" min={lg.minTo} max={lg.maxTo} step={Math.max(1, Math.min(10, lg.maxTo - lg.minTo))} value={rt} aria-label="Cantidad" onChange={(e) => setRaising(Number(e.target.value))} className="min-w-0 flex-1 accent-amber-400" />
+                <input type="number" min={lg.minTo} max={lg.maxTo} value={rt} aria-label="Importe" onChange={(e) => setRaising(clampTo(Number(e.target.value) || lg.minTo))} className="h-8 w-20 rounded-lg border border-white/15 bg-black/40 px-2 text-right font-mono text-[13px] tabular-nums text-amber-200" />
+              </div>
+            )}
+          </>
+        ) : s.phase === 'handOver' ? (
+          <button type="button" onClick={() => dispatch({ k: 'next' })} className="h-11 rounded-xl bg-gradient-to-b from-[#FCE38A] to-[#D4AF37] text-[14px] font-extrabold text-[#2a1d02] active:scale-95">{t('a.next')}</button>
+        ) : (
+          <p className="py-3 text-center text-[13px] font-semibold text-stone-400" aria-live="polite">{status || 'Esperando…'}</p>
+        )}
+      </div>
+    </div>
+  );
+
   const bottom = (
     <>
+      {vipDock}
+      <div className="contents lg:hidden">
       <div className="relative flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <TableAvatar name={nm(myIdx)} tone="me" active={myTurn} className="size-9 text-[15px]" />
@@ -305,6 +382,7 @@ function PokerTable({ s, setS, dispatch, online, myIdx, hostLike, restart, exit 
         {me.hole.map((c, i) => (
           <FaceCard key={c.id} card={c} deal={i} scale={0.92} rotate={i === 0 ? -4 : 4} dim={me.folded} />
         ))}
+      </div>
       </div>
     </>
   );

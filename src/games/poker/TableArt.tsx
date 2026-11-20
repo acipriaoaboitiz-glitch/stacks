@@ -7,20 +7,20 @@ import type { ReactNode } from 'react';
  */
 export function OvalTable({ children }: { children: ReactNode }) {
   return (
-    <div className="relative h-full w-full">
+    <div className="relative mx-auto h-full w-full lg:max-w-[1120px]">
       {/* rail acolchado */}
       <div aria-hidden className="absolute inset-[0.5%_0.3%] rounded-[50%]"
-        style={{ background: 'linear-gradient(180deg,#1c211f 0%,#141816 45%,#0b0d0c 100%)', boxShadow: 'inset 0 5px 12px rgba(255,255,255,.09), inset 0 -12px 24px rgba(0,0,0,.85), 0 16px 30px rgba(0,0,0,.55)' }} />
+        style={{ background: 'linear-gradient(180deg,#1c211f 0%,#13241c 45%,#0b0d0c 100%)', boxShadow: 'inset 0 5px 12px rgba(255,255,255,.09), inset 0 -12px 24px rgba(0,0,0,.85), 0 0 0 1px rgba(212,175,55,.35), 0 18px 36px rgba(0,0,0,.6)' }} />
       {/* brillo del canto */}
       <div aria-hidden className="absolute inset-[1.4%_1%] rounded-[50%]" style={{ boxShadow: 'inset 0 2px 3px rgba(255,255,255,.14)' }} />
       {/* ribete dorado */}
       <div aria-hidden className="absolute inset-[5.2%_3.4%] rounded-[50%]" style={{ border: '2px solid rgba(212,175,55,.35)', boxShadow: '0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(251,224,138,.35)' }} />
       {/* fieltro */}
       <div aria-hidden className="absolute inset-[6%_4.1%] overflow-hidden rounded-[50%]"
-        style={{ background: 'radial-gradient(ellipse at 50% 46%, #0B2E20 0%, #0A2819 55%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55)' }}>
+        style={{ background: 'radial-gradient(ellipse at 50% 46%, #14543a 0%, #0B2E20 38%, #0A2819 65%, #061A12 100%)', boxShadow: 'inset 0 0 40px rgba(0,0,0,.55)' }}>
       </div>
       {/* línea de apuestas */}
-      <div aria-hidden className="absolute inset-[22%_15%] rounded-[50%]" style={{ border: '2px dashed rgba(212,175,55,.18)' }} />
+      <div aria-hidden className="absolute inset-[22%_15%] rounded-[50%]" style={{ border: '2px dotted rgba(212,175,55,.32)' }} />
       {children}
     </div>
   );
