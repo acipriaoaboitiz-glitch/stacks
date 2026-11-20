@@ -266,10 +266,10 @@ export default function Uno() {
 
   const felt = (
     <>
-      <div className="relative h-full min-h-[340px] lg:min-h-[400px]">
-        <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2">{seat('top')}</div>
-        <div className="absolute left-3 top-1/2 z-20 -translate-y-1/2">{seat('left')}</div>
-        <div className="absolute inset-x-0 top-[60%] z-10 flex -translate-y-1/2 items-center justify-center">
+      <div className="grid h-full place-items-center"><div className="relative flex h-[290px] max-h-full w-full items-center justify-center sm:h-[340px] lg:h-[380px]">
+        <div className="absolute left-1/2 top-2.5 z-20 -translate-x-1/2">{seat('top')}</div>
+        <div className="absolute left-3 top-1/2 z-20 sm:left-7 -translate-y-1/2">{seat('left')}</div>
+        <div className="relative z-10 flex items-center justify-center gap-4 sm:gap-7">
           <div className="grid justify-items-center gap-3">
             <div className="relative flex items-center gap-[min(4vw,18px)] px-3 py-2">
               {/* anillo luminoso del color activo con el sentido de giro */}
@@ -309,8 +309,8 @@ export default function Uno() {
             </div>
           </div>
         </div>
-        <div className="absolute right-3 top-1/2 z-20 -translate-y-1/2">{seat('right')}</div>
-      </div>
+        <div className="absolute right-3 top-1/2 z-20 sm:right-7 -translate-y-1/2">{seat('right')}</div>
+      </div></div>
       <Banner text={banner} />
     </>
   );
